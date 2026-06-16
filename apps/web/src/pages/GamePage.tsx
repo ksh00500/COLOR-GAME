@@ -16,6 +16,7 @@ import { HelpPanel } from "../components/HelpPanel";
 import { PlayerCard } from "../components/PlayerCard";
 import { ResultPanel } from "../components/ResultPanel";
 import { SettingsPanel } from "../components/SettingsPanel";
+import { playOpponentTurnCue } from "../audio";
 import { useSettings } from "../settings";
 
 const HUMAN_ID = "player1";
@@ -101,6 +102,7 @@ export function GamePage() {
   const [isAnimating, setIsAnimating] = useState(false);
   const [isBoardClearing, setIsBoardClearing] = useState(false);
   const [isAiThinking, setIsAiThinking] = useState(false);
+  const [turnCueActive, setTurnCueActive] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [resignOpen, setResignOpen] = useState(false);
@@ -121,6 +123,17 @@ export function GamePage() {
   }, []);
 
   useEffect(() => clearEffectTimers, [clearEffectTimers]);
+
+  const triggerOpponentTurnComplete = useCallback(() => {
+    if (settings.soundEnabled) {
+      void playOpponentTurnCue();
+    }
+
+    if (settings.animationLevel === "off") return;
+    setTurnCueActive(true);
+    const timer = window.setTimeout(() => setTurnCueActive(false), 850);
+    effectTimers.current.push(timer);
+  }, [settings.animationLevel, settings.soundEnabled]);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -155,10 +168,15 @@ export function GamePage() {
       }
 
       setLastPlaced(position);
+      const shouldCueOpponentTurn =
+        playerId !== HUMAN_ID &&
+        result.state.status === "playing" &&
+        result.state.currentPlayerId === HUMAN_ID;
       const removedCells = result.move.removedCells;
       const shouldAnimateRemoval = removedCells.length > 0;
       if (!shouldAnimateRemoval) {
         setGame(result.state);
+        if (shouldCueOpponentTurn) triggerOpponentTurnComplete();
         return;
       }
 
@@ -193,6 +211,7 @@ export function GamePage() {
         setScoringCells(new Set());
         setIsBoardClearing(false);
         setIsAnimating(false);
+        if (shouldCueOpponentTurn) triggerOpponentTurnComplete();
       }, animationDuration);
       const timers = [commitTimer];
       if (result.move.earnedScore > 0) {
@@ -201,7 +220,7 @@ export function GamePage() {
       }
       effectTimers.current.push(...timers);
     },
-    [game, isAnimating, settings.animationLevel, settings.presentationSpeed],
+    [game, isAnimating, settings.animationLevel, settings.presentationSpeed, triggerOpponentTurnComplete],
   );
 
   useEffect(() => {
@@ -254,6 +273,7 @@ export function GamePage() {
     setIsAnimating(false);
     setIsBoardClearing(false);
     setIsAiThinking(false);
+    setTurnCueActive(false);
     setMatchStartedAt(startedAt);
     setNow(startedAt);
   };
@@ -316,7 +336,7 @@ export function GamePage() {
               descriptor={aiDescriptors[difficulty]}
             />
 
-            <div className={`turn-banner ${humanTurn ? "mine" : "theirs"}`} role="status" aria-live="polite">
+            <div className={`turn-banner ${humanTurn ? "mine" : "theirs"}${turnCueActive ? " turn-ready-effect" : ""}`} role="status" aria-live="polite">
               <span className="turn-indicator" />
               <strong>{turnLabel}</strong>
               <small>{humanTurn ? "색상을 고르고 빈칸에 놓으세요." : "상대 수를 기다리는 중입니다."}</small>

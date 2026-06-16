@@ -15,6 +15,7 @@ import { PlayerCard } from "../components/PlayerCard";
 import { ResultPanel } from "../components/ResultPanel";
 import { SettingsPanel } from "../components/SettingsPanel";
 import { getAuthToken } from "../api";
+import { playOpponentTurnCue } from "../audio";
 import { useSettings } from "../settings";
 import { createAppSocket } from "../socket";
 
@@ -123,6 +124,7 @@ export function OnlineRoomPage() {
   const [focusedIndex, setFocusedIndex] = useState(12);
   const [busyLabel, setBusyLabel] = useState<string | null>(null);
   const [isBoardClearing, setIsBoardClearing] = useState(false);
+  const [turnCueActive, setTurnCueActive] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
@@ -151,6 +153,17 @@ export function OnlineRoomPage() {
     effectTimers.current.forEach((timer) => window.clearTimeout(timer));
     effectTimers.current = [];
   }, []);
+
+  const triggerOpponentTurnComplete = useCallback(() => {
+    if (settings.soundEnabled) {
+      void playOpponentTurnCue();
+    }
+
+    if (settings.animationLevel === "off") return;
+    setTurnCueActive(true);
+    const timer = window.setTimeout(() => setTurnCueActive(false), 850);
+    effectTimers.current.push(timer);
+  }, [settings.animationLevel, settings.soundEnabled]);
 
   const applyRoom = useCallback((nextRoom: RoomSnapshot) => {
     setRoom((current) => {
@@ -207,6 +220,15 @@ export function OnlineRoomPage() {
     const moveKey = `${game.lastMove.turnNumber}:${game.lastMove.playerId}:${game.lastMove.row}:${game.lastMove.col}`;
     if (animatedMoveKey.current === moveKey) return;
     animatedMoveKey.current = moveKey;
+    const shouldCueOpponentTurn =
+      playerId !== null &&
+      game.status === "playing" &&
+      game.currentPlayerId === playerId &&
+      game.lastMove.playerId !== playerId;
+    const removalDelay = game.lastMove.removedCells.length > 0
+      ? game.lastMove.earnedScore === 0 ? 420 : 620
+      : 150;
+
     setLastPlaced({ row: game.lastMove.row, col: game.lastMove.col });
     if (game.lastMove.removedCells.length > 0) {
       const previousBoard = previousBoardRef.current;
@@ -228,12 +250,16 @@ export function OnlineRoomPage() {
       }, game.lastMove.earnedScore === 0 ? 420 : 620);
       effectTimers.current.push(timer);
     }
+    if (shouldCueOpponentTurn) {
+      const timer = window.setTimeout(triggerOpponentTurnComplete, removalDelay);
+      effectTimers.current.push(timer);
+    }
     if (game.lastMove.earnedScore > 0) {
       setScoreNotice({ playerId: game.lastMove.playerId, score: game.lastMove.earnedScore });
       const timer = window.setTimeout(() => setScoreNotice(null), 900);
       effectTimers.current.push(timer);
     }
-  }, [game?.lastMove]);
+  }, [game, playerId, triggerOpponentTurnComplete]);
 
   useEffect(() => {
     const handleShortcut = (event: KeyboardEvent) => {
@@ -528,7 +554,7 @@ export function OnlineRoomPage() {
               descriptor={opponent.connectionStatus === "connected" ? "온라인 상대" : "연결 끊김"}
             />
 
-            <div className={`turn-banner ${myTurn ? "mine" : "theirs"}`} role="status" aria-live="polite">
+            <div className={`turn-banner ${myTurn ? "mine" : "theirs"}${turnCueActive ? " turn-ready-effect" : ""}`} role="status" aria-live="polite">
               <span className="turn-indicator" />
               <strong>{turnLabel}</strong>
               <small>{myTurn ? "서버가 수를 검증합니다." : "상대의 수를 기다리는 중입니다."}</small>

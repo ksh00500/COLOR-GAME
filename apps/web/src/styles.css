@@ -1176,6 +1176,14 @@ fieldset legend {
   box-shadow: 0 0 0 5px color-mix(in srgb, var(--burgundy) 12%, transparent);
 }
 
+.turn-banner.turn-ready-effect {
+  animation: turn-ready-flash 850ms ease both;
+}
+
+.turn-banner.turn-ready-effect .turn-indicator {
+  animation: turn-ready-dot 850ms ease both;
+}
+
 .turn-banner strong {
   font-size: 0.82rem;
 }
@@ -1991,6 +1999,101 @@ kbd {
   margin-top: 1.5rem;
 }
 
+.tutorial-backdrop {
+  background:
+    radial-gradient(circle at 36% 32%, color-mix(in srgb, var(--green) 18%, transparent), transparent 22rem),
+    rgba(24, 19, 15, 0.62);
+}
+
+.tutorial-panel {
+  width: min(100%, 470px);
+  padding: 1.25rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 20px;
+  color: var(--ink);
+  background: var(--surface-raised);
+  box-shadow: 0 30px 88px rgba(16, 10, 6, 0.38), inset 0 0 0 3px color-mix(in srgb, var(--surface-muted) 48%, transparent);
+  animation: panel-in 220ms ease both;
+}
+
+.tutorial-panel h2 {
+  margin-bottom: 1rem;
+  font-family: Georgia, serif;
+  font-size: 1.85rem;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.tutorial-card {
+  display: grid;
+  gap: 0.35rem;
+  min-height: 155px;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background:
+    radial-gradient(circle at 88% 16%, color-mix(in srgb, var(--burgundy) 13%, transparent), transparent 8rem),
+    var(--surface);
+}
+
+.tutorial-count {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  color: var(--burgundy);
+  background: var(--surface-muted);
+  font-size: 0.75rem;
+  font-weight: 950;
+}
+
+.tutorial-card strong {
+  font-size: 1.1rem;
+}
+
+.tutorial-card p,
+.tutorial-note {
+  color: var(--ink-soft);
+  font-size: 0.74rem;
+  line-height: 1.65;
+  word-break: keep-all;
+}
+
+.tutorial-dots {
+  display: flex;
+  justify-content: center;
+  gap: 0.38rem;
+  margin: 0.9rem 0;
+}
+
+.tutorial-dots button {
+  width: 9px;
+  height: 9px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--line-strong);
+  cursor: pointer;
+}
+
+.tutorial-dots button.active {
+  width: 26px;
+  border-radius: 999px;
+  background: var(--burgundy);
+}
+
+.tutorial-actions {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.65rem;
+}
+
+.tutorial-note {
+  margin: 0.85rem 0 0;
+}
+
 @keyframes tile-place {
   from { opacity: 0.4; transform: translateY(-7px) scale(0.94); }
   to { opacity: 1; transform: translateY(0) scale(1); }
@@ -2024,6 +2127,32 @@ kbd {
   from { opacity: 0; transform: translateY(8px) scale(0.92); }
   35% { opacity: 1; transform: translateY(-3px) scale(1.08); }
   to { opacity: 1; transform: translateY(-12px) scale(1); }
+}
+
+@keyframes turn-ready-flash {
+  0% {
+    border-color: color-mix(in srgb, var(--green-light) 78%, white);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--green-light) 30%, transparent);
+    transform: translateY(0);
+  }
+  40% {
+    border-color: color-mix(in srgb, var(--green-light) 70%, var(--line));
+    box-shadow: 0 0 0 7px color-mix(in srgb, var(--green-light) 14%, transparent);
+    transform: translateY(-1px);
+  }
+  100% {
+    box-shadow: none;
+    transform: translateY(0);
+  }
+}
+
+@keyframes turn-ready-dot {
+  0%, 100% { transform: scale(1); }
+  38% {
+    background: var(--green-light);
+    box-shadow: 0 0 0 8px color-mix(in srgb, var(--green-light) 18%, transparent);
+    transform: scale(1.35);
+  }
 }
 
 @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
