@@ -25,6 +25,7 @@
 ```text
 apps/
   web/                React + TypeScript + Vite 웹 앱
+  server/             Fastify + Socket.IO 서버 권위형 게임 서버
 packages/
   shared-types/       게임과 UI가 공유하는 타입
   game-core/          부작용 없는 순수 게임 규칙 엔진
@@ -47,7 +48,7 @@ amplify.yml           AWS Amplify Hosting 빌드 설정
 - `switchTurn`
 - `resignGame`
 
-게임 엔진은 React와 네트워크 코드에 의존하지 않으며 입력 상태를 직접 변경하지 않습니다. 향후 온라인 서버에서도 같은 패키지를 사용해 점수, 제거, 승패를 서버 권위형으로 계산할 수 있습니다.
+게임 엔진은 React와 네트워크 코드에 의존하지 않으며 입력 상태를 직접 변경하지 않습니다. 웹 앱과 온라인 서버가 같은 패키지를 사용해 점수, 제거, 승패를 계산합니다.
 
 ## 실행
 
@@ -61,7 +62,29 @@ pnpm install
 pnpm dev
 ```
 
-개발 서버 기본 주소는 `http://localhost:4173`입니다.
+웹 개발 서버 기본 주소는 `http://localhost:5173`입니다.
+
+서버 개발 모드는 별도로 실행합니다.
+
+```bash
+pnpm dev:server
+```
+
+서버 기본 주소는 `http://localhost:8080`이며, 헬스 체크는 `GET /health`입니다.
+
+## 온라인 서버 진행 상황
+
+현재 `apps/server`에는 다음 서버 권위형 기반이 들어 있습니다.
+
+- Fastify HTTP 서버
+- Socket.IO 실시간 연결
+- `room:create`, `room:join`, `room:ready`
+- `game:move`, `game:resign`, `game:reconnect`
+- 서버 측 턴 검증, 점수 계산, 타일 제거, 승패 처리
+- 연결 끊김 표시와 재접속 복구
+- `GET /rooms/:code` 디버그 조회
+
+현재 방 상태는 메모리에 저장됩니다. PostgreSQL과 Prisma를 붙이면 `game_rooms`, `games`, `game_players`, `game_moves` 테이블에 같은 상태와 수 기록을 영속화할 수 있습니다.
 
 ## 검증 명령
 
@@ -71,7 +94,7 @@ pnpm test
 pnpm build
 ```
 
-현재 자동 테스트는 게임 엔진 15개와 AI 엔진 2개로 구성됩니다. 연결 판정, 동시 득점, 제거, 승리, 무승부, 시간 초과, 불변성, AI 즉시 득점을 포함합니다.
+현재 자동 테스트는 게임 엔진 15개, AI 엔진 2개, 서버 방 서비스 7개로 구성됩니다. 연결 판정, 동시 득점, 제거, 승리, 무승부, 시간 초과, 불변성, AI 즉시 득점, 방 생성, 준비, 서버 권위형 수 처리, 재접속, 참가자 검증을 포함합니다.
 
 ## AWS 배포
 
@@ -87,16 +110,24 @@ Target: /index.html
 Type: 200 (Rewrite)
 ```
 
-향후 Fastify·Socket.IO 서버와 PostgreSQL을 추가할 때는 웹 앱과 분리해 ECS/Fargate 또는 App Runner, RDS PostgreSQL로 배포하는 구성을 권장합니다.
+서버는 `apps/server/Dockerfile`을 이용해 App Runner 또는 ECS/Fargate로 배포할 수 있습니다.
+
+권장 AWS 구성:
+
+- Web: AWS Amplify Hosting
+- Server: AWS App Runner 또는 ECS/Fargate
+- Database: RDS PostgreSQL
+- Secrets: AWS Secrets Manager
+- WebSocket URL: Amplify 환경 변수 `VITE_SOCKET_URL`
 
 ## 아직 구현하지 않은 기능
 
 - 실제 이메일·Google 로그인
 - 일반 온라인 자동 매칭
 - 경쟁전, 레이팅, 티어, 배치 경기, 시즌
-- 사설방 서버와 초대 코드
+- 사설방 클라이언트 화면과 초대 링크 UI
 - PostgreSQL 및 영속 게임 기록
-- Socket.IO 재접속과 서버 기준 타이머
+- 재접속 유예 시간과 이탈 패배 정책
 - 프로필, 최근 경기, 리더보드
 
 이 기능들은 현재 순수 게임 엔진을 서버에서도 재사용하는 방식으로 단계적으로 추가할 수 있습니다.
