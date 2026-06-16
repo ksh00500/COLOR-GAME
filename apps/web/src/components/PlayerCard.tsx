@@ -10,6 +10,14 @@ interface PlayerCardProps {
   descriptor: string;
 }
 
+const resolveAvatarLabel = (player: GamePlayer, descriptor: string): string => {
+  if (descriptor.includes("AI") || player.id.toLowerCase().includes("ai")) return "AI";
+  if (player.isGuest) return "G";
+
+  const [firstCharacter] = [...player.nickname.trim()];
+  return firstCharacter?.toLocaleUpperCase() ?? "P";
+};
+
 export function PlayerCard({
   player,
   active,
@@ -21,6 +29,7 @@ export function PlayerCard({
   const scoreProgress = Math.min(100, (player.score / targetScore) * 100);
   const timerProgress = remainingSeconds === null ? 100 : Math.min(100, (remainingSeconds / 60) * 100);
   const timerUrgency = remainingSeconds !== null && remainingSeconds <= 10;
+  const avatarLabel = resolveAvatarLabel(player, descriptor);
 
   return (
     <article className={`player-card ${active ? "active" : ""}`} aria-current={active ? "true" : undefined}>
@@ -29,7 +38,7 @@ export function PlayerCard({
         {active ? "CURRENT TURN" : "CONNECTED"}
       </div>
       <div className={`player-avatar avatar-${player.avatarId}`} aria-hidden="true">
-        <i /><i /><i />
+        <span>{avatarLabel}</span>
       </div>
       <div className="player-identity">
         <strong>{player.nickname}</strong>
@@ -58,4 +67,3 @@ export function PlayerCard({
     </article>
   );
 }
-
