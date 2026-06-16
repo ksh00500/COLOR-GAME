@@ -9,7 +9,7 @@ import {
   resignGame,
 } from "@color-game/game-core";
 import type { Board, GamePlayer, GameState, Position, TileColorId } from "@color-game/shared-types";
-import { BrandMark } from "../components/BrandMark";
+import { AppSidebar } from "../components/AppSidebar";
 import { ColorPicker } from "../components/ColorPicker";
 import { GameBoard } from "../components/GameBoard";
 import { HelpPanel } from "../components/HelpPanel";
@@ -248,85 +248,81 @@ export function GamePage() {
         : "상대 차례";
 
   return (
-    <main className="game-page">
-      <header className="game-header">
-        <button className="brand-button" type="button" onClick={() => navigate("/")} aria-label="메인 화면으로">
-          <BrandMark />
-        </button>
-        <div className="match-label">
-          <span>AI MATCH</span>
-          <strong>TURN {game.turnNumber}</strong>
-        </div>
-        <div className="header-actions">
-          <button className="icon-button labeled" type="button" onClick={() => setHelpOpen(true)}><span>?</span><small>규칙</small></button>
-          <button className="icon-button labeled" type="button" onClick={() => setSettingsOpen(true)}><span>◌</span><small>설정</small></button>
-        </div>
-      </header>
+    <main className="game-page app-frame">
+      <AppSidebar onSettings={() => setSettingsOpen(true)} />
 
-      <div className={`turn-banner ${humanTurn ? "mine" : "theirs"}`} role="status" aria-live="polite">
-        <span className="turn-indicator" />
-        <strong>{turnLabel}</strong>
-        <small>{humanTurn ? "색상을 고르고 빈칸에 타일을 놓으세요." : "보드는 잠시 입력할 수 없습니다."}</small>
-      </div>
-
-      <section className="game-layout">
-        <div className="player-slot opponent-slot">
-          <PlayerCard
-            player={ai}
-            active={aiTurn}
-            targetScore={game.config.targetScore}
-            remainingSeconds={aiTurn ? remainingSeconds : null}
-            scoreDelta={scoreNotice?.playerId === AI_ID ? scoreNotice.score : null}
-            descriptor={aiDescriptors[difficulty]}
-          />
-        </div>
-
-        <div className="board-stage">
-          <div className="board-caption">
-            <span><i /> SHARED COLOR FIELD</span>
-            <small>3 = 1PT · 4 = 3PT · 5 = 5PT</small>
-          </div>
-          <GameBoard
-            board={visualBoard ?? game.board}
-            selectedColor={selectedColors[HUMAN_ID] ?? "colorA"}
-            canPlay={canHumanPlay}
-            showShapes={settings.showShapes}
-            focusedIndex={focusedIndex}
-            scoringCells={scoringCells}
-            lastPlaced={lastPlaced}
-            invalidCell={invalidCell}
-            onFocusedIndexChange={setFocusedIndex}
-            onPlace={(position) => applyMove(HUMAN_ID, position, selectedColors[HUMAN_ID] ?? "colorA")}
-          />
-        </div>
-
-        <div className="player-slot human-slot">
-          <PlayerCard
-            player={human}
-            active={humanTurn}
-            targetScore={game.config.targetScore}
-            remainingSeconds={humanTurn ? remainingSeconds : null}
-            scoreDelta={scoreNotice?.playerId === HUMAN_ID ? scoreNotice.score : null}
-            descriptor="게스트 플레이어"
-          />
-          <button className="resign-button" type="button" onClick={() => setResignOpen(true)} disabled={game.status !== "playing"}>
-            대전 포기
+      <section className="game-shell">
+        <header className="game-topbar">
+          <button className="icon-button labeled" type="button" onClick={() => navigate("/")}>
+            <span>←</span><small>로비</small>
           </button>
-        </div>
+          <div className="match-label">
+            <span>AI MATCH</span>
+            <strong>TURN {game.turnNumber}</strong>
+          </div>
+          <div className="header-actions">
+            <button className="icon-button labeled" type="button" onClick={() => setHelpOpen(true)}><span>?</span><small>규칙</small></button>
+            <button className="icon-button labeled" type="button" onClick={() => setSettingsOpen(true)}><span>◌</span><small>설정</small></button>
+          </div>
+        </header>
 
-        <div className="picker-slot">
-          <ColorPicker
-            selected={selectedColors[HUMAN_ID] ?? "colorA"}
-            disabled={!canHumanPlay}
-            onSelect={(color) => setSelectedColors((current) => ({ ...current, [HUMAN_ID]: color }))}
-          />
-        </div>
+        <section className="game-layout">
+          <div className="board-stage">
+            <div className="board-caption">
+              <span><i /> SHARED COLOR FIELD</span>
+              <small>3 = 1PT · 4 = 3PT · 5 = 5PT</small>
+            </div>
+            <GameBoard
+              board={visualBoard ?? game.board}
+              selectedColor={selectedColors[HUMAN_ID] ?? "colorA"}
+              canPlay={canHumanPlay}
+              showShapes={settings.showShapes}
+              focusedIndex={focusedIndex}
+              scoringCells={scoringCells}
+              lastPlaced={lastPlaced}
+              invalidCell={invalidCell}
+              onFocusedIndexChange={setFocusedIndex}
+              onPlace={(position) => applyMove(HUMAN_ID, position, selectedColors[HUMAN_ID] ?? "colorA")}
+            />
+          </div>
+
+          <aside className="game-control-panel" aria-label="대전 정보">
+            <PlayerCard
+              player={ai}
+              active={aiTurn}
+              targetScore={game.config.targetScore}
+              remainingSeconds={aiTurn ? remainingSeconds : null}
+              scoreDelta={scoreNotice?.playerId === AI_ID ? scoreNotice.score : null}
+              descriptor={aiDescriptors[difficulty]}
+            />
+
+            <div className={`turn-banner ${humanTurn ? "mine" : "theirs"}`} role="status" aria-live="polite">
+              <span className="turn-indicator" />
+              <strong>{turnLabel}</strong>
+              <small>{humanTurn ? "색상을 고르고 빈칸에 놓으세요." : "상대 수를 기다리는 중입니다."}</small>
+            </div>
+
+            <ColorPicker
+              selected={selectedColors[HUMAN_ID] ?? "colorA"}
+              disabled={!canHumanPlay}
+              onSelect={(color) => setSelectedColors((current) => ({ ...current, [HUMAN_ID]: color }))}
+            />
+
+            <PlayerCard
+              player={human}
+              active={humanTurn}
+              targetScore={game.config.targetScore}
+              remainingSeconds={humanTurn ? remainingSeconds : null}
+              scoreDelta={scoreNotice?.playerId === HUMAN_ID ? scoreNotice.score : null}
+              descriptor="게스트 플레이어"
+            />
+
+            <button className="resign-button" type="button" onClick={() => setResignOpen(true)} disabled={game.status !== "playing"}>
+              대전 포기
+            </button>
+          </aside>
+        </section>
       </section>
-
-      <div className="game-footnote">
-        <span>ARROW KEYS TO MOVE · ENTER TO PLACE</span>
-        <span>목표 점수 {game.config.targetScore} · 턴당 60초</span>
-      </div>
 
       {resignOpen && (
         <div className="modal-backdrop" role="presentation" onMouseDown={() => setResignOpen(false)}>
