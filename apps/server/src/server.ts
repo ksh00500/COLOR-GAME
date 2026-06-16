@@ -204,7 +204,16 @@ export const createServer = (options: ServerOptions = {}) => {
     });
   });
 
+  const turnTimer = setInterval(() => {
+    const rooms = roomService.expireActiveTurns();
+    for (const room of rooms) {
+      io.to(room.code).emit("game:state", room);
+      io.to(room.code).emit("game:finished", room.game);
+    }
+  }, 1_000);
+
   app.addHook("onClose", async () => {
+    clearInterval(turnTimer);
     await io.close();
   });
 

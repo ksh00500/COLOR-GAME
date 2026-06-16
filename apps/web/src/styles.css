@@ -523,6 +523,158 @@ p {
   font-size: 0.86rem;
 }
 
+.online-page {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 76% 8%, color-mix(in srgb, var(--bronze) 18%, transparent), transparent 26rem),
+    linear-gradient(135deg, var(--page), var(--page-deep));
+}
+
+.online-shell {
+  display: grid;
+  grid-template-columns: minmax(300px, 0.85fr) minmax(340px, 0.65fr);
+  align-items: start;
+  gap: 4rem;
+  width: min(100% - 3rem, 1180px);
+  margin: 0 auto;
+  padding: 5rem 1rem;
+}
+
+.online-copy h1 {
+  max-width: 720px;
+  margin-bottom: 1.25rem;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(2.5rem, 5vw, 4.8rem);
+  font-weight: 500;
+  line-height: 1.04;
+  letter-spacing: -0.05em;
+}
+
+.online-copy p:last-child {
+  max-width: 620px;
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+  line-height: 1.85;
+  word-break: keep-all;
+}
+
+.online-card {
+  display: grid;
+  gap: 1rem;
+  padding: 1.25rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--surface-raised) 88%, transparent);
+  box-shadow: var(--shadow-soft);
+}
+
+.online-field {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.online-field span {
+  color: var(--ink-soft);
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.online-field input,
+.join-row input {
+  min-height: 48px;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  padding: 0 0.85rem;
+  color: var(--ink);
+  background: var(--surface);
+}
+
+.join-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.65rem;
+}
+
+.waiting-room {
+  display: grid;
+  gap: 0.9rem;
+  margin-top: 0.25rem;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.waiting-room > span {
+  color: var(--ink-soft);
+  font-size: 0.58rem;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+}
+
+.waiting-room > strong {
+  font-family: Georgia, serif;
+  color: var(--burgundy);
+  font-size: 2.15rem;
+  letter-spacing: 0.16em;
+}
+
+.waiting-players {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.waiting-players p {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 0;
+  padding: 0.7rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.waiting-players p:last-child {
+  border-bottom: 0;
+}
+
+.waiting-players small,
+.online-message,
+.online-toast {
+  color: var(--ink-soft);
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.online-message {
+  margin: 0;
+  line-height: 1.55;
+}
+
+.online-toast {
+  width: min(100% - 3rem, 680px);
+  margin: 0.7rem auto 0;
+  padding: 0.7rem 1rem;
+  border: 1px solid color-mix(in srgb, var(--burgundy) 30%, var(--line));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface-raised) 90%, transparent);
+}
+
+.status-connected i {
+  background: var(--green-light);
+}
+
+.status-connecting i,
+.status-disconnected i {
+  background: var(--bronze);
+}
+
+.status-error i {
+  background: var(--danger);
+}
+
 .config-controls {
   display: grid;
   gap: 1.2rem;
@@ -1575,6 +1727,11 @@ kbd {
     gap: 2rem;
   }
 
+  .online-shell {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
   .game-layout {
     grid-template-columns: minmax(150px, 190px) minmax(380px, 600px) minmax(150px, 190px);
     gap: 1rem;
@@ -1599,6 +1756,7 @@ kbd {
   .game-header,
   .lobby-hero,
   .match-config,
+  .online-shell,
   .lobby-footer,
   .game-footnote {
     width: min(100% - 2rem, 680px);
@@ -1766,6 +1924,10 @@ kbd {
   }
 
   .choice-row {
+    grid-template-columns: 1fr;
+  }
+
+  .join-row {
     grid-template-columns: 1fr;
   }
 

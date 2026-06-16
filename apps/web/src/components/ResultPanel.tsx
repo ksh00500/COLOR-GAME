@@ -5,37 +5,46 @@ interface ResultPanelProps {
   elapsedSeconds: number;
   onRematch: () => void;
   onLobby: () => void;
+  perspectivePlayerId?: string;
+  rematchLabel?: string;
 }
 
-export function ResultPanel({ game, elapsedSeconds, onRematch, onLobby }: ResultPanelProps) {
+export function ResultPanel({
+  game,
+  elapsedSeconds,
+  onRematch,
+  onLobby,
+  perspectivePlayerId,
+  rematchLabel = "다시 하기",
+}: ResultPanelProps) {
   if (game.status !== "finished") return null;
 
-  const human = game.players[0];
-  const ai = game.players[1];
+  const primary = game.players.find((player) => player.id === perspectivePlayerId) ?? game.players[0];
+  const opponent = game.players.find((player) => player.id !== primary.id) ?? game.players[1];
   const isDraw = game.result === "draw";
-  const humanWon = game.winnerId === human.id;
-  const title = isDraw ? "무승부" : humanWon ? "승리" : "패배";
+  const primaryWon = game.winnerId === primary.id;
+  const title = isDraw ? "무승부" : primaryWon ? "승리" : "패배";
   const reason = game.result === "timeout"
-    ? humanWon ? "상대의 시간이 끝났습니다." : "제한 시간이 끝났습니다."
+    ? primaryWon ? "상대의 시간이 끝났습니다." : "제한 시간이 끝났습니다."
     : game.result === "resignation"
-      ? humanWon ? "상대가 대전을 종료했습니다." : "대전을 종료했습니다."
+      ? primaryWon ? "상대가 대전을 종료했습니다." : "대전을 종료했습니다."
       : isDraw
         ? "보드가 가득 찼습니다."
-        : humanWon
+        : primaryWon
           ? "마지막 연결이 목표 점수를 완성했습니다."
-          : "AI가 목표 점수에 먼저 도달했습니다.";
+          : `${opponent.nickname} 플레이어가 목표 점수에 먼저 도달했습니다.`;
 
   return (
     <div className="modal-backdrop result-backdrop">
-      <section className={`result-panel ${humanWon ? "win" : isDraw ? "draw" : "loss"}`} role="dialog" aria-modal="true" aria-labelledby="result-title">
+      <section className={`result-panel ${primaryWon ? "win" : isDraw ? "draw" : "loss"}`} role="dialog" aria-modal="true" aria-labelledby="result-title">
         <p className="eyebrow">MATCH COMPLETE</p>
         <div className="result-emblem" aria-hidden="true"><i /><i /><i /></div>
         <h2 id="result-title">{title}</h2>
         <p>{reason}</p>
         <div className="final-score">
-          <span><small>YOU</small><strong>{human.score}</strong></span>
+          <span><small>YOU</small><strong>{primary.score}</strong></span>
           <i>:</i>
-          <span><small>AI</small><strong>{ai.score}</strong></span>
+          <span><small>{opponent.nickname}</small><strong>{opponent.score}</strong></span>
         </div>
         <div className="result-meta">
           <span><small>전체 턴</small><strong>{game.turnNumber}</strong></span>
@@ -43,7 +52,7 @@ export function ResultPanel({ game, elapsedSeconds, onRematch, onLobby }: Result
         </div>
         <div className="result-actions">
           <button type="button" className="secondary-action" onClick={onLobby}>메인으로</button>
-          <button type="button" className="primary-action" onClick={onRematch}>다시 하기 <span>↗</span></button>
+          <button type="button" className="primary-action" onClick={onRematch}>{rematchLabel} <span>↗</span></button>
         </div>
       </section>
     </div>

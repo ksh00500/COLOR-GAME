@@ -121,3 +121,23 @@ export interface ValidMove extends Position {
   color: TileColorId;
 }
 
+export type RoomStatus = "waiting" | "playing" | "finished";
+
+export interface RoomPlayerSnapshot {
+  id: PlayerId;
+  nickname: string;
+  avatarId: string;
+  isGuest: boolean;
+  ready: boolean;
+  connected: boolean;
+}
+
+export interface RoomSnapshot {
+  code: string;
+  status: RoomStatus;
+  hostPlayerId: PlayerId;
+  players: [RoomPlayerSnapshot, RoomPlayerSnapshot | null];
+  game: GameState | null;
+  createdAt: number;
+  updatedAt: number;
+}

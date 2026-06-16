@@ -131,6 +131,17 @@ describe("GameRoomService", () => {
     expect(expired.value.room.game?.winnerId).toBe("player-2");
   });
 
+  it("expires active rooms without waiting for another move", () => {
+    const { service, setNow } = startRoom();
+
+    setNow(61_000);
+    const changed = service.expireActiveTurns();
+
+    expect(changed).toHaveLength(1);
+    expect(changed[0]?.status).toBe("finished");
+    expect(changed[0]?.game?.result).toBe("timeout");
+  });
+
   it("marks disconnects and allows reconnecting without losing game state", () => {
     const { service, code, guestId } = startRoom();
 
@@ -143,7 +154,6 @@ describe("GameRoomService", () => {
     expect(reconnected.ok).toBe(true);
     if (!reconnected.ok) return;
     expect(reconnected.value.players[1]?.connected).toBe(true);
-    expect(reconnected.value.players[1]?.socketId).toBe("socket-next");
     expect(reconnected.value.game?.players[1].connectionStatus).toBe("connected");
   });
 

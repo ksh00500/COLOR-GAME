@@ -11,10 +11,10 @@ import type {
   GamePlayer,
   GameState,
   Move,
+  RoomSnapshot,
+  RoomStatus,
   TileColorId,
 } from "@color-game/shared-types";
-
-export type RoomStatus = "waiting" | "playing" | "finished";
 
 export interface RoomPlayer {
   id: string;
@@ -24,16 +24,6 @@ export interface RoomPlayer {
   ready: boolean;
   connected: boolean;
   socketId: string | null;
-}
-
-export interface RoomSnapshot {
-  code: string;
-  status: RoomStatus;
-  hostPlayerId: string;
-  players: [RoomPlayer, RoomPlayer | null];
-  game: GameState | null;
-  createdAt: number;
-  updatedAt: number;
 }
 
 export interface PlayerProfile {
@@ -99,8 +89,27 @@ const toGamePlayer = (player: RoomPlayer): GamePlayer => ({
   isGuest: player.isGuest,
 });
 
-const cloneRoom = (room: RoomSession): RoomSnapshot =>
-  structuredClone(room) as RoomSnapshot;
+const toPlayerSnapshot = (player: RoomPlayer) => ({
+  id: player.id,
+  nickname: player.nickname,
+  avatarId: player.avatarId,
+  isGuest: player.isGuest,
+  ready: player.ready,
+  connected: player.connected,
+});
+
+const cloneRoom = (room: RoomSession): RoomSnapshot => ({
+  code: room.code,
+  status: room.status,
+  hostPlayerId: room.hostPlayerId,
+  players: [
+    toPlayerSnapshot(room.players[0]),
+    room.players[1] === null ? null : toPlayerSnapshot(room.players[1]),
+  ],
+  game: structuredClone(room.game) as GameState | null,
+  createdAt: room.createdAt,
+  updatedAt: room.updatedAt,
+});
 
 const makeError = (
   code: RoomErrorCode,
@@ -341,6 +350,27 @@ export class GameRoomService {
         changedRooms.push(cloneRoom(room));
       }
     }
+    return changedRooms;
+  }
+
+  expireActiveTurns(): RoomSnapshot[] {
+    const changedRooms: RoomSnapshot[] = [];
+    const now = this.now();
+
+    for (const room of this.rooms.values()) {
+      if (room.game === null || room.status !== "playing") {
+        continue;
+      }
+
+      const expired = expireTurn(room.game, now);
+      if (expired !== room.game && expired.status === "finished") {
+        room.game = expired;
+        room.status = "finished";
+        room.updatedAt = now;
+        changedRooms.push(cloneRoom(room));
+      }
+    }
+
     return changedRooms;
   }
 

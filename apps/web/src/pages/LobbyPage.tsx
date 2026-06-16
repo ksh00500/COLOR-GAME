@@ -36,7 +36,7 @@ const modes = [
     index: "04",
     title: "사설방",
     description: "초대 코드로 만나는 프라이빗 매치.",
-    state: "SERVER NEXT",
+    state: "ONLINE",
     accent: "bronze",
   },
 ] as const;
@@ -94,7 +94,7 @@ export function LobbyPage() {
 
         <div className="mode-grid">
           {modes.map((mode) => {
-            const enabled = mode.id === "ai";
+            const enabled = mode.id === "ai" || mode.id === "private";
             return (
               <article key={mode.id} className={`mode-card ${mode.accent} ${enabled ? "featured" : "locked"}`}>
                 <div className="mode-card-top">
@@ -105,8 +105,8 @@ export function LobbyPage() {
                 <h3>{mode.title}</h3>
                 <p>{mode.description}</p>
                 {enabled ? (
-                  <button className="mode-action" type="button" onClick={startGame}>
-                    대전 준비 <span aria-hidden="true">→</span>
+                  <button className="mode-action" type="button" onClick={mode.id === "ai" ? startGame : () => navigate("/private")}>
+                    {mode.id === "ai" ? "대전 준비" : "방 만들기"} <span aria-hidden="true">→</span>
                   </button>
                 ) : (
                   <span className="mode-pending">서버 연결 예정</span>
