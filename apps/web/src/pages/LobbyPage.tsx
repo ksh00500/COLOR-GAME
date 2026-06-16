@@ -20,7 +20,7 @@ const modes = [
     index: "02",
     title: "일반 게임",
     description: "레이팅 부담 없이 새로운 상대와 한 판.",
-    state: "SERVER NEXT",
+    state: "MATCHING",
     accent: "navy",
   },
   {
@@ -28,7 +28,7 @@ const modes = [
     index: "03",
     title: "경쟁 게임",
     description: "도에서 모까지. 시즌 순위를 향한 승부.",
-    state: "SERVER NEXT",
+    state: "RANKED",
     accent: "green",
   },
   {
@@ -51,12 +51,32 @@ export function LobbyPage() {
     navigate(`/game?difficulty=${difficulty}&first=${firstPlayer}`);
   };
 
+  const openMode = (modeId: (typeof modes)[number]["id"]) => {
+    if (modeId === "ai") {
+      startGame();
+      return;
+    }
+
+    if (modeId === "private") {
+      navigate("/private");
+      return;
+    }
+
+    navigate(`/matchmaking?mode=${modeId}`);
+  };
+
   return (
     <main className="lobby-page">
       <header className="site-header">
         <BrandMark />
         <nav aria-label="주요 메뉴">
           <span className="service-status"><i /> AWS SERVICE BUILD</span>
+          <button className="header-button" type="button" onClick={() => navigate("/account")}>
+            계정
+          </button>
+          <button className="header-button" type="button" onClick={() => navigate("/leaderboard")}>
+            리더보드
+          </button>
           <button className="header-button" type="button" onClick={() => setSettingsOpen(true)}>
             <span aria-hidden="true">◌</span> 설정
           </button>
@@ -89,14 +109,13 @@ export function LobbyPage() {
             <p className="eyebrow">CHOOSE YOUR TABLE</p>
             <h2 id="mode-title">게임 모드</h2>
           </div>
-          <p>AI 대전부터 플레이할 수 있습니다. 온라인 모드는 AWS 서버 단계에서 연결됩니다.</p>
+          <p>AI 대전, 사설방, 일반 자동 매칭, 경쟁 매칭까지 같은 규칙 엔진으로 플레이합니다.</p>
         </div>
 
         <div className="mode-grid">
           {modes.map((mode) => {
-            const enabled = mode.id === "ai" || mode.id === "private";
             return (
-              <article key={mode.id} className={`mode-card ${mode.accent} ${enabled ? "featured" : "locked"}`}>
+              <article key={mode.id} className={`mode-card ${mode.accent} featured`}>
                 <div className="mode-card-top">
                   <span>{mode.index}</span>
                   <small>{mode.state}</small>
@@ -104,13 +123,9 @@ export function LobbyPage() {
                 <div className="mode-glyph" aria-hidden="true"><i /><i /><i /><i /></div>
                 <h3>{mode.title}</h3>
                 <p>{mode.description}</p>
-                {enabled ? (
-                  <button className="mode-action" type="button" onClick={mode.id === "ai" ? startGame : () => navigate("/private")}>
-                    {mode.id === "ai" ? "대전 준비" : "방 만들기"} <span aria-hidden="true">→</span>
-                  </button>
-                ) : (
-                  <span className="mode-pending">서버 연결 예정</span>
-                )}
+                <button className="mode-action" type="button" onClick={() => openMode(mode.id)}>
+                  {mode.id === "ai" ? "대전 준비" : mode.id === "private" ? "방 만들기" : "매칭 시작"} <span aria-hidden="true">→</span>
+                </button>
               </article>
             );
           })}

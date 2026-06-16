@@ -88,6 +88,21 @@ describe("GameRoomService", () => {
     expect(result.error.code).toBe("GAME_NOT_STARTED");
   });
 
+  it("creates an immediately started ranked matchmaking room", () => {
+    const { service } = createDeterministicService();
+    const room = service.createMatchedRoom(
+      { ...profile("RankedOne"), accountId: "account-1" },
+      { ...profile("RankedTwo"), accountId: "account-2" },
+      "ranked",
+    );
+
+    expect(room.mode).toBe("ranked");
+    expect(room.status).toBe("playing");
+    expect(room.players[0].accountId).toBe("account-1");
+    expect(room.players[1]?.accountId).toBe("account-2");
+    expect(room.game?.mode).toBe("ranked");
+  });
+
   it("uses game-core to enforce turns and award server-side scores", () => {
     const { service, code, hostId, guestId, advance } = startRoom();
 

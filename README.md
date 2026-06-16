@@ -1,6 +1,6 @@
 # Color Line Strategy
 
-공용 색상 타일을 이용해 연결을 완성하고 점수를 가져가는 2인용 웹 전략 퍼즐 보드게임입니다. 제품에는 같은 기기에서 번갈아 두는 로컬 2인 모드를 노출하지 않으며, 현재 플레이 가능한 첫 버전은 플레이어 대 AI 대전입니다.
+공용 색상 타일을 이용해 연결을 완성하고 점수를 가져가는 2인용 웹 전략 퍼즐 보드게임입니다. 제품에는 같은 기기에서 번갈아 두는 로컬 2인 모드를 노출하지 않으며, AI 대전, 사설방, 일반 자동 매칭, 경쟁전, 계정 기반 전적/리더보드를 제공합니다.
 
 ## 현재 구현 범위
 
@@ -20,6 +20,11 @@
 - 데스크톱·태블릿·모바일 반응형 UI
 - 설정 저장, 도움말, 기권, 결과 및 즉시 재경기
 - 사설방 생성, 초대 코드 참가, 준비 완료, 서버 권위형 온라인 대전
+- 계정 가입/로그인, 토큰 인증
+- 일반 자동 매칭과 경쟁전 자동 매칭
+- 경쟁전 레이팅 갱신, 리더보드, 프로필, 최근 전적
+- 운영 헬스 체크, readiness/liveness, Prometheus 텍스트 메트릭
+- RDS 저장, 서버 재시작 시 진행 중인 방 복구
 
 ## 저장소 구조
 
@@ -72,7 +77,7 @@ pnpm dev
 pnpm dev:server
 ```
 
-서버 기본 주소는 `http://localhost:8080`이며, 헬스 체크는 `GET /health`입니다. 웹 앱은 `VITE_SOCKET_URL` 환경 변수로 Socket.IO 서버 주소를 읽고, 기본값은 `http://localhost:8080`입니다.
+서버 기본 주소는 `http://localhost:8080`이며, 헬스 체크는 `GET /health`입니다. 웹 앱은 `VITE_SOCKET_URL`로 Socket.IO 서버 주소를, `VITE_API_URL`로 HTTP API 주소를 읽고, 기본값은 둘 다 `http://localhost:8080`입니다.
 
 PostgreSQL을 로컬에서 함께 확인하려면 Docker Compose로 DB를 띄운 뒤 마이그레이션을 실행합니다.
 
@@ -90,11 +95,15 @@ pnpm db:check
 - Socket.IO 실시간 연결
 - `room:create`, `room:join`, `room:ready`
 - `game:move`, `game:resign`, `game:reconnect`
+- `matchmaking:join`, `matchmaking:leave`
 - 서버 측 턴 검증, 점수 계산, 타일 제거, 승패 처리
 - 연결 끊김 표시와 재접속 복구
 - 서버 루프 기반 턴 시간 만료 처리
 - PostgreSQL/RDS 방·플레이어·게임·수 기록 저장
 - 서버 재시작 시 RDS의 활성 방 스냅샷 복구
+- 계정 가입/로그인, JWT 형식 토큰 인증
+- 경쟁전 결과 저장, Elo 방식 레이팅 갱신, 리더보드/전적 API
+- `GET /livez`, `GET /readyz`, `GET /metrics` 운영 엔드포인트
 - `GET /rooms/:code` 디버그 조회
 
 `DATABASE_URL`이 없으면 메모리 모드로 동작하고, 값이 있으면 RDS/PostgreSQL 기록 저장을 활성화합니다. 마이그레이션 SQL은 `apps/server/db/migrations`에 있습니다.
@@ -109,7 +118,7 @@ pnpm db:migrate
 pnpm db:check
 ```
 
-현재 자동 테스트는 게임 엔진 15개, AI 엔진 2개, 서버 방 서비스 9개로 구성됩니다. 연결 판정, 동시 득점, 제거, 승리, 무승부, 시간 초과, 불변성, AI 즉시 득점, 방 생성, 준비, 서버 권위형 수 처리, 재접속, 참가자 검증, 서버 자동 시간 만료, 서버 재시작 복구를 포함합니다.
+현재 자동 테스트는 게임 엔진, AI 엔진, 서버 방 서비스 검증으로 구성됩니다. 연결 판정, 동시 득점, 제거, 승리, 무승부, 시간 초과, 불변성, AI 즉시 득점, 방 생성, 준비, 서버 권위형 수 처리, 재접속, 참가자 검증, 자동 시간 만료, 서버 재시작 복구, 자동 매칭 방 생성을 포함합니다.
 
 ## AWS 배포
 
@@ -134,7 +143,9 @@ Type: 200 (Rewrite)
 - Database: RDS PostgreSQL
 - Secrets: AWS Secrets Manager
 - WebSocket URL: 웹 빌드 환경 변수 `VITE_SOCKET_URL`
+- HTTP API URL: 웹 빌드 환경 변수 `VITE_API_URL`
 - Server CORS: 서버 환경 변수 `CORS_ORIGIN`
+- Auth secret: 서버 환경 변수 `AUTH_SECRET` 32자 이상
 
 EC2 + RDS 운영 템플릿:
 
@@ -143,14 +154,12 @@ EC2 + RDS 운영 템플릿:
 - `deploy/ec2/nginx-color-game.conf.example`
 - `deploy/ec2/README.md`
 
-## 아직 구현하지 않은 기능
+## 배포 전후 확인할 항목
 
-- 실제 이메일·Google 로그인
-- 일반 온라인 자동 매칭
-- 경쟁전, 레이팅, 티어, 배치 경기, 시즌
-- 사설방 초대 링크 공유 버튼과 관전/재대전 UX
-- PostgreSQL 및 영속 게임 기록
-- 재접속 유예 시간과 이탈 패배 정책
-- 프로필, 최근 경기, 리더보드
+- 실제 AWS 리소스 생성: EC2, RDS, 도메인, HTTPS 인증서
+- RDS 마이그레이션 실행: `pnpm --filter @color-game/server db:migrate`
+- 웹 빌드 환경 변수: `VITE_SOCKET_URL`, `VITE_API_URL`
+- 서버 운영 환경 변수: `DATABASE_URL`, `DATABASE_SSL`, `DATABASE_REQUIRED`, `HEALTHCHECK_REQUIRE_DB`, `AUTH_SECRET`, `CORS_ORIGIN`
+- 운영 보호 정책: `/metrics` 접근 제한, RDS 자동 백업/스냅샷, systemd 재시작 정책
 
-이 기능들은 현재 순수 게임 엔진을 서버에서도 재사용하는 방식으로 단계적으로 추가할 수 있습니다.
+남은 제품 확장 후보는 실제 이메일 인증, Google/OAuth 로그인, 시즌/티어/배치 경기, 관전, 사설방 초대 링크 UX, 재접속 유예 후 이탈 패배 정책입니다.

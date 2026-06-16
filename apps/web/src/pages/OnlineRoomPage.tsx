@@ -14,6 +14,7 @@ import { HelpPanel } from "../components/HelpPanel";
 import { PlayerCard } from "../components/PlayerCard";
 import { ResultPanel } from "../components/ResultPanel";
 import { SettingsPanel } from "../components/SettingsPanel";
+import { getAuthToken } from "../api";
 import { useSettings } from "../settings";
 
 type ConnectionStatus = "connecting" | "connected" | "disconnected" | "error";
@@ -156,7 +157,9 @@ export function OnlineRoomPage() {
   }, []);
 
   useEffect(() => {
-    const socket = io(socketUrl);
+    const socket = io(socketUrl, {
+      auth: { token: getAuthToken() },
+    });
     socketRef.current = socket;
 
     socket.on("connect", () => {

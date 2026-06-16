@@ -48,6 +48,7 @@ export interface TurnTimer {
 
 export interface GamePlayer {
   id: PlayerId;
+  accountId?: string | null;
   nickname: string;
   avatarId: string;
   score: number;
@@ -125,6 +126,7 @@ export type RoomStatus = "waiting" | "playing" | "finished";
 
 export interface RoomPlayerSnapshot {
   id: PlayerId;
+  accountId?: string | null;
   nickname: string;
   avatarId: string;
   isGuest: boolean;
@@ -134,6 +136,7 @@ export interface RoomPlayerSnapshot {
 
 export interface RoomSnapshot {
   code: string;
+  mode: GameMode;
   status: RoomStatus;
   hostPlayerId: PlayerId;
   players: [RoomPlayerSnapshot, RoomPlayerSnapshot | null];

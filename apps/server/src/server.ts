@@ -1,9 +1,18 @@
+import cors from "@fastify/cors";
 import Fastify from "fastify";
-import { Server } from "socket.io";
+import { Server, type Socket } from "socket.io";
 import { z } from "zod";
-import type { Move, RoomSnapshot } from "@color-game/shared-types";
-import { GameRoomService, type RoomError } from "./game-room-service.js";
+import type { GameMode, Move, RoomSnapshot } from "@color-game/shared-types";
+import {
+  NullAccountStore,
+  createAuthToken,
+  verifyAuthToken,
+  type AccountStore,
+  type AccountSummary,
+} from "./auth-store.js";
+import { GameRoomService, type PlayerProfile, type RoomError } from "./game-room-service.js";
 import { NullGameHistoryStore, type GameHistoryStore } from "./history-store.js";
+import { ServerMetrics } from "./metrics.js";
 import {
   gameMoveSchema,
   gameResignSchema,
@@ -17,7 +26,18 @@ export interface ServerOptions {
   corsOrigin?: string | string[];
   roomService?: GameRoomService;
   historyStore?: GameHistoryStore;
+  accountStore?: AccountStore;
+  authSecret?: string;
+  tokenTtlSeconds?: number;
   requireDatabaseHealth?: boolean;
+}
+
+type MatchmakingMode = Extract<GameMode, "casual" | "ranked">;
+
+interface QueuedPlayer {
+  socketId: string;
+  accountId: string | null;
+  profile: PlayerProfile;
 }
 
 const toClientError = (error: RoomError) => ({
@@ -32,37 +52,205 @@ const socketPlayerMismatchError = {
   gameErrorCode: null,
 };
 
+const authSchema = z.object({
+  email: z.string().trim().email().max(254),
+  password: z.string().min(8).max(128),
+});
+
+const registerSchema = authSchema.extend({
+  displayName: z.string().trim().min(2).max(24),
+  avatarId: z.string().trim().min(1).max(32).default("orbit"),
+});
+
+const matchmakingSchema = z.object({
+  mode: z.enum(["casual", "ranked"]),
+  player: playerProfileSchema.optional(),
+});
+
+const bearerToken = (authorization: unknown): string | null => {
+  if (typeof authorization !== "string") return null;
+  const [scheme, token] = authorization.split(" ");
+  if (scheme?.toLowerCase() !== "bearer" || token === undefined || token === "") {
+    return null;
+  }
+  return token;
+};
+
+const publicAccount = (account: AccountSummary) => ({
+  id: account.id,
+  email: account.email,
+  displayName: account.displayName,
+  avatarId: account.avatarId,
+  rating: account.rating,
+  gamesPlayed: account.gamesPlayed,
+  rankedWins: account.rankedWins,
+  rankedLosses: account.rankedLosses,
+  rankedDraws: account.rankedDraws,
+  createdAt: account.createdAt,
+});
+
 export const createServer = (options: ServerOptions = {}) => {
   const app = Fastify({ logger: true });
   const roomService = options.roomService ?? new GameRoomService();
   const historyStore = options.historyStore ?? new NullGameHistoryStore();
+  const accountStore = options.accountStore ?? new NullAccountStore();
+  const metrics = new ServerMetrics();
+  const authSecret = options.authSecret ?? "dev-only-color-game-secret-for-local-development";
+  const tokenTtlSeconds = options.tokenTtlSeconds ?? 60 * 60 * 24 * 30;
+  const matchmakingQueues: Record<MatchmakingMode, QueuedPlayer[]> = {
+    casual: [],
+    ranked: [],
+  };
   const io = new Server(app.server, {
     cors: {
       origin: options.corsOrigin ?? true,
     },
   });
 
-  const persistRoom = (room: RoomSnapshot): void => {
+  void app.register(cors, {
+    origin: options.corsOrigin ?? true,
+  });
+
+  const persistRoom = async (room: RoomSnapshot): Promise<void> => {
     if (!historyStore.enabled) return;
-    void historyStore.recordRoomSnapshot(room).catch((error: unknown) => {
-      app.log.error({ err: error, roomCode: room.code }, "Failed to persist room snapshot");
+    await historyStore.recordRoomSnapshot(room);
+  };
+
+  const persistMoveApplication = async (
+    room: RoomSnapshot,
+    move: Move | null,
+  ): Promise<void> => {
+    if (!historyStore.enabled) return;
+    await historyStore.recordRoomSnapshot(room);
+    if (move !== null) {
+      await historyStore.recordMove(room, move);
+    }
+  };
+
+  const recordFinishedRoom = async (room: RoomSnapshot): Promise<void> => {
+    if (room.game?.status !== "finished") return;
+    metrics.gameFinished();
+    if (!accountStore.enabled) return;
+    await accountStore.recordFinishedRoom(room);
+  };
+
+  const persistRoomLater = (room: RoomSnapshot, context: string): void => {
+    void persistRoom(room).catch((error: unknown) => {
+      app.log.error({ err: error, roomCode: room.code }, context);
     });
   };
 
-  const persistMoveApplication = (room: RoomSnapshot, move: Move | null): void => {
-    if (!historyStore.enabled) return;
-    void (async () => {
-      await historyStore.recordRoomSnapshot(room);
-      if (move !== null) {
-        await historyStore.recordMove(room, move);
-      }
-    })().catch((error: unknown) => {
+  const persistMoveApplicationLater = (
+    room: RoomSnapshot,
+    move: Move | null,
+    context: string,
+  ): void => {
+    void persistMoveApplication(room, move).catch((error: unknown) => {
       app.log.error(
         { err: error, roomCode: room.code, gameId: room.game?.id, turnNumber: move?.turnNumber },
-        "Failed to persist move application",
+        context,
       );
     });
   };
+
+  const persistFinishedRoomLater = (
+    room: RoomSnapshot,
+    move: Move | null,
+    context: string,
+  ): void => {
+    void (async () => {
+      if (move === null) {
+        await persistRoom(room);
+      } else {
+        await persistMoveApplication(room, move);
+      }
+      await recordFinishedRoom(room);
+    })().catch((error: unknown) => {
+      app.log.error(
+        { err: error, roomCode: room.code, gameId: room.game?.id },
+        context,
+      );
+    });
+  };
+
+  const authenticateToken = async (token: string | null): Promise<AccountSummary | null> => {
+    if (token === null || !accountStore.enabled) return null;
+    const payload = verifyAuthToken(token, authSecret);
+    if (payload === null) return null;
+    return accountStore.getAccount(payload.accountId);
+  };
+
+  const accountProfile = (
+    player: z.infer<typeof playerProfileSchema>,
+    socketId: string,
+    account: AccountSummary | null,
+  ): PlayerProfile => {
+    if (account !== null) {
+      return {
+        accountId: account.id,
+        nickname: account.displayName,
+        avatarId: account.avatarId,
+        isGuest: false,
+        socketId,
+      };
+    }
+
+    return { ...player, accountId: null, socketId };
+  };
+
+  const removeFromMatchmaking = (socketId: string): void => {
+    for (const mode of ["casual", "ranked"] as const) {
+      matchmakingQueues[mode] = matchmakingQueues[mode].filter(
+        (queued) => queued.socketId !== socketId,
+      );
+      metrics.setQueueDepth(mode, matchmakingQueues[mode].length);
+    }
+  };
+
+  const getSocketAccount = (socket: Socket): AccountSummary | null => {
+    const account = socket.data.account;
+    return account === undefined ? null : account as AccountSummary;
+  };
+
+  const emitMatch = (
+    mode: MatchmakingMode,
+    first: QueuedPlayer,
+    second: QueuedPlayer,
+  ): void => {
+    const firstSocket = io.sockets.sockets.get(first.socketId);
+    const secondSocket = io.sockets.sockets.get(second.socketId);
+    if (firstSocket === undefined || secondSocket === undefined) {
+      return;
+    }
+
+    const room = roomService.createMatchedRoom(first.profile, second.profile, mode);
+    const firstPlayer = room.players[0];
+    const secondPlayer = room.players[1];
+    if (secondPlayer === null) return;
+
+    firstSocket.data.playerId = firstPlayer.id;
+    secondSocket.data.playerId = secondPlayer.id;
+    firstSocket.join(room.code);
+    secondSocket.join(room.code);
+
+    metrics.matchStarted();
+    persistRoomLater(room, "Failed to persist matched room");
+    firstSocket.emit("matchmaking:matched", { ok: true, room, playerId: firstPlayer.id });
+    secondSocket.emit("matchmaking:matched", { ok: true, room, playerId: secondPlayer.id });
+    io.to(room.code).emit("game:state", room);
+  };
+
+  io.use((socket, next) => {
+    void (async () => {
+      const auth = socket.handshake.auth as { token?: unknown };
+      const token = typeof auth.token === "string" ? auth.token : null;
+      const account = await authenticateToken(token);
+      if (account !== null) {
+        socket.data.account = account;
+      }
+      next();
+    })().catch(next);
+  });
 
   app.get("/health", async (_request, reply) => {
     const database = await historyStore.health();
@@ -80,6 +268,102 @@ export const createServer = (options: ServerOptions = {}) => {
     return payload;
   });
 
+  app.get("/livez", async () => ({ ok: true }));
+
+  app.get("/readyz", async (_request, reply) => {
+    const database = await historyStore.health();
+    const ok = database.ok || options.requireDatabaseHealth !== true;
+    if (!ok) {
+      return reply.code(503).send({ ok, database });
+    }
+    return { ok, database };
+  });
+
+  app.get("/metrics", async (_request, reply) =>
+    reply
+      .header("content-type", "text/plain; version=0.0.4")
+      .send(metrics.renderPrometheus()),
+  );
+
+  app.post("/auth/register", async (request, reply) => {
+    if (!accountStore.enabled) {
+      return reply.code(503).send({ code: "DATABASE_DISABLED", message: "Account database is not configured." });
+    }
+
+    const parsed = registerSchema.safeParse(request.body ?? {});
+    if (!parsed.success) {
+      return reply.code(400).send({ code: "INVALID_REQUEST", details: parsed.error.flatten() });
+    }
+
+    try {
+      const account = await accountStore.register(parsed.data);
+      const token = createAuthToken(account.id, authSecret, tokenTtlSeconds);
+      return { token, account: publicAccount(account) };
+    } catch (error) {
+      app.log.warn({ err: error }, "Registration failed");
+      return reply.code(409).send({ code: "ACCOUNT_EXISTS", message: "Email is already registered." });
+    }
+  });
+
+  app.post("/auth/login", async (request, reply) => {
+    if (!accountStore.enabled) {
+      return reply.code(503).send({ code: "DATABASE_DISABLED", message: "Account database is not configured." });
+    }
+
+    const parsed = authSchema.safeParse(request.body ?? {});
+    if (!parsed.success) {
+      return reply.code(400).send({ code: "INVALID_REQUEST", details: parsed.error.flatten() });
+    }
+
+    const account = await accountStore.authenticate(parsed.data.email, parsed.data.password);
+    if (account === null) {
+      return reply.code(401).send({ code: "INVALID_CREDENTIALS", message: "Email or password is invalid." });
+    }
+
+    const token = createAuthToken(account.id, authSecret, tokenTtlSeconds);
+    return { token, account: publicAccount(account) };
+  });
+
+  app.get("/auth/me", async (request, reply) => {
+    const account = await authenticateToken(bearerToken(request.headers.authorization));
+    if (account === null) {
+      return reply.code(401).send({ code: "UNAUTHORIZED", message: "Sign in is required." });
+    }
+    return { account: publicAccount(account) };
+  });
+
+  app.get("/leaderboard", async (request, reply) => {
+    if (!accountStore.enabled) {
+      return reply.code(503).send({ code: "DATABASE_DISABLED", message: "Account database is not configured." });
+    }
+
+    const query = z.object({ limit: z.coerce.number().int().min(1).max(100).default(20) }).parse(request.query);
+    return { players: await accountStore.getLeaderboard(query.limit) };
+  });
+
+  app.get("/profiles/:accountId", async (request, reply) => {
+    if (!accountStore.enabled) {
+      return reply.code(503).send({ code: "DATABASE_DISABLED", message: "Account database is not configured." });
+    }
+
+    const params = z.object({ accountId: z.string().min(1) }).parse(request.params);
+    const profile = await accountStore.getPublicProfile(params.accountId);
+    if (profile === null) {
+      return reply.code(404).send({ code: "PROFILE_NOT_FOUND", message: "Profile was not found." });
+    }
+    return { profile };
+  });
+
+  app.get("/profiles/:accountId/matches", async (request, reply) => {
+    if (!accountStore.enabled) {
+      return reply.code(503).send({ code: "DATABASE_DISABLED", message: "Account database is not configured." });
+    }
+
+    const params = z.object({ accountId: z.string().min(1) }).parse(request.params);
+    const query = z.object({ limit: z.coerce.number().int().min(1).max(100).default(20) }).parse(request.query);
+    return { matches: await accountStore.getMatchHistory(params.accountId, query.limit) };
+  });
+
   app.get("/rooms/:code", async (request, reply) => {
     const params = z.object({ code: z.string().toUpperCase() }).parse(request.params);
     const result = roomService.getRoom(params.code);
@@ -90,6 +374,8 @@ export const createServer = (options: ServerOptions = {}) => {
   });
 
   io.on("connection", (socket) => {
+    metrics.socketConnected();
+
     const rejectPlayerMismatch = (
       playerId: string,
       callback?: (response: unknown) => void,
@@ -111,11 +397,14 @@ export const createServer = (options: ServerOptions = {}) => {
       }
 
       const player = playerProfileSchema.parse(parsed.data.player ?? {});
-      const room = roomService.createRoom({ ...player, socketId: socket.id });
+      const room = roomService.createRoom(
+        accountProfile(player, socket.id, getSocketAccount(socket)),
+      );
       const host = room.players[0];
       socket.data.playerId = host.id;
       socket.join(room.code);
-      persistRoom(room);
+      metrics.roomCreated();
+      persistRoomLater(room, "Failed to persist created room");
       io.to(room.code).emit("game:state", room);
       callback?.({ ok: true, room, playerId: host.id });
     });
@@ -129,8 +418,7 @@ export const createServer = (options: ServerOptions = {}) => {
 
       const player = playerProfileSchema.parse(parsed.data.player ?? {});
       const result = roomService.joinRoom(parsed.data.code, {
-        ...player,
-        socketId: socket.id,
+        ...accountProfile(player, socket.id, getSocketAccount(socket)),
       });
       if (!result.ok) {
         callback?.({ ok: false, error: toClientError(result.error) });
@@ -140,7 +428,7 @@ export const createServer = (options: ServerOptions = {}) => {
       const joinedPlayer = result.value.players[1];
       socket.data.playerId = joinedPlayer?.id;
       socket.join(result.value.code);
-      persistRoom(result.value);
+      persistRoomLater(result.value, "Failed to persist joined room");
       io.to(result.value.code).emit("game:state", result.value);
       callback?.({ ok: true, room: result.value, playerId: joinedPlayer?.id });
     });
@@ -163,7 +451,7 @@ export const createServer = (options: ServerOptions = {}) => {
         return;
       }
 
-      persistRoom(result.value);
+      persistRoomLater(result.value, "Failed to persist ready state");
       io.to(result.value.code).emit("game:state", result.value);
       callback?.({ ok: true, room: result.value });
     });
@@ -189,7 +477,22 @@ export const createServer = (options: ServerOptions = {}) => {
         return;
       }
 
-      persistMoveApplication(result.value.room, result.value.move);
+      if (result.value.move !== null) {
+        metrics.moveAccepted();
+      }
+      if (result.value.room.game?.status === "finished") {
+        persistFinishedRoomLater(
+          result.value.room,
+          result.value.move,
+          "Failed to persist finished move",
+        );
+      } else {
+        persistMoveApplicationLater(
+          result.value.room,
+          result.value.move,
+          "Failed to persist move application",
+        );
+      }
       io.to(result.value.room.code).emit("game:state", result.value.room);
       if (result.value.move !== null) {
         io.to(result.value.room.code).emit("game:move:accepted", result.value.move);
@@ -211,7 +514,7 @@ export const createServer = (options: ServerOptions = {}) => {
         return;
       }
 
-      persistRoom(result.value);
+      persistFinishedRoomLater(result.value, null, "Failed to persist resigned room");
       io.to(result.value.code).emit("game:state", result.value);
       io.to(result.value.code).emit("game:finished", result.value.game);
       callback?.({ ok: true, room: result.value });
@@ -234,17 +537,72 @@ export const createServer = (options: ServerOptions = {}) => {
 
       socket.data.playerId = parsed.data.playerId;
       socket.join(result.value.code);
-      persistRoom(result.value);
+      persistRoomLater(result.value, "Failed to persist reconnected room");
       io.to(result.value.code).emit("game:state", result.value);
       callback?.({ ok: true, room: result.value });
     });
 
+    socket.on("matchmaking:join", (payload, callback?: (response: unknown) => void) => {
+      const parsed = matchmakingSchema.safeParse(payload ?? {});
+      if (!parsed.success) {
+        callback?.({ ok: false, error: parsed.error.flatten() });
+        return;
+      }
+
+      const account = getSocketAccount(socket);
+      if (parsed.data.mode === "ranked" && account === null) {
+        callback?.({
+          ok: false,
+          error: {
+            code: "LOGIN_REQUIRED",
+            message: "Ranked matchmaking requires an account.",
+            gameErrorCode: null,
+          },
+        });
+        return;
+      }
+
+      removeFromMatchmaking(socket.id);
+      const player = playerProfileSchema.parse(parsed.data.player ?? {});
+      const queued: QueuedPlayer = {
+        socketId: socket.id,
+        accountId: account?.id ?? null,
+        profile: accountProfile(player, socket.id, account),
+      };
+
+      const queue = matchmakingQueues[parsed.data.mode];
+      const opponent = queue.shift();
+      metrics.setQueueDepth(parsed.data.mode, queue.length);
+
+      if (opponent === undefined) {
+        queue.push(queued);
+        metrics.setQueueDepth(parsed.data.mode, queue.length);
+        callback?.({ ok: true, status: "queued", mode: parsed.data.mode });
+        socket.emit("matchmaking:queued", { mode: parsed.data.mode });
+        return;
+      }
+
+      callback?.({ ok: true, status: "matched", mode: parsed.data.mode });
+      emitMatch(parsed.data.mode, opponent, queued);
+    });
+
+    socket.on("matchmaking:leave", (payloadOrCallback, callback?: (response: unknown) => void) => {
+      const ack = typeof payloadOrCallback === "function"
+        ? payloadOrCallback as (response: unknown) => void
+        : callback;
+      removeFromMatchmaking(socket.id);
+      ack?.({ ok: true });
+    });
+
     socket.on("disconnect", () => {
-      if (typeof socket.data.playerId !== "string") return;
-      const rooms = roomService.markDisconnected(socket.data.playerId);
-      for (const room of rooms) {
-        persistRoom(room);
-        io.to(room.code).emit("game:state", room);
+      metrics.socketDisconnected();
+      removeFromMatchmaking(socket.id);
+      if (typeof socket.data.playerId === "string") {
+        const rooms = roomService.markDisconnected(socket.data.playerId);
+        for (const room of rooms) {
+          persistRoomLater(room, "Failed to persist disconnected room");
+          io.to(room.code).emit("game:state", room);
+        }
       }
     });
   });
@@ -252,7 +610,7 @@ export const createServer = (options: ServerOptions = {}) => {
   const turnTimer = setInterval(() => {
     const rooms = roomService.expireActiveTurns();
     for (const room of rooms) {
-      persistRoom(room);
+      persistFinishedRoomLater(room, null, "Failed to persist expired room");
       io.to(room.code).emit("game:state", room);
       io.to(room.code).emit("game:finished", room.game);
     }
@@ -262,6 +620,7 @@ export const createServer = (options: ServerOptions = {}) => {
     clearInterval(turnTimer);
     await io.close();
     await historyStore.close();
+    await accountStore.close();
   });
 
   return { app, io, roomService };

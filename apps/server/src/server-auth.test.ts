@@ -1,0 +1,138 @@
+import { afterEach, describe, expect, it } from "vitest";
+import type {
+  AccountStore,
+  AccountSummary,
+  MatchHistoryItem,
+  PublicProfile,
+} from "./auth-store.js";
+import { createServer } from "./server.js";
+import type { RoomSnapshot } from "@color-game/shared-types";
+
+class MemoryAccountStore implements AccountStore {
+  readonly enabled = true;
+
+  private readonly accounts = new Map<string, AccountSummary & { password: string }>();
+
+  async close(): Promise<void> {
+    return undefined;
+  }
+
+  async register(input: {
+    email: string;
+    password: string;
+    displayName: string;
+    avatarId: string;
+  }): Promise<AccountSummary> {
+    const email = input.email.toLowerCase();
+    if ([...this.accounts.values()].some((account) => account.email === email)) {
+      throw new Error("duplicate account");
+    }
+
+    const account = {
+      id: `account-${this.accounts.size + 1}`,
+      email,
+      displayName: input.displayName,
+      avatarId: input.avatarId,
+      rating: 1000,
+      gamesPlayed: 0,
+      rankedWins: 0,
+      rankedLosses: 0,
+      rankedDraws: 0,
+      createdAt: new Date(0).toISOString(),
+      password: input.password,
+    };
+    this.accounts.set(account.id, account);
+    return account;
+  }
+
+  async authenticate(email: string, password: string): Promise<AccountSummary | null> {
+    const account = [...this.accounts.values()].find(
+      (candidate) => candidate.email === email.toLowerCase(),
+    );
+    return account?.password === password ? account : null;
+  }
+
+  async getAccount(accountId: string): Promise<AccountSummary | null> {
+    return this.accounts.get(accountId) ?? null;
+  }
+
+  async getPublicProfile(accountId: string): Promise<PublicProfile | null> {
+    const account = this.accounts.get(accountId);
+    if (account === undefined) return null;
+    return {
+      id: account.id,
+      displayName: account.displayName,
+      avatarId: account.avatarId,
+      rating: account.rating,
+      gamesPlayed: account.gamesPlayed,
+      rankedWins: account.rankedWins,
+      rankedLosses: account.rankedLosses,
+      rankedDraws: account.rankedDraws,
+    };
+  }
+
+  async getLeaderboard(): Promise<PublicProfile[]> {
+    return Promise.all([...this.accounts.keys()].map((id) => this.getPublicProfile(id)))
+      .then((profiles) => profiles.filter((profile): profile is PublicProfile => profile !== null));
+  }
+
+  async getMatchHistory(): Promise<MatchHistoryItem[]> {
+    return [];
+  }
+
+  async recordFinishedRoom(_room: RoomSnapshot): Promise<void> {
+    return undefined;
+  }
+}
+
+describe("auth routes", () => {
+  const apps: Array<ReturnType<typeof createServer>["app"]> = [];
+
+  afterEach(async () => {
+    await Promise.all(apps.splice(0).map((app) => app.close()));
+  });
+
+  it("registers an account, returns the current user, and exposes leaderboard entries", async () => {
+    const accountStore = new MemoryAccountStore();
+    const { app } = createServer({
+      accountStore,
+      authSecret: "test-auth-secret-with-more-than-32-characters",
+    });
+    apps.push(app);
+
+    const registered = await app.inject({
+      method: "POST",
+      url: "/auth/register",
+      payload: {
+        email: "Player@example.com",
+        password: "password123",
+        displayName: "Player One",
+        avatarId: "orbit",
+      },
+    });
+    expect(registered.statusCode).toBe(200);
+
+    const authBody = registered.json<{
+      token: string;
+      account: AccountSummary;
+    }>();
+    expect(authBody.account.email).toBe("player@example.com");
+
+    const me = await app.inject({
+      method: "GET",
+      url: "/auth/me",
+      headers: {
+        authorization: `Bearer ${authBody.token}`,
+      },
+    });
+    expect(me.statusCode).toBe(200);
+    expect(me.json<{ account: AccountSummary }>().account.displayName).toBe("Player One");
+
+    const leaderboard = await app.inject({
+      method: "GET",
+      url: "/leaderboard",
+    });
+    expect(leaderboard.statusCode).toBe(200);
+    expect(leaderboard.json<{ players: PublicProfile[] }>().players).toHaveLength(1);
+  });
+});

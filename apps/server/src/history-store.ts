@@ -170,6 +170,7 @@ export class PostgresGameHistoryStore implements GameHistoryStore {
       `
         insert into game_rooms (
           code,
+          mode,
           status,
           host_player_id,
           current_game_id,
@@ -177,8 +178,9 @@ export class PostgresGameHistoryStore implements GameHistoryStore {
           created_at,
           updated_at
         )
-        values ($1, $2, $3, $4, $5::jsonb, $6, $7)
+        values ($1, $2, $3, $4, $5, $6::jsonb, $7, $8)
         on conflict (code) do update set
+          mode = excluded.mode,
           status = excluded.status,
           host_player_id = excluded.host_player_id,
           current_game_id = excluded.current_game_id,
@@ -187,6 +189,7 @@ export class PostgresGameHistoryStore implements GameHistoryStore {
       `,
       [
         room.code,
+        room.mode,
         room.status,
         room.hostPlayerId,
         room.game?.id ?? null,
@@ -208,6 +211,7 @@ export class PostgresGameHistoryStore implements GameHistoryStore {
           insert into game_room_players (
             room_code,
             player_id,
+            account_id,
             seat_index,
             nickname,
             avatar_id,
@@ -217,8 +221,9 @@ export class PostgresGameHistoryStore implements GameHistoryStore {
             created_at,
             updated_at
           )
-          values ($1, $2, $3, $4, $5, $6, $7, $8, now(), $9)
+          values ($1, $2, $3, $4, $5, $6, $7, $8, $9, now(), $10)
           on conflict (room_code, player_id) do update set
+            account_id = excluded.account_id,
             seat_index = excluded.seat_index,
             nickname = excluded.nickname,
             avatar_id = excluded.avatar_id,
@@ -230,6 +235,7 @@ export class PostgresGameHistoryStore implements GameHistoryStore {
         [
           room.code,
           player.id,
+          player.accountId ?? null,
           seatIndex,
           player.nickname,
           player.avatarId,

@@ -568,6 +568,123 @@ p {
   box-shadow: var(--shadow-soft);
 }
 
+.account-shell {
+  grid-template-columns: minmax(300px, 0.8fr) minmax(360px, 0.7fr);
+}
+
+.account-form,
+.account-summary,
+.matchmaking-card {
+  display: grid;
+  gap: 1rem;
+}
+
+.account-form .primary-action,
+.account-summary .secondary-action,
+.matchmaking-card .primary-action,
+.matchmaking-card .secondary-action {
+  width: 100%;
+}
+
+.account-summary h2,
+.account-summary h3,
+.matchmaking-card h2 {
+  margin-bottom: 0;
+  font-family: Georgia, serif;
+  font-weight: 500;
+}
+
+.account-summary h2,
+.matchmaking-card h2 {
+  color: var(--burgundy);
+  font-size: 2rem;
+}
+
+.account-summary h3 {
+  margin-top: 0.5rem;
+  font-size: 1.15rem;
+}
+
+.profile-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+}
+
+.profile-stats span {
+  display: grid;
+  gap: 0.28rem;
+  padding: 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.profile-stats small {
+  color: var(--ink-soft);
+  font-size: 0.55rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+}
+
+.profile-stats strong {
+  font-size: 1.28rem;
+}
+
+.match-history,
+.leaderboard-card {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.match-history p,
+.leaderboard-row {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.match-history small,
+.leaderboard-row small {
+  color: var(--ink-soft);
+  font-size: 0.64rem;
+  font-weight: 800;
+}
+
+.leaderboard-row {
+  grid-template-columns: 2.4rem 1fr auto;
+  align-items: center;
+}
+
+.leaderboard-row span {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  color: var(--burgundy);
+  font-family: Georgia, serif;
+}
+
+.leaderboard-row strong {
+  color: var(--green);
+  font-size: 1.05rem;
+}
+
+.leaderboard-row small {
+  grid-column: 2 / -1;
+}
+
+.matchmaking-card {
+  min-height: 260px;
+  align-content: center;
+}
+
 .online-field {
   display: grid;
   gap: 0.45rem;

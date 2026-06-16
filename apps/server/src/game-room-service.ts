@@ -8,6 +8,7 @@ import {
 import type {
   GameConfig,
   GameErrorCode,
+  GameMode,
   GamePlayer,
   GameState,
   Move,
@@ -19,6 +20,7 @@ import type {
 
 export interface RoomPlayer {
   id: string;
+  accountId?: string | null;
   nickname: string;
   avatarId: string;
   isGuest: boolean;
@@ -28,6 +30,7 @@ export interface RoomPlayer {
 }
 
 export interface PlayerProfile {
+  accountId?: string | null;
   nickname: string;
   avatarId: string;
   isGuest: boolean;
@@ -55,6 +58,7 @@ export type ServiceResult<T> =
 
 interface RoomSession {
   code: string;
+  mode: GameMode;
   status: RoomStatus;
   hostPlayerId: string;
   players: [RoomPlayer, RoomPlayer | null];
@@ -83,6 +87,7 @@ const cloneConfig = (config: GameConfig): GameConfig => ({
 
 const toGamePlayer = (player: RoomPlayer): GamePlayer => ({
   id: player.id,
+  accountId: player.accountId ?? null,
   nickname: player.nickname,
   avatarId: player.avatarId,
   score: 0,
@@ -92,6 +97,7 @@ const toGamePlayer = (player: RoomPlayer): GamePlayer => ({
 
 const toPlayerSnapshot = (player: RoomPlayer) => ({
   id: player.id,
+  accountId: player.accountId ?? null,
   nickname: player.nickname,
   avatarId: player.avatarId,
   isGuest: player.isGuest,
@@ -101,6 +107,7 @@ const toPlayerSnapshot = (player: RoomPlayer) => ({
 
 const fromPlayerSnapshot = (player: RoomPlayerSnapshot): RoomPlayer => ({
   id: player.id,
+  accountId: player.accountId ?? null,
   nickname: player.nickname,
   avatarId: player.avatarId,
   isGuest: player.isGuest,
@@ -123,6 +130,7 @@ const disconnectGamePlayers = (game: GameState | null): GameState | null => {
 
 const cloneRoom = (room: RoomSession): RoomSnapshot => ({
   code: room.code,
+  mode: room.mode,
   status: room.status,
   hostPlayerId: room.hostPlayerId,
   players: [
@@ -163,7 +171,7 @@ export class GameRoomService {
     this.now = options.now ?? (() => Date.now());
   }
 
-  createRoom(profile: PlayerProfile): RoomSnapshot {
+  createRoom(profile: PlayerProfile, mode: GameMode = "private"): RoomSnapshot {
     const now = this.now();
     let code = this.codeGenerator().toUpperCase();
     while (this.rooms.has(code)) {
@@ -172,6 +180,7 @@ export class GameRoomService {
 
     const host: RoomPlayer = {
       id: this.idGenerator(),
+      accountId: profile.accountId ?? null,
       nickname: profile.nickname,
       avatarId: profile.avatarId,
       isGuest: profile.isGuest,
@@ -182,6 +191,7 @@ export class GameRoomService {
 
     const room: RoomSession = {
       code,
+      mode,
       status: "waiting",
       hostPlayerId: host.id,
       players: [host, null],
@@ -194,9 +204,58 @@ export class GameRoomService {
     return cloneRoom(room);
   }
 
+  createMatchedRoom(
+    firstProfile: PlayerProfile,
+    secondProfile: PlayerProfile,
+    mode: Extract<GameMode, "casual" | "ranked">,
+  ): RoomSnapshot {
+    const now = this.now();
+    let code = this.codeGenerator().toUpperCase();
+    while (this.rooms.has(code)) {
+      code = this.generateRoomCode();
+    }
+
+    const first: RoomPlayer = {
+      id: this.idGenerator(),
+      accountId: firstProfile.accountId ?? null,
+      nickname: firstProfile.nickname,
+      avatarId: firstProfile.avatarId,
+      isGuest: firstProfile.isGuest,
+      ready: true,
+      connected: true,
+      socketId: firstProfile.socketId ?? null,
+    };
+    const second: RoomPlayer = {
+      id: this.idGenerator(),
+      accountId: secondProfile.accountId ?? null,
+      nickname: secondProfile.nickname,
+      avatarId: secondProfile.avatarId,
+      isGuest: secondProfile.isGuest,
+      ready: true,
+      connected: true,
+      socketId: secondProfile.socketId ?? null,
+    };
+
+    const room: RoomSession = {
+      code,
+      mode,
+      status: "waiting",
+      hostPlayerId: first.id,
+      players: [first, second],
+      game: null,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    this.startGame(room);
+    this.rooms.set(code, room);
+    return cloneRoom(room);
+  }
+
   restoreRoom(snapshot: RoomSnapshot): RoomSnapshot {
     const room: RoomSession = {
       code: snapshot.code,
+      mode: snapshot.mode ?? "private",
       status: snapshot.status,
       hostPlayerId: snapshot.hostPlayerId,
       players: [
@@ -229,6 +288,7 @@ export class GameRoomService {
 
     room.players[1] = {
       id: this.idGenerator(),
+      accountId: profile.accountId ?? null,
       nickname: profile.nickname,
       avatarId: profile.avatarId,
       isGuest: profile.isGuest,
@@ -458,8 +518,8 @@ export class GameRoomService {
 
     const now = this.now();
     room.game = createInitialGame(this.config, {
-      id: `private-${room.code}-${now}`,
-      mode: "private",
+      id: `${room.mode}-${room.code}-${now}`,
+      mode: room.mode,
       firstPlayerId: room.hostPlayerId,
       now,
       players: [toGamePlayer(room.players[0]), toGamePlayer(guest)],
