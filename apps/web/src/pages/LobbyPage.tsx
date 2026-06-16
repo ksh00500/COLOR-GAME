@@ -12,7 +12,7 @@ const modes = [
     id: "ai",
     index: "01",
     title: "AI 대전",
-    description: "세 단계의 사고 깊이. 나만의 수를 설계하세요.",
+    description: "Easy 모드만 먼저 열어두었습니다.",
     state: "PLAYABLE",
     accent: "burgundy",
   },
@@ -47,13 +47,13 @@ const formatVisitorCount = (count: number | undefined) =>
 
 export function LobbyPage() {
   const navigate = useNavigate();
-  const [difficulty, setDifficulty] = useState<AiDifficulty>("normal");
+  const [difficulty, setDifficulty] = useState<AiDifficulty>("easy");
   const [firstPlayer, setFirstPlayer] = useState<FirstPlayer>("human");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const visitorCounts = useVisitorAnalytics();
 
   const startGame = () => {
-    navigate(`/game?difficulty=${difficulty}&first=${firstPlayer}`);
+    navigate(`/game?difficulty=easy&first=${firstPlayer}`);
   };
 
   const openMode = (modeId: (typeof modes)[number]["id"]) => {
@@ -99,16 +99,25 @@ export function LobbyPage() {
 
           <div className="quick-config" aria-label="AI 대전 설정">
             <span>AI</span>
-            {(["easy", "normal", "hard"] as const).map((level) => (
-              <button
-                key={level}
-                type="button"
-                className={difficulty === level ? "active" : ""}
-                onClick={() => setDifficulty(level)}
-              >
-                {level === "easy" ? "Easy" : level === "normal" ? "Normal" : "Hard"}
-              </button>
-            ))}
+            {(["easy", "normal", "hard"] as const).map((level) => {
+              const locked = level !== "easy";
+              return (
+                <button
+                  key={level}
+                  type="button"
+                  className={`${difficulty === level ? "active" : ""}${locked ? " locked" : ""}`}
+                  aria-disabled={locked}
+                  title={locked ? "아직 준비중입니다." : undefined}
+                  data-tooltip={locked ? "아직 준비중입니다." : undefined}
+                  onClick={() => {
+                    if (!locked) setDifficulty(level);
+                  }}
+                >
+                  {level === "easy" ? "Easy" : level === "normal" ? "Normal" : "Hard"}
+                  {locked && <small>준비중</small>}
+                </button>
+              );
+            })}
           </div>
 
           <div className="quick-config" aria-label="선공 설정">

@@ -22,8 +22,8 @@ export function LeaderboardPage() {
       <section className="online-shell account-shell app-content-shell" aria-labelledby="leaderboard-title">
         <div className="online-copy">
           <p className="eyebrow">RANKED LADDER</p>
-          <h1 id="leaderboard-title">레이팅은 경쟁 게임 결과로 갱신됩니다.</h1>
-          <p>상위 50명의 레이팅, 전적, 승률을 표시합니다. RDS 연결 전에는 안내 메시지가 표시됩니다.</p>
+          <h1 id="leaderboard-title">팔레트는 경쟁 게임 결과로 채워집니다.</h1>
+          <p>상위 50명의 레이팅, 전적, 승률을 표시합니다. 보라 팔레트를 완성한 top 50 플레이어는 무지개 팔레트를 얻습니다.</p>
         </div>
 
         <div className="online-card leaderboard-card">
@@ -34,7 +34,7 @@ export function LeaderboardPage() {
             return (
               <article className="leaderboard-row" key={player.id}>
                 <span className="leaderboard-rank">{index + 1}</span>
-                <RankBadge rating={player.rating} compact />
+                <RankBadge rating={player.rating} leaderboardRank={index + 1} compact />
                 <b>{player.displayName}</b>
                 <strong>{player.rating}</strong>
                 <small>{player.rankedWins}승 {player.rankedLosses}패 · {winRate}%</small>

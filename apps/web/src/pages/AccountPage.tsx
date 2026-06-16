@@ -1,12 +1,14 @@
 import { FormEvent, useEffect, useState } from "react";
 import {
   clearAuthToken,
+  fetchLeaderboard,
   fetchMatches,
   fetchMe,
   loginAccount,
   registerAccount,
   type Account,
   type MatchHistoryItem,
+  type PublicProfile,
 } from "../api";
 import { AppSidebar } from "../components/AppSidebar";
 import { RankBadge } from "../components/RankBadge";
@@ -17,6 +19,11 @@ type AuthMode = "login" | "register";
 const matchOutcome = (match: MatchHistoryItem, accountId: string): string => {
   if (match.winnerAccountId === null) return "무승부";
   return match.winnerAccountId === accountId ? "승리" : "패배";
+};
+
+const findLeaderboardRank = (players: PublicProfile[], accountId: string): number | null => {
+  const index = players.findIndex((player) => player.id === accountId);
+  return index === -1 ? null : index + 1;
 };
 
 export function AccountPage() {
@@ -30,20 +37,25 @@ export function AccountPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [leaderboardRank, setLeaderboardRank] = useState<number | null>(null);
 
   useEffect(() => {
     void fetchMe()
-      .then((nextAccount) => {
+      .then(async (nextAccount) => {
         setAccount(nextAccount);
-        return fetchMatches(nextAccount.id);
+        await refreshAccountData(nextAccount);
       })
-      .then(setMatches)
       .catch(() => undefined);
   }, []);
 
-  const refreshMatches = async (nextAccount: Account) => {
-    setMatches(await fetchMatches(nextAccount.id));
-  };
+  async function refreshAccountData(nextAccount: Account) {
+    const [nextMatches, leaderboard] = await Promise.all([
+      fetchMatches(nextAccount.id),
+      fetchLeaderboard().catch(() => [] as PublicProfile[]),
+    ]);
+    setMatches(nextMatches);
+    setLeaderboardRank(findLeaderboardRank(leaderboard, nextAccount.id));
+  }
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -54,7 +66,7 @@ export function AccountPage() {
         ? await loginAccount({ email, password })
         : await registerAccount({ email, password, displayName, avatarId });
       setAccount(nextAccount);
-      await refreshMatches(nextAccount);
+      await refreshAccountData(nextAccount);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "계정 요청을 처리하지 못했습니다.");
     } finally {
@@ -66,6 +78,7 @@ export function AccountPage() {
     clearAuthToken();
     setAccount(null);
     setMatches([]);
+    setLeaderboardRank(null);
   };
 
   return (
@@ -128,7 +141,7 @@ export function AccountPage() {
               <p className="eyebrow">SIGNED IN</p>
               <div className="account-title-row">
                 <h2>{account.displayName}</h2>
-                <RankBadge rating={account.rating} />
+                <RankBadge rating={account.rating} leaderboardRank={leaderboardRank} />
               </div>
               <div className="profile-stats">
                 <span><small>레이팅</small><strong>{account.rating}</strong></span>
