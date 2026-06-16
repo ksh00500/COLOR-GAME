@@ -216,6 +216,14 @@ export const removeCells = (board: Board, positions: Position[]): Board => {
   return nextBoard;
 };
 
+const getAllCells = (board: Board): Position[] =>
+  board.flatMap((row, rowIndex) =>
+    row.map((_cell, colIndex) => ({ row: rowIndex, col: colIndex })),
+  );
+
+const isBoardFull = (board: Board): boolean =>
+  board.every((row) => row.every((cell) => cell !== null));
+
 export const validateMove = (
   state: GameState,
   input: MoveInput,
@@ -343,7 +351,11 @@ export const placeTile = (state: GameState, input: MoveInput): MoveResult => {
     state.config.scoreRules,
   );
   const earnedScore = calculateScore(scoringLines);
-  const removedCells = getCellsToRemove(scoringLines);
+  const scoringRemovedCells = getCellsToRemove(scoringLines);
+  const shouldClearFullBoard = scoringRemovedCells.length === 0 && isBoardFull(placedBoard);
+  const removedCells = shouldClearFullBoard
+    ? getAllCells(placedBoard)
+    : scoringRemovedCells;
   const nextBoard = removeCells(placedBoard, removedCells);
   const players = state.players.map((player) =>
     player.id === input.playerId
@@ -365,8 +377,6 @@ export const placeTile = (state: GameState, input: MoveInput): MoveResult => {
 
   const scoredPlayer = players.find((player) => player.id === input.playerId);
   const reachedTarget = (scoredPlayer?.score ?? 0) >= state.config.targetScore;
-  const boardIsFull = nextBoard.every((row) => row.every((cell) => cell !== null));
-
   if (reachedTarget) {
     return {
       ok: true,
@@ -379,24 +389,6 @@ export const placeTile = (state: GameState, input: MoveInput): MoveResult => {
         currentPlayerId: null,
         winnerId: input.playerId,
         result: "target-score",
-        lastMove: move,
-        turnTimer: null,
-      },
-    };
-  }
-
-  if (boardIsFull) {
-    return {
-      ok: true,
-      move,
-      state: {
-        ...state,
-        board: nextBoard,
-        players,
-        status: "finished",
-        currentPlayerId: null,
-        winnerId: null,
-        result: "draw",
         lastMove: move,
         turnTimer: null,
       },
@@ -434,4 +426,3 @@ export const resignGame = (state: GameState, playerId: string): GameState => {
     turnTimer: null,
   };
 };
-

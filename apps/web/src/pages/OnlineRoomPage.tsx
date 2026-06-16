@@ -116,18 +116,21 @@ export function OnlineRoomPage() {
   const [playerId, setPlayerId] = useState<string | null>(null);
   const [selectedColors, setSelectedColors] = useState<Record<string, TileColorId>>({});
   const [visualBoard, setVisualBoard] = useState<Board | null>(null);
-  const scoringCells = useMemo(() => new Set<string>(), []);
+  const [scoringCells, setScoringCells] = useState<Set<string>>(new Set());
   const [lastPlaced, setLastPlaced] = useState<Position | null>(null);
   const [invalidCell, setInvalidCell] = useState<Position | null>(null);
   const [scoreNotice, setScoreNotice] = useState<{ playerId: string; score: number } | null>(null);
   const [focusedIndex, setFocusedIndex] = useState(12);
   const [busyLabel, setBusyLabel] = useState<string | null>(null);
+  const [isBoardClearing, setIsBoardClearing] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [resignOpen, setResignOpen] = useState(false);
   const [now, setNow] = useState(Date.now());
   const [matchStartedAt, setMatchStartedAt] = useState(0);
+  const animatedMoveKey = useRef<string | null>(null);
+  const previousBoardRef = useRef<Board | null>(null);
 
   const game = room?.game ?? null;
   const roomPlayer = room?.players.find((player) => player?.id === playerId) ?? null;
@@ -136,7 +139,13 @@ export function OnlineRoomPage() {
   const myTurn = playerId !== null && currentPlayerId === playerId;
   const selectedColor = playerId === null ? "colorA" : selectedColors[playerId] ?? "colorA";
   const showColorShapes = settings.colorBlindPalette && settings.showShapes;
-  const canPlay = game?.status === "playing" && myTurn && busyLabel === null && connectionStatus === "connected";
+  const canPlay =
+    game?.status === "playing" &&
+    myTurn &&
+    busyLabel === null &&
+    visualBoard === null &&
+    !isBoardClearing &&
+    connectionStatus === "connected";
 
   const clearEffectTimers = useCallback(() => {
     effectTimers.current.forEach((timer) => window.clearTimeout(timer));
@@ -144,7 +153,10 @@ export function OnlineRoomPage() {
   }, []);
 
   const applyRoom = useCallback((nextRoom: RoomSnapshot) => {
-    setRoom(nextRoom);
+    setRoom((current) => {
+      previousBoardRef.current = current?.game?.board ?? null;
+      return nextRoom;
+    });
     if (nextRoom.game !== null) {
       setMatchStartedAt((current) => (current === 0 ? Date.now() : current));
     }
@@ -192,7 +204,30 @@ export function OnlineRoomPage() {
 
   useEffect(() => {
     if (game?.lastMove === null || game?.lastMove === undefined) return;
+    const moveKey = `${game.lastMove.turnNumber}:${game.lastMove.playerId}:${game.lastMove.row}:${game.lastMove.col}`;
+    if (animatedMoveKey.current === moveKey) return;
+    animatedMoveKey.current = moveKey;
     setLastPlaced({ row: game.lastMove.row, col: game.lastMove.col });
+    if (game.lastMove.removedCells.length > 0) {
+      const previousBoard = previousBoardRef.current;
+      if (previousBoard !== null) {
+        setVisualBoard(boardWithPlacement(
+          previousBoard,
+          { row: game.lastMove.row, col: game.lastMove.col },
+          game.lastMove.color,
+        ));
+      }
+      setIsBoardClearing(game.lastMove.earnedScore === 0);
+      setScoringCells(
+        new Set(game.lastMove.removedCells.map((cell) => `${cell.row}:${cell.col}`)),
+      );
+      const timer = window.setTimeout(() => {
+        setVisualBoard(null);
+        setScoringCells(new Set());
+        setIsBoardClearing(false);
+      }, game.lastMove.earnedScore === 0 ? 420 : 620);
+      effectTimers.current.push(timer);
+    }
     if (game.lastMove.earnedScore > 0) {
       setScoreNotice({ playerId: game.lastMove.playerId, score: game.lastMove.earnedScore });
       const timer = window.setTimeout(() => setScoreNotice(null), 900);
@@ -299,14 +334,35 @@ export function OnlineRoomPage() {
       { code: room.code, playerId, row: position.row, col: position.col, color: selectedColor },
       (response: MoveAck) => {
         setBusyLabel(null);
-        setVisualBoard(null);
         if (!response.ok) {
+          setVisualBoard(null);
           setInvalidCell(position);
           setMessage(describeError(response.error));
           const timer = window.setTimeout(() => setInvalidCell(null), 320);
           effectTimers.current.push(timer);
           return;
         }
+        const lastMove = response.room?.game?.lastMove;
+        if (lastMove !== undefined && lastMove !== null && lastMove.removedCells.length > 0) {
+          animatedMoveKey.current = `${lastMove.turnNumber}:${lastMove.playerId}:${lastMove.row}:${lastMove.col}`;
+          setLastPlaced(position);
+          setScoringCells(
+            new Set(lastMove.removedCells.map((cell) => `${cell.row}:${cell.col}`)),
+          );
+          setIsBoardClearing(lastMove.earnedScore === 0);
+          if (lastMove.earnedScore > 0) {
+            setScoreNotice({ playerId, score: lastMove.earnedScore });
+          }
+          const timer = window.setTimeout(() => {
+            setVisualBoard(null);
+            setScoringCells(new Set());
+            setIsBoardClearing(false);
+            if (response.room !== undefined) applyRoom(response.room);
+          }, lastMove.earnedScore === 0 ? 420 : 620);
+          effectTimers.current.push(timer);
+          return;
+        }
+        setVisualBoard(null);
         if (response.room !== undefined) applyRoom(response.room);
       },
     );
@@ -451,6 +507,7 @@ export function OnlineRoomPage() {
               board={visualBoard ?? game.board}
               selectedColor={selectedColor}
               canPlay={canPlay}
+              isClearing={isBoardClearing}
               showShapes={showColorShapes}
               focusedIndex={focusedIndex}
               scoringCells={scoringCells}

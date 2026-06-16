@@ -100,6 +100,7 @@ export function GamePage() {
   const [scoreNotice, setScoreNotice] = useState<{ playerId: string; score: number } | null>(null);
   const [focusedIndex, setFocusedIndex] = useState(12);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [isBoardClearing, setIsBoardClearing] = useState(false);
   const [isAiThinking, setIsAiThinking] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
@@ -155,34 +156,51 @@ export function GamePage() {
       }
 
       setLastPlaced(position);
-      if (result.move.earnedScore === 0) {
+      const removedCells = result.move.removedCells;
+      const shouldAnimateRemoval = removedCells.length > 0;
+      if (!shouldAnimateRemoval) {
         setGame(result.state);
         return;
       }
 
-      const animationDuration = settings.animationLevel === "off"
-        ? 40
-        : settings.presentationSpeed === "fast"
-          ? 280
-          : settings.animationLevel === "reduced"
-            ? 360
-            : 620;
+      const isFullBoardClear = result.move.earnedScore === 0;
+      const animationDuration = isFullBoardClear
+        ? settings.animationLevel === "off"
+          ? 40
+          : settings.presentationSpeed === "fast"
+            ? 260
+            : 420
+        : settings.animationLevel === "off"
+          ? 40
+          : settings.presentationSpeed === "fast"
+            ? 280
+            : settings.animationLevel === "reduced"
+              ? 360
+              : 620;
 
       setIsAnimating(true);
+      setIsBoardClearing(isFullBoardClear);
       setVisualBoard(boardWithPlacement(game.board, position, color));
       setScoringCells(
-        new Set(result.move.removedCells.map((cell) => `${cell.row}:${cell.col}`)),
+        new Set(removedCells.map((cell) => `${cell.row}:${cell.col}`)),
       );
-      setScoreNotice({ playerId, score: result.move.earnedScore });
+      if (result.move.earnedScore > 0) {
+        setScoreNotice({ playerId, score: result.move.earnedScore });
+      }
 
       const commitTimer = window.setTimeout(() => {
         setGame(result.state);
         setVisualBoard(null);
         setScoringCells(new Set());
+        setIsBoardClearing(false);
         setIsAnimating(false);
       }, animationDuration);
-      const noticeTimer = window.setTimeout(() => setScoreNotice(null), animationDuration + 700);
-      effectTimers.current.push(commitTimer, noticeTimer);
+      const timers = [commitTimer];
+      if (result.move.earnedScore > 0) {
+        const noticeTimer = window.setTimeout(() => setScoreNotice(null), animationDuration + 700);
+        timers.push(noticeTimer);
+      }
+      effectTimers.current.push(...timers);
     },
     [game, isAnimating, settings.animationLevel, settings.presentationSpeed],
   );
@@ -235,6 +253,7 @@ export function GamePage() {
     setInvalidCell(null);
     setScoreNotice(null);
     setIsAnimating(false);
+    setIsBoardClearing(false);
     setIsAiThinking(false);
     setMatchStartedAt(startedAt);
     setNow(startedAt);
@@ -277,6 +296,7 @@ export function GamePage() {
               board={visualBoard ?? game.board}
               selectedColor={selectedColors[HUMAN_ID] ?? "colorA"}
               canPlay={canHumanPlay}
+              isClearing={isBoardClearing}
               showShapes={showColorShapes}
               focusedIndex={focusedIndex}
               scoringCells={scoringCells}

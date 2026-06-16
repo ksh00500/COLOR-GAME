@@ -235,7 +235,7 @@ describe("game completion", () => {
     expect(result.state.result).toBe("target-score");
   });
 
-  it("declares a draw when the board is full without a scoring line", () => {
+  it("clears every tile and keeps playing when the board fills without scoring", () => {
     const state = gameWithBoard(
       boardFrom([
         ["colorA", "colorB", "colorC", "colorA", "colorB"],
@@ -255,9 +255,14 @@ describe("game completion", () => {
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.state.status).toBe("finished");
-    expect(result.state.result).toBe("draw");
+    expect(result.state.status).toBe("playing");
+    expect(result.state.result).toBeNull();
     expect(result.state.winnerId).toBeNull();
+    expect(result.state.currentPlayerId).toBe("player2");
+    expect(result.state.turnNumber).toBe(2);
+    expect(result.move.earnedScore).toBe(0);
+    expect(result.move.removedCells).toHaveLength(25);
+    expect(result.state.board.flat().every((cell) => cell === null)).toBe(true);
   });
 
   it("awards a timeout win to the opponent", () => {

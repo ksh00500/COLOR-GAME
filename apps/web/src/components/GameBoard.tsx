@@ -5,6 +5,7 @@ interface GameBoardProps {
   board: Board;
   selectedColor: TileColorId;
   canPlay: boolean;
+  isClearing?: boolean;
   showShapes: boolean;
   focusedIndex: number;
   scoringCells: Set<string>;
@@ -30,6 +31,7 @@ export function GameBoard({
   board,
   selectedColor,
   canPlay,
+  isClearing = false,
   showShapes,
   focusedIndex,
   scoringCells,
@@ -65,7 +67,7 @@ export function GameBoard({
   };
 
   return (
-    <div className={`game-board-frame ${canPlay ? "interactive" : "locked"}`}>
+    <div className={`game-board-frame ${canPlay ? "interactive" : "locked"} ${isClearing ? "clearing" : ""}`}>
       <div
         className="game-board"
         ref={boardRef}
