@@ -157,6 +157,22 @@ describe("GameRoomService", () => {
     expect(reconnected.value.game?.players[1].connectionStatus).toBe("connected");
   });
 
+  it("restores an active room snapshot after a server restart", () => {
+    const { room, code, hostId } = startRoom();
+    const restoredService = new GameRoomService();
+
+    const restored = restoredService.restoreRoom(room);
+    expect(restored.status).toBe("playing");
+    expect(restored.players[0].connected).toBe(false);
+    expect(restored.game?.players[0].connectionStatus).toBe("disconnected");
+
+    const reconnected = restoredService.reconnect(code, hostId, "socket-next");
+    expect(reconnected.ok).toBe(true);
+    if (!reconnected.ok) return;
+    expect(reconnected.value.players[0].connected).toBe(true);
+    expect(reconnected.value.game?.players[0].connectionStatus).toBe("connected");
+  });
+
   it("finishes the game when a player resigns", () => {
     const { service, code, hostId, guestId } = startRoom();
     const resigned = service.resign(code, guestId);

@@ -1,7 +1,9 @@
 import Fastify from "fastify";
 import { Server } from "socket.io";
 import { z } from "zod";
+import type { Move, RoomSnapshot } from "@color-game/shared-types";
 import { GameRoomService, type RoomError } from "./game-room-service.js";
+import { NullGameHistoryStore, type GameHistoryStore } from "./history-store.js";
 import {
   gameMoveSchema,
   gameResignSchema,
@@ -14,6 +16,8 @@ import {
 export interface ServerOptions {
   corsOrigin?: string | string[];
   roomService?: GameRoomService;
+  historyStore?: GameHistoryStore;
+  requireDatabaseHealth?: boolean;
 }
 
 const toClientError = (error: RoomError) => ({
@@ -31,16 +35,50 @@ const socketPlayerMismatchError = {
 export const createServer = (options: ServerOptions = {}) => {
   const app = Fastify({ logger: true });
   const roomService = options.roomService ?? new GameRoomService();
+  const historyStore = options.historyStore ?? new NullGameHistoryStore();
   const io = new Server(app.server, {
     cors: {
       origin: options.corsOrigin ?? true,
     },
   });
 
-  app.get("/health", async () => ({
-    ok: true,
-    service: "color-game-server",
-  }));
+  const persistRoom = (room: RoomSnapshot): void => {
+    if (!historyStore.enabled) return;
+    void historyStore.recordRoomSnapshot(room).catch((error: unknown) => {
+      app.log.error({ err: error, roomCode: room.code }, "Failed to persist room snapshot");
+    });
+  };
+
+  const persistMoveApplication = (room: RoomSnapshot, move: Move | null): void => {
+    if (!historyStore.enabled) return;
+    void (async () => {
+      await historyStore.recordRoomSnapshot(room);
+      if (move !== null) {
+        await historyStore.recordMove(room, move);
+      }
+    })().catch((error: unknown) => {
+      app.log.error(
+        { err: error, roomCode: room.code, gameId: room.game?.id, turnNumber: move?.turnNumber },
+        "Failed to persist move application",
+      );
+    });
+  };
+
+  app.get("/health", async (_request, reply) => {
+    const database = await historyStore.health();
+    const ok = database.ok || options.requireDatabaseHealth !== true;
+    const payload = {
+      ok,
+      service: "color-game-server",
+      database,
+    };
+
+    if (!ok) {
+      return reply.code(503).send(payload);
+    }
+
+    return payload;
+  });
 
   app.get("/rooms/:code", async (request, reply) => {
     const params = z.object({ code: z.string().toUpperCase() }).parse(request.params);
@@ -77,6 +115,7 @@ export const createServer = (options: ServerOptions = {}) => {
       const host = room.players[0];
       socket.data.playerId = host.id;
       socket.join(room.code);
+      persistRoom(room);
       io.to(room.code).emit("game:state", room);
       callback?.({ ok: true, room, playerId: host.id });
     });
@@ -101,6 +140,7 @@ export const createServer = (options: ServerOptions = {}) => {
       const joinedPlayer = result.value.players[1];
       socket.data.playerId = joinedPlayer?.id;
       socket.join(result.value.code);
+      persistRoom(result.value);
       io.to(result.value.code).emit("game:state", result.value);
       callback?.({ ok: true, room: result.value, playerId: joinedPlayer?.id });
     });
@@ -123,6 +163,7 @@ export const createServer = (options: ServerOptions = {}) => {
         return;
       }
 
+      persistRoom(result.value);
       io.to(result.value.code).emit("game:state", result.value);
       callback?.({ ok: true, room: result.value });
     });
@@ -148,6 +189,7 @@ export const createServer = (options: ServerOptions = {}) => {
         return;
       }
 
+      persistMoveApplication(result.value.room, result.value.move);
       io.to(result.value.room.code).emit("game:state", result.value.room);
       if (result.value.move !== null) {
         io.to(result.value.room.code).emit("game:move:accepted", result.value.move);
@@ -169,6 +211,7 @@ export const createServer = (options: ServerOptions = {}) => {
         return;
       }
 
+      persistRoom(result.value);
       io.to(result.value.code).emit("game:state", result.value);
       io.to(result.value.code).emit("game:finished", result.value.game);
       callback?.({ ok: true, room: result.value });
@@ -191,6 +234,7 @@ export const createServer = (options: ServerOptions = {}) => {
 
       socket.data.playerId = parsed.data.playerId;
       socket.join(result.value.code);
+      persistRoom(result.value);
       io.to(result.value.code).emit("game:state", result.value);
       callback?.({ ok: true, room: result.value });
     });
@@ -199,6 +243,7 @@ export const createServer = (options: ServerOptions = {}) => {
       if (typeof socket.data.playerId !== "string") return;
       const rooms = roomService.markDisconnected(socket.data.playerId);
       for (const room of rooms) {
+        persistRoom(room);
         io.to(room.code).emit("game:state", room);
       }
     });
@@ -207,6 +252,7 @@ export const createServer = (options: ServerOptions = {}) => {
   const turnTimer = setInterval(() => {
     const rooms = roomService.expireActiveTurns();
     for (const room of rooms) {
+      persistRoom(room);
       io.to(room.code).emit("game:state", room);
       io.to(room.code).emit("game:finished", room.game);
     }
@@ -215,6 +261,7 @@ export const createServer = (options: ServerOptions = {}) => {
   app.addHook("onClose", async () => {
     clearInterval(turnTimer);
     await io.close();
+    await historyStore.close();
   });
 
   return { app, io, roomService };

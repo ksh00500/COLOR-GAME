@@ -11,6 +11,7 @@ import type {
   GamePlayer,
   GameState,
   Move,
+  RoomPlayerSnapshot,
   RoomSnapshot,
   RoomStatus,
   TileColorId,
@@ -98,6 +99,28 @@ const toPlayerSnapshot = (player: RoomPlayer) => ({
   connected: player.connected,
 });
 
+const fromPlayerSnapshot = (player: RoomPlayerSnapshot): RoomPlayer => ({
+  id: player.id,
+  nickname: player.nickname,
+  avatarId: player.avatarId,
+  isGuest: player.isGuest,
+  ready: player.ready,
+  connected: false,
+  socketId: null,
+});
+
+const disconnectGamePlayers = (game: GameState | null): GameState | null => {
+  if (game === null) return null;
+
+  return {
+    ...game,
+    players: game.players.map((player) => ({
+      ...player,
+      connectionStatus: "disconnected",
+    })) as [GamePlayer, GamePlayer],
+  };
+};
+
 const cloneRoom = (room: RoomSession): RoomSnapshot => ({
   code: room.code,
   status: room.status,
@@ -168,6 +191,24 @@ export class GameRoomService {
     };
 
     this.rooms.set(code, room);
+    return cloneRoom(room);
+  }
+
+  restoreRoom(snapshot: RoomSnapshot): RoomSnapshot {
+    const room: RoomSession = {
+      code: snapshot.code,
+      status: snapshot.status,
+      hostPlayerId: snapshot.hostPlayerId,
+      players: [
+        fromPlayerSnapshot(snapshot.players[0]),
+        snapshot.players[1] === null ? null : fromPlayerSnapshot(snapshot.players[1]),
+      ],
+      game: disconnectGamePlayers(snapshot.game),
+      createdAt: snapshot.createdAt,
+      updatedAt: this.now(),
+    };
+
+    this.rooms.set(room.code, room);
     return cloneRoom(room);
   }
 

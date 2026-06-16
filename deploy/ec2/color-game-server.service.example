@@ -1,0 +1,18 @@
+[Unit]
+Description=Color Game Socket Server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/srv/color-game/COLOR-GAME
+EnvironmentFile=/etc/color-game/server.env
+ExecStart=/usr/bin/pnpm --filter @color-game/server start
+Restart=always
+RestartSec=5
+KillSignal=SIGTERM
+SyslogIdentifier=color-game-server
+
+[Install]
+WantedBy=multi-user.target

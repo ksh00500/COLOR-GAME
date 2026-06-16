@@ -33,6 +33,7 @@ packages/
   ai-engine/          휴리스틱 기반 AI 수 선택기
 .github/workflows/    GitHub Actions 검증
 amplify.yml           AWS Amplify Hosting 빌드 설정
+deploy/ec2/           EC2 + RDS 운영 템플릿
 ```
 
 ## 주요 게임 엔진 함수
@@ -73,6 +74,14 @@ pnpm dev:server
 
 서버 기본 주소는 `http://localhost:8080`이며, 헬스 체크는 `GET /health`입니다. 웹 앱은 `VITE_SOCKET_URL` 환경 변수로 Socket.IO 서버 주소를 읽고, 기본값은 `http://localhost:8080`입니다.
 
+PostgreSQL을 로컬에서 함께 확인하려면 Docker Compose로 DB를 띄운 뒤 마이그레이션을 실행합니다.
+
+```bash
+docker compose -f compose.local.yml up -d
+pnpm db:migrate
+pnpm db:check
+```
+
 ## 온라인 서버 진행 상황
 
 현재 `apps/server`에는 다음 서버 권위형 기반이 들어 있습니다.
@@ -84,9 +93,11 @@ pnpm dev:server
 - 서버 측 턴 검증, 점수 계산, 타일 제거, 승패 처리
 - 연결 끊김 표시와 재접속 복구
 - 서버 루프 기반 턴 시간 만료 처리
+- PostgreSQL/RDS 방·플레이어·게임·수 기록 저장
+- 서버 재시작 시 RDS의 활성 방 스냅샷 복구
 - `GET /rooms/:code` 디버그 조회
 
-현재 방 상태는 메모리에 저장됩니다. PostgreSQL과 Prisma를 붙이면 `game_rooms`, `games`, `game_players`, `game_moves` 테이블에 같은 상태와 수 기록을 영속화할 수 있습니다.
+`DATABASE_URL`이 없으면 메모리 모드로 동작하고, 값이 있으면 RDS/PostgreSQL 기록 저장을 활성화합니다. 마이그레이션 SQL은 `apps/server/db/migrations`에 있습니다.
 
 ## 검증 명령
 
@@ -94,9 +105,11 @@ pnpm dev:server
 pnpm typecheck
 pnpm test
 pnpm build
+pnpm db:migrate
+pnpm db:check
 ```
 
-현재 자동 테스트는 게임 엔진 15개, AI 엔진 2개, 서버 방 서비스 8개로 구성됩니다. 연결 판정, 동시 득점, 제거, 승리, 무승부, 시간 초과, 불변성, AI 즉시 득점, 방 생성, 준비, 서버 권위형 수 처리, 재접속, 참가자 검증, 서버 자동 시간 만료를 포함합니다.
+현재 자동 테스트는 게임 엔진 15개, AI 엔진 2개, 서버 방 서비스 9개로 구성됩니다. 연결 판정, 동시 득점, 제거, 승리, 무승부, 시간 초과, 불변성, AI 즉시 득점, 방 생성, 준비, 서버 권위형 수 처리, 재접속, 참가자 검증, 서버 자동 시간 만료, 서버 재시작 복구를 포함합니다.
 
 ## AWS 배포
 
@@ -112,16 +125,23 @@ Target: /index.html
 Type: 200 (Rewrite)
 ```
 
-서버는 `apps/server/Dockerfile`을 이용해 App Runner 또는 ECS/Fargate로 배포할 수 있습니다.
+사용자가 실제 AWS 리소스를 생성합니다. 저장소에는 EC2 + RDS 배포를 위한 준비물이 들어 있습니다.
 
 권장 AWS 구성:
 
-- Web: AWS Amplify Hosting
-- Server: AWS App Runner 또는 ECS/Fargate
+- Web: EC2 Nginx 정적 서빙 또는 AWS Amplify Hosting
+- Server: EC2 systemd 서비스
 - Database: RDS PostgreSQL
 - Secrets: AWS Secrets Manager
-- WebSocket URL: Amplify 환경 변수 `VITE_SOCKET_URL`
+- WebSocket URL: 웹 빌드 환경 변수 `VITE_SOCKET_URL`
 - Server CORS: 서버 환경 변수 `CORS_ORIGIN`
+
+EC2 + RDS 운영 템플릿:
+
+- `deploy/ec2/env.server.example`
+- `deploy/ec2/color-game-server.service.example`
+- `deploy/ec2/nginx-color-game.conf.example`
+- `deploy/ec2/README.md`
 
 ## 아직 구현하지 않은 기능
 
