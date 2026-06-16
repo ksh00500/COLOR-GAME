@@ -38,11 +38,19 @@ export function ResultPanel({
     <div className="modal-backdrop result-backdrop">
       <section className={`result-panel ${primaryWon ? "win" : isDraw ? "draw" : "loss"}`} role="dialog" aria-modal="true" aria-labelledby="result-title">
         <p className="eyebrow">MATCH COMPLETE</p>
-        <div className="result-emblem" aria-hidden="true"><i /><i /><i /></div>
+        <div className="result-status-card">
+          <span className={`result-status-mark ${primaryWon ? "win" : isDraw ? "draw" : "loss"}`}>
+            {isDraw ? "D" : primaryWon ? "W" : "L"}
+          </span>
+          <span>
+            <small>{isDraw ? "DRAW" : primaryWon ? "WIN" : "LOSS"}</small>
+            <strong>{primary.nickname}</strong>
+          </span>
+        </div>
         <h2 id="result-title">{title}</h2>
         <p>{reason}</p>
         <div className="final-score">
-          <span><small>YOU</small><strong>{primary.score}</strong></span>
+          <span><small>{primary.nickname}</small><strong>{primary.score}</strong></span>
           <i>:</i>
           <span><small>{opponent.nickname}</small><strong>{opponent.score}</strong></span>
         </div>

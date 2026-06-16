@@ -10,6 +10,10 @@ import {
   type AccountStore,
   type AccountSummary,
 } from "./auth-store.js";
+import {
+  NullAnalyticsStore,
+  type AnalyticsStore,
+} from "./analytics-store.js";
 import { GameRoomService, type PlayerProfile, type RoomError } from "./game-room-service.js";
 import { NullGameHistoryStore, type GameHistoryStore } from "./history-store.js";
 import { ServerMetrics } from "./metrics.js";
@@ -27,6 +31,7 @@ export interface ServerOptions {
   roomService?: GameRoomService;
   historyStore?: GameHistoryStore;
   accountStore?: AccountStore;
+  analyticsStore?: AnalyticsStore;
   authSecret?: string;
   tokenTtlSeconds?: number;
   requireDatabaseHealth?: boolean;
@@ -67,6 +72,11 @@ const matchmakingSchema = z.object({
   player: playerProfileSchema.optional(),
 });
 
+const analyticsHeartbeatSchema = z.object({
+  visitorId: z.string().trim().min(8).max(128),
+  path: z.string().trim().max(256).optional().default("/"),
+});
+
 const bearerToken = (authorization: unknown): string | null => {
   if (typeof authorization !== "string") return null;
   const [scheme, token] = authorization.split(" ");
@@ -94,6 +104,7 @@ export const createServer = (options: ServerOptions = {}) => {
   const roomService = options.roomService ?? new GameRoomService();
   const historyStore = options.historyStore ?? new NullGameHistoryStore();
   const accountStore = options.accountStore ?? new NullAccountStore();
+  const analyticsStore = options.analyticsStore ?? new NullAnalyticsStore();
   const metrics = new ServerMetrics();
   const authSecret = options.authSecret ?? "dev-only-color-game-secret-for-local-development";
   const tokenTtlSeconds = options.tokenTtlSeconds ?? 60 * 60 * 24 * 30;
@@ -284,6 +295,30 @@ export const createServer = (options: ServerOptions = {}) => {
       .header("content-type", "text/plain; version=0.0.4")
       .send(metrics.renderPrometheus()),
   );
+
+  app.post("/analytics/heartbeat", async (request, reply) => {
+    const parsed = analyticsHeartbeatSchema.safeParse(request.body ?? {});
+    if (!parsed.success) {
+      return reply.code(400).send({ code: "INVALID_REQUEST", details: parsed.error.flatten() });
+    }
+
+    const userAgentHeader = request.headers["user-agent"];
+    const userAgent = typeof userAgentHeader === "string"
+      ? userAgentHeader.slice(0, 512)
+      : null;
+
+    await analyticsStore.recordHeartbeat({
+      visitorId: parsed.data.visitorId,
+      path: parsed.data.path,
+      userAgent,
+    });
+
+    return { ok: true, visitors: await analyticsStore.getVisitorCounts() };
+  });
+
+  app.get("/analytics/visitors", async () => ({
+    visitors: await analyticsStore.getVisitorCounts(),
+  }));
 
   app.post("/auth/register", async (request, reply) => {
     if (!accountStore.enabled) {
@@ -621,6 +656,7 @@ export const createServer = (options: ServerOptions = {}) => {
     await io.close();
     await historyStore.close();
     await accountStore.close();
+    await analyticsStore.close();
   });
 
   return { app, io, roomService };

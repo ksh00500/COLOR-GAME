@@ -23,7 +23,7 @@ cp deploy/ec2/env.server.example /etc/color-game/server.env
 # /etc/color-game/server.env 안의 DATABASE_URL, CORS_ORIGIN, AUTH_SECRET 값을 실제 값으로 수정
 
 pnpm --filter @color-game/server db:migrate
-VITE_SOCKET_URL=https://your-domain.example VITE_API_URL=https://your-domain.example pnpm build
+pnpm build
 ```
 
 그 다음:
@@ -49,7 +49,7 @@ HTTPS는 EC2에서 도메인을 연결한 뒤 Certbot 또는 사용자가 선택
 NODE_ENV=production
 HOST=127.0.0.1
 PORT=8080
-CORS_ORIGIN=https://your-domain.example
+CORS_ORIGIN=http://colortile.kro.kr,http://3.26.178.31
 DATABASE_URL=postgresql://user:password@your-rds-endpoint:5432/color_game
 DATABASE_SSL=true
 DATABASE_REQUIRED=true
@@ -60,8 +60,10 @@ AUTH_SECRET=at-least-32-random-characters
 웹 빌드 시:
 
 ```bash
-VITE_SOCKET_URL=https://your-domain.example VITE_API_URL=https://your-domain.example pnpm --filter @color-game/web build
+pnpm --filter @color-game/web build
 ```
+
+프론트는 `VITE_API_URL`, `VITE_SOCKET_URL`이 비어 있으면 현재 접속한 origin을 그대로 사용합니다. 같은 빌드로 `http://colortile.kro.kr/`와 `http://3.26.178.31/` 모두 동작합니다. API 서버를 별도 도메인으로 분리할 때만 두 env 값을 지정하세요.
 
 ## Database Commands
 
@@ -78,6 +80,7 @@ Nginx는 다음 경로를 `127.0.0.1:8080` 서버로 프록시해야 합니다.
 
 - `GET /health`, `GET /livez`, `GET /readyz`
 - `GET /metrics`
+- `POST /analytics/heartbeat`, `GET /analytics/visitors`
 - `POST /auth/register`, `POST /auth/login`, `GET /auth/me`
 - `GET /leaderboard`
 - `GET /profiles/:accountId`, `GET /profiles/:accountId/matches`

@@ -35,7 +35,19 @@ export interface MatchHistoryItem {
   finishedAt: string;
 }
 
-const apiUrl = import.meta.env.VITE_API_URL ?? import.meta.env.VITE_SOCKET_URL ?? "http://localhost:8080";
+export interface VisitorCounts {
+  realtime: number;
+  daily: number;
+  monthly: number;
+  updatedAt: string;
+}
+
+const configuredApiUrl = import.meta.env.VITE_API_URL?.trim();
+const apiUrl = (
+  configuredApiUrl === undefined || configuredApiUrl === ""
+    ? import.meta.env.DEV ? "http://localhost:8080" : ""
+    : configuredApiUrl
+).replace(/\/+$/, "");
 const tokenKey = "color-game-auth-token";
 
 export const getAuthToken = (): string | null =>
@@ -116,4 +128,20 @@ export const fetchMatches = async (accountId: string): Promise<MatchHistoryItem[
     `/profiles/${encodeURIComponent(accountId)}/matches?limit=20`,
   );
   return data.matches;
+};
+
+export const recordVisitorHeartbeat = async (
+  visitorId: string,
+  path: string,
+): Promise<VisitorCounts> => {
+  const data = await request<{ visitors: VisitorCounts }>("/analytics/heartbeat", {
+    method: "POST",
+    body: JSON.stringify({ visitorId, path }),
+  });
+  return data.visitors;
+};
+
+export const fetchVisitorCounts = async (): Promise<VisitorCounts> => {
+  const data = await request<{ visitors: VisitorCounts }>("/analytics/visitors");
+  return data.visitors;
 };

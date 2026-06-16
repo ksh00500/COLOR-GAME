@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { io, type Socket } from "socket.io-client";
+import type { Socket } from "socket.io-client";
 import type {
   Board,
   Position,
@@ -16,6 +16,7 @@ import { ResultPanel } from "../components/ResultPanel";
 import { SettingsPanel } from "../components/SettingsPanel";
 import { getAuthToken } from "../api";
 import { useSettings } from "../settings";
+import { createAppSocket } from "../socket";
 
 type ConnectionStatus = "connecting" | "connected" | "disconnected" | "error";
 
@@ -44,7 +45,6 @@ interface PlayerProfile {
   isGuest: boolean;
 }
 
-const socketUrl = import.meta.env.VITE_SOCKET_URL ?? "http://localhost:8080";
 const profileKey = "color-game-player-profile";
 const roomPlayerPrefix = "color-game-room-player:";
 
@@ -170,7 +170,7 @@ export function OnlineRoomPage() {
   }, []);
 
   useEffect(() => {
-    const socket = io(socketUrl, {
+    const socket = createAppSocket({
       auth: { token: getAuthToken() },
     });
     socketRef.current = socket;

@@ -1,4 +1,5 @@
 import { createAccountStoreFromEnv } from "./auth-store.js";
+import { createAnalyticsStoreFromEnv } from "./analytics-store.js";
 import { GameRoomService } from "./game-room-service.js";
 import { createGameHistoryStoreFromEnv } from "./history-store.js";
 import { createServer, type ServerOptions } from "./server.js";
@@ -13,6 +14,7 @@ const requireDatabaseHealth =
   databaseRequired || process.env.HEALTHCHECK_REQUIRE_DB === "true";
 const historyStore = createGameHistoryStoreFromEnv();
 const accountStore = createAccountStoreFromEnv();
+const analyticsStore = createAnalyticsStoreFromEnv();
 
 if (databaseRequired && !historyStore.enabled) {
   console.error("DATABASE_REQUIRED=true but DATABASE_URL is not set.");
@@ -29,6 +31,7 @@ const serverOptions: ServerOptions = {
   roomService,
   historyStore,
   accountStore,
+  analyticsStore,
   authSecret,
   requireDatabaseHealth,
 };
@@ -53,5 +56,6 @@ try {
   app.log.error(error);
   await historyStore.close();
   await accountStore.close();
+  await analyticsStore.close();
   process.exit(1);
 }

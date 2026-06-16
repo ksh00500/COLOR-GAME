@@ -5,6 +5,7 @@ import type {
   MatchHistoryItem,
   PublicProfile,
 } from "./auth-store.js";
+import type { AnalyticsStore, VisitorCounts } from "./analytics-store.js";
 import { createServer } from "./server.js";
 import type { RoomSnapshot } from "@color-game/shared-types";
 
@@ -85,6 +86,38 @@ class MemoryAccountStore implements AccountStore {
   }
 }
 
+class MemoryAnalyticsStore implements AnalyticsStore {
+  readonly enabled = true;
+
+  private readonly visitors = new Map<string, { lastSeenAt: Date }>();
+
+  async close(): Promise<void> {
+    return undefined;
+  }
+
+  async recordHeartbeat(input: {
+    visitorId: string;
+    path: string | null;
+    userAgent: string | null;
+  }): Promise<void> {
+    this.visitors.set(input.visitorId, { lastSeenAt: new Date() });
+  }
+
+  async getVisitorCounts(now = new Date()): Promise<VisitorCounts> {
+    const realtimeStart = now.getTime() - 60_000;
+    const realtime = [...this.visitors.values()].filter(
+      (visitor) => visitor.lastSeenAt.getTime() >= realtimeStart,
+    ).length;
+
+    return {
+      realtime,
+      daily: this.visitors.size,
+      monthly: this.visitors.size,
+      updatedAt: now.toISOString(),
+    };
+  }
+}
+
 describe("auth routes", () => {
   const apps: Array<ReturnType<typeof createServer>["app"]> = [];
 
@@ -134,5 +167,37 @@ describe("auth routes", () => {
     });
     expect(leaderboard.statusCode).toBe(200);
     expect(leaderboard.json<{ players: PublicProfile[] }>().players).toHaveLength(1);
+  });
+
+  it("records anonymous visitor heartbeats and exposes visitor counts", async () => {
+    const analyticsStore = new MemoryAnalyticsStore();
+    const { app } = createServer({ analyticsStore });
+    apps.push(app);
+
+    const heartbeat = await app.inject({
+      method: "POST",
+      url: "/analytics/heartbeat",
+      payload: {
+        visitorId: "visitor-test-1",
+        path: "/",
+      },
+    });
+    expect(heartbeat.statusCode).toBe(200);
+    expect(heartbeat.json<{ visitors: VisitorCounts }>().visitors).toMatchObject({
+      realtime: 1,
+      daily: 1,
+      monthly: 1,
+    });
+
+    const visitors = await app.inject({
+      method: "GET",
+      url: "/analytics/visitors",
+    });
+    expect(visitors.statusCode).toBe(200);
+    expect(visitors.json<{ visitors: VisitorCounts }>().visitors).toMatchObject({
+      realtime: 1,
+      daily: 1,
+      monthly: 1,
+    });
   });
 });

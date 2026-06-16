@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import type { AiDifficulty } from "@color-game/ai-engine";
 import { AppSidebar } from "../components/AppSidebar";
 import { SettingsPanel } from "../components/SettingsPanel";
+import { useVisitorAnalytics } from "../visitorAnalytics";
 
 type FirstPlayer = "human" | "ai" | "random";
 
@@ -41,11 +42,15 @@ const modes = [
   },
 ] as const;
 
+const formatVisitorCount = (count: number | undefined) =>
+  count === undefined ? "-" : count.toLocaleString("ko-KR");
+
 export function LobbyPage() {
   const navigate = useNavigate();
   const [difficulty, setDifficulty] = useState<AiDifficulty>("normal");
   const [firstPlayer, setFirstPlayer] = useState<FirstPlayer>("human");
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const visitorCounts = useVisitorAnalytics();
 
   const startGame = () => {
     navigate(`/game?difficulty=${difficulty}&first=${firstPlayer}`);
@@ -128,6 +133,21 @@ export function LobbyPage() {
                 <span>{mode.id === "ai" ? "바로 시작" : mode.id === "private" ? "방 만들기" : "매칭"}</span>
               </button>
             ))}
+          </section>
+
+          <section className="visitor-strip" aria-label="접속자 현황">
+            <span>
+              <small>실시간</small>
+              <strong>{formatVisitorCount(visitorCounts?.realtime)}</strong>
+            </span>
+            <span>
+              <small>일간</small>
+              <strong>{formatVisitorCount(visitorCounts?.daily)}</strong>
+            </span>
+            <span>
+              <small>월간</small>
+              <strong>{formatVisitorCount(visitorCounts?.monthly)}</strong>
+            </span>
           </section>
         </div>
       </section>

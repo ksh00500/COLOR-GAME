@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { io, type Socket } from "socket.io-client";
+import type { Socket } from "socket.io-client";
 import type { RoomSnapshot } from "@color-game/shared-types";
 import { getAuthToken } from "../api";
 import { AppSidebar } from "../components/AppSidebar";
 import { SettingsPanel } from "../components/SettingsPanel";
+import { createAppSocket } from "../socket";
 
-const socketUrl = import.meta.env.VITE_SOCKET_URL ?? "http://localhost:8080";
 const roomPlayerPrefix = "color-game-room-player:";
 
 interface MatchAck {
@@ -32,7 +32,7 @@ export function MatchmakingPage() {
   const token = useMemo(() => getAuthToken(), []);
 
   useEffect(() => {
-    const socket = io(socketUrl, { auth: { token } });
+    const socket = createAppSocket({ auth: { token } });
     socketRef.current = socket;
 
     socket.on("connect", () => setStatus("매칭을 시작할 수 있습니다."));
