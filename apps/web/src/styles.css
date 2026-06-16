@@ -640,9 +640,9 @@ p {
 .rank-badge {
   display: inline-flex;
   align-items: center;
-  gap: 0.55rem;
+  gap: 0.65rem;
   width: fit-content;
-  padding: 0.38rem 0.55rem;
+  padding: 0.42rem 0.65rem;
   border: 1px solid var(--line);
   border-radius: 999px;
   color: var(--ink);
@@ -650,23 +650,23 @@ p {
 }
 
 .rank-badge.compact {
-  padding: 0.25rem 0.38rem;
-  gap: 0.35rem;
+  padding: 0.3rem 0.5rem;
+  gap: 0.45rem;
 }
 
 .rank-palette {
   position: relative;
   display: block;
-  width: 56px;
-  height: 38px;
+  width: 70px;
+  height: 48px;
   flex: 0 0 auto;
 }
 
 .rank-palette-board {
   position: relative;
   display: block;
-  width: 56px;
-  height: 36px;
+  width: 70px;
+  height: 45px;
   border: 1px solid color-mix(in srgb, var(--bronze) 70%, white);
   border-radius: 54% 46% 52% 48% / 58% 48% 52% 42%;
   background:
@@ -679,10 +679,10 @@ p {
 .rank-palette-board::before {
   content: "";
   position: absolute;
-  left: 4px;
-  top: 12px;
-  width: 10px;
-  height: 10px;
+  left: 5px;
+  top: 15px;
+  width: 13px;
+  height: 13px;
   border: 1px solid color-mix(in srgb, var(--walnut-dark) 38%, transparent);
   border-radius: 50%;
   background: var(--surface-raised);
@@ -692,29 +692,33 @@ p {
 .rank-palette-board i {
   position: absolute;
   display: block;
-  width: 10px;
-  height: 8px;
-  border: 1px solid color-mix(in srgb, var(--walnut-dark) 34%, transparent);
+  width: 13px;
+  height: 10px;
+  border: 0;
   border-radius: 58% 42% 56% 44% / 62% 52% 48% 38%;
-  background: color-mix(in srgb, var(--surface-raised) 88%, white);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.44), 0 2px 4px rgba(0,0,0,0.12);
+  background: transparent;
+  box-shadow: none;
+  opacity: 0;
   transform: rotate(var(--paint-rotate, -8deg));
 }
 
 .rank-palette-board i.filled {
+  opacity: 1;
+  border: 1px solid color-mix(in srgb, var(--paint-color) 72%, white);
   border-color: color-mix(in srgb, var(--paint-color) 72%, white);
   background:
     radial-gradient(circle at 32% 28%, rgba(255,255,255,0.52), transparent 0.14rem),
     var(--paint-color);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.44), 0 2px 4px rgba(0,0,0,0.16);
 }
 
-.rank-palette-board i:nth-child(1) { left: 18px; top: 5px; --paint-rotate: -11deg; }
-.rank-palette-board i:nth-child(2) { left: 31px; top: 4px; --paint-rotate: 10deg; }
-.rank-palette-board i:nth-child(3) { left: 43px; top: 11px; --paint-rotate: 14deg; }
-.rank-palette-board i:nth-child(4) { left: 39px; top: 23px; --paint-rotate: -6deg; }
-.rank-palette-board i:nth-child(5) { left: 28px; top: 25px; --paint-rotate: 7deg; }
-.rank-palette-board i:nth-child(6) { left: 17px; top: 23px; --paint-rotate: -14deg; }
-.rank-palette-board i:nth-child(7) { left: 8px; top: 20px; --paint-rotate: 9deg; }
+.rank-palette-board i:nth-child(1) { left: 22px; top: 6px; --paint-rotate: -11deg; }
+.rank-palette-board i:nth-child(2) { left: 39px; top: 5px; --paint-rotate: 10deg; }
+.rank-palette-board i:nth-child(3) { left: 54px; top: 14px; --paint-rotate: 14deg; }
+.rank-palette-board i:nth-child(4) { left: 49px; top: 29px; --paint-rotate: -6deg; }
+.rank-palette-board i:nth-child(5) { left: 35px; top: 31px; --paint-rotate: 7deg; }
+.rank-palette-board i:nth-child(6) { left: 21px; top: 28px; --paint-rotate: -14deg; }
+.rank-palette-board i:nth-child(7) { left: 10px; top: 24px; --paint-rotate: 9deg; }
 
 .rank-badge.rainbow {
   border-color: color-mix(in srgb, var(--green-light) 48%, var(--burgundy));
@@ -755,34 +759,34 @@ p {
 }
 
 .rank-badge.compact .rank-palette {
-  width: 42px;
-  height: 29px;
+  width: 58px;
+  height: 39px;
 }
 
 .rank-badge.compact .rank-palette-board {
-  width: 42px;
-  height: 27px;
+  width: 58px;
+  height: 37px;
 }
 
 .rank-badge.compact .rank-palette-board::before {
-  left: 3px;
-  top: 9px;
-  width: 7px;
-  height: 7px;
+  left: 4px;
+  top: 12px;
+  width: 10px;
+  height: 10px;
 }
 
 .rank-badge.compact .rank-palette-board i {
-  width: 7px;
-  height: 6px;
+  width: 10px;
+  height: 8px;
 }
 
-.rank-badge.compact .rank-palette-board i:nth-child(1) { left: 14px; top: 4px; }
-.rank-badge.compact .rank-palette-board i:nth-child(2) { left: 24px; top: 3px; }
-.rank-badge.compact .rank-palette-board i:nth-child(3) { left: 32px; top: 8px; }
-.rank-badge.compact .rank-palette-board i:nth-child(4) { left: 29px; top: 17px; }
-.rank-badge.compact .rank-palette-board i:nth-child(5) { left: 21px; top: 18px; }
-.rank-badge.compact .rank-palette-board i:nth-child(6) { left: 13px; top: 17px; }
-.rank-badge.compact .rank-palette-board i:nth-child(7) { left: 7px; top: 15px; }
+.rank-badge.compact .rank-palette-board i:nth-child(1) { left: 18px; top: 5px; }
+.rank-badge.compact .rank-palette-board i:nth-child(2) { left: 32px; top: 4px; }
+.rank-badge.compact .rank-palette-board i:nth-child(3) { left: 45px; top: 11px; }
+.rank-badge.compact .rank-palette-board i:nth-child(4) { left: 40px; top: 24px; }
+.rank-badge.compact .rank-palette-board i:nth-child(5) { left: 29px; top: 26px; }
+.rank-badge.compact .rank-palette-board i:nth-child(6) { left: 17px; top: 23px; }
+.rank-badge.compact .rank-palette-board i:nth-child(7) { left: 9px; top: 20px; }
 
 .rank-badge.compact .rank-copy {
   min-width: 44px;
