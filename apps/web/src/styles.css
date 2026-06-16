@@ -655,25 +655,70 @@ p {
 }
 
 .rank-yut {
-  display: inline-flex;
-  align-items: end;
-  gap: 3px;
+  position: relative;
+  display: inline-grid;
+  grid-template-columns: repeat(4, 7px);
+  align-items: center;
+  gap: 4px;
+  min-height: 28px;
 }
 
 .rank-yut i {
+  position: relative;
   display: block;
-  width: 6px;
-  height: 24px;
-  border: 1px solid color-mix(in srgb, var(--walnut-dark) 32%, transparent);
+  width: 7px;
+  height: 25px;
+  border: 1px solid color-mix(in srgb, var(--walnut-dark) 42%, transparent);
+  border-radius: 999px 999px 7px 7px;
+  background:
+    linear-gradient(90deg, rgba(255,255,255,0.18), transparent 45%),
+    linear-gradient(180deg, var(--walnut-light), var(--walnut));
+  box-shadow: inset -2px 0 3px rgba(0,0,0,0.14), 0 2px 5px rgba(0,0,0,0.12);
+  transform: rotate(-10deg);
+}
+
+.rank-yut i::before {
+  content: "";
+  position: absolute;
+  top: 5px;
+  left: 50%;
+  width: 2px;
+  height: 13px;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--surface-muted) 82%, var(--walnut));
-  transform: rotate(-9deg);
+  background: rgba(54, 32, 18, 0.28);
+  transform: translateX(-50%);
 }
 
 .rank-yut i.flipped {
-  background: linear-gradient(180deg, var(--bronze), var(--burgundy));
-  box-shadow: inset 0 2px 1px rgba(255,255,255,0.18), 0 3px 7px rgba(0,0,0,0.16);
+  border-color: color-mix(in srgb, var(--bronze) 62%, white);
+  background:
+    radial-gradient(circle at 50% 33%, color-mix(in srgb, var(--burgundy) 70%, black) 0 2px, transparent 2.4px),
+    radial-gradient(circle at 50% 65%, color-mix(in srgb, var(--burgundy) 58%, black) 0 1.6px, transparent 2px),
+    linear-gradient(90deg, rgba(255,255,255,0.58), transparent 58%),
+    linear-gradient(180deg, #f0d9b6, var(--bronze));
+  box-shadow: inset -2px 0 3px rgba(75, 43, 21, 0.14), 0 4px 8px rgba(0,0,0,0.16);
   transform: rotate(8deg) translateY(-2px);
+}
+
+.rank-yut i.flipped::before {
+  display: none;
+}
+
+.rank-yut.complete::after {
+  content: "";
+  position: absolute;
+  right: -5px;
+  top: -3px;
+  width: 8px;
+  height: 8px;
+  border: 1px solid color-mix(in srgb, var(--bronze) 70%, white);
+  border-radius: 50%;
+  background: var(--surface-raised);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--bronze) 18%, transparent);
+}
+
+.rank-yut.complete i.flipped {
+  box-shadow: inset -2px 0 3px rgba(75, 43, 21, 0.14), 0 0 0 1px color-mix(in srgb, var(--bronze) 26%, transparent), 0 5px 10px rgba(0,0,0,0.16);
 }
 
 .rank-copy {
@@ -696,8 +741,8 @@ p {
 }
 
 .rank-badge.compact .rank-yut i {
-  width: 5px;
-  height: 19px;
+  width: 6px;
+  height: 20px;
 }
 
 .rank-badge.compact .rank-copy strong {
