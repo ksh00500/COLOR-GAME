@@ -98,8 +98,9 @@ export function MatchmakingPage() {
           <p className="eyebrow">{mode === "ranked" ? "RANKED MATCH" : "CASUAL MATCH"}</p>
           <h1 id="matchmaking-title">{mode === "ranked" ? "레이팅이 걸린 경쟁 게임" : "가볍게 만나는 일반 게임"}</h1>
           <p>
-            매칭 큐에 들어가면 같은 모드의 다른 플레이어와 자동으로 방이 만들어집니다.
-            경쟁 게임은 계정 레이팅과 전적에 반영됩니다.
+            {mode === "ranked"
+              ? "경쟁 게임은 로그인한 플레이어만 참가할 수 있습니다. 결과는 레이팅과 전적에 반영됩니다."
+              : "매칭 큐에 들어가면 부담 없이 다른 플레이어와 자동으로 방이 만들어집니다."}
           </p>
         </div>
 

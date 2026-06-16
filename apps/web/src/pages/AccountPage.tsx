@@ -90,8 +90,8 @@ export function AccountPage() {
           <p className="eyebrow">PLAYER ACCOUNT</p>
           <h1 id="account-title">전적과 레이팅은 계정에 저장됩니다.</h1>
           <p>
-            경쟁 게임은 로그인한 플레이어만 참가할 수 있습니다. RDS가 연결되면 계정,
-            리더보드, 최근 경기 기록이 모두 서버에 저장됩니다.
+            경쟁 게임은 로그인한 플레이어만 참가할 수 있습니다. 계정에는 전적,
+            레이팅, 최근 경기 기록이 저장됩니다.
           </p>
         </div>
 

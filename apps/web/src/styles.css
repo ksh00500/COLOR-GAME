@@ -828,6 +828,74 @@ p {
   gap: 0.65rem;
 }
 
+.tier-guide-card {
+  display: grid;
+  gap: 0.85rem;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 96% 8%, color-mix(in srgb, var(--green) 12%, transparent), transparent 10rem),
+    var(--surface-raised);
+}
+
+.tier-guide-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.tier-guide-heading .eyebrow {
+  margin: 0;
+}
+
+.tier-guide-heading strong {
+  font-size: 1rem;
+}
+
+.tier-guide-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(185px, 1fr));
+  gap: 0.55rem;
+}
+
+.tier-guide-item {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.45rem 0.55rem;
+  align-items: center;
+  min-width: 0;
+  padding: 0.65rem;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.tier-guide-item > span {
+  display: grid;
+  width: 1.7rem;
+  height: 1.7rem;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  color: var(--burgundy);
+  font-size: 0.72rem;
+  font-weight: 950;
+}
+
+.tier-guide-item .rank-badge {
+  max-width: 100%;
+}
+
+.tier-guide-item small {
+  grid-column: 2;
+  color: var(--ink-soft);
+  font-size: 0.62rem;
+  font-weight: 850;
+}
+
 .match-history p,
 .leaderboard-row {
   display: grid;
@@ -2006,7 +2074,7 @@ kbd {
 }
 
 .tutorial-panel {
-  width: min(100%, 470px);
+  width: min(100%, 820px);
   padding: 1.25rem;
   border: 1px solid var(--line-strong);
   border-radius: 20px;
@@ -2014,6 +2082,11 @@ kbd {
   background: var(--surface-raised);
   box-shadow: 0 30px 88px rgba(16, 10, 6, 0.38), inset 0 0 0 3px color-mix(in srgb, var(--surface-muted) 48%, transparent);
   animation: panel-in 220ms ease both;
+}
+
+.tutorial-heading {
+  display: grid;
+  gap: 0.2rem;
 }
 
 .tutorial-panel h2 {
@@ -2024,10 +2097,178 @@ kbd {
   line-height: 1.2;
 }
 
+.tutorial-stage {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(260px, 0.85fr);
+  gap: 0.85rem;
+  align-items: stretch;
+}
+
+.tutorial-game-preview {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: 0.75rem;
+  min-height: 300px;
+  padding: 0.9rem;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at 76% 16%, color-mix(in srgb, var(--green) 16%, transparent), transparent 9rem),
+    linear-gradient(135deg, color-mix(in srgb, var(--surface) 72%, var(--walnut)), var(--surface));
+}
+
+.tutorial-preview-topbar,
+.tutorial-preview-status,
+.tutorial-preview-choice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.tutorial-preview-topbar {
+  color: var(--ink-soft);
+  font-size: 0.62rem;
+  font-weight: 950;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.tutorial-preview-topbar strong {
+  color: var(--ink);
+}
+
+.tutorial-preview-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 122px;
+  gap: 0.75rem;
+  align-items: stretch;
+}
+
+.tutorial-preview-board {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.38rem;
+  aspect-ratio: 1;
+  width: 100%;
+  min-width: 0;
+  padding: 0.55rem;
+  border: 7px solid color-mix(in srgb, var(--walnut-dark) 70%, black);
+  border-radius: 18px;
+  background:
+    linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px),
+    linear-gradient(135deg, var(--walnut), var(--walnut-dark));
+  background-size: 28px 28px, 28px 28px, auto;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.16), 0 18px 28px rgba(0,0,0,0.18);
+}
+
+.tutorial-preview-cell {
+  position: relative;
+  min-width: 0;
+  border-radius: 10px;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,0.04), rgba(0,0,0,0.08)),
+    color-mix(in srgb, var(--walnut-dark) 74%, var(--walnut));
+  box-shadow: inset 0 2px 5px rgba(22, 10, 4, 0.22);
+}
+
+.tutorial-preview-cell::after {
+  content: "";
+  position: absolute;
+  inset: 10%;
+  border-radius: inherit;
+  opacity: 0;
+  transform: scale(0.92);
+  background: var(--preview-color, transparent);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.2), 0 8px 16px rgba(0,0,0,0.18);
+}
+
+.tutorial-preview-cell.red-tile { --preview-color: var(--burgundy); }
+.tutorial-preview-cell.blue-tile { --preview-color: var(--blue); }
+.tutorial-preview-cell.green-tile { --preview-color: var(--green); }
+
+.tutorial-preview-cell.red-tile::after,
+.tutorial-preview-cell.blue-tile::after,
+.tutorial-preview-cell.green-tile::after {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.tutorial-preview-cell.placing::after {
+  animation: tutorial-place 1.7s ease-in-out infinite;
+}
+
+.tutorial-preview-cell.scoring::after {
+  animation: tutorial-score 1.45s ease-in-out infinite;
+}
+
+.tutorial-preview-cell.clearing::after {
+  animation: tutorial-clear 1.65s ease-in-out infinite;
+}
+
+.tutorial-preview-side {
+  display: grid;
+  align-content: space-between;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.tutorial-preview-status,
+.tutorial-preview-choice,
+.tutorial-preview-score {
+  min-height: 58px;
+  padding: 0.65rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  color: var(--ink);
+  background: color-mix(in srgb, var(--surface-raised) 72%, transparent);
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.tutorial-preview-status::before {
+  content: "";
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: var(--green-light);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--green-light) 15%, transparent);
+}
+
+.tutorial-game-preview.turn .tutorial-preview-status {
+  border-color: color-mix(in srgb, var(--green-light) 46%, var(--line));
+  animation: tutorial-turn 1.5s ease-in-out infinite;
+}
+
+.tutorial-preview-choice i {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: var(--burgundy);
+}
+
+.tutorial-preview-score {
+  display: grid;
+  place-items: center;
+  color: var(--ink-soft);
+}
+
+.tutorial-preview-score strong {
+  color: var(--burgundy);
+  font-size: 1.65rem;
+}
+
+.tutorial-game-preview.win .tutorial-preview-score strong {
+  animation: tutorial-score-pop 1.65s ease-in-out infinite;
+}
+
 .tutorial-card {
   display: grid;
   gap: 0.35rem;
-  min-height: 155px;
+  align-content: start;
+  min-height: 100%;
   padding: 1rem;
   border: 1px solid var(--line);
   border-radius: 14px;
@@ -2092,6 +2333,35 @@ kbd {
 
 .tutorial-note {
   margin: 0.85rem 0 0;
+}
+
+@keyframes tutorial-place {
+  0%, 100% { opacity: 0.55; transform: translateY(-10px) scale(0.82); }
+  45%, 78% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes tutorial-score {
+  0%, 100% { filter: brightness(1); transform: scale(1); }
+  48% {
+    filter: brightness(1.4);
+    transform: scale(1.05);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.28), 0 0 18px rgba(255, 235, 184, 0.48);
+  }
+}
+
+@keyframes tutorial-clear {
+  0%, 64% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0.18; transform: scale(0.72); }
+}
+
+@keyframes tutorial-turn {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--green-light) 0%, transparent); }
+  46% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--green-light) 16%, transparent); }
+}
+
+@keyframes tutorial-score-pop {
+  0%, 100% { transform: scale(1); }
+  45% { transform: scale(1.16); }
 }
 
 @keyframes tile-place {
@@ -2325,6 +2595,25 @@ kbd {
 
   .game-board-frame {
     padding: clamp(14px, 5vw, 28px);
+  }
+
+  .tutorial-panel {
+    width: min(100% - 1.25rem, 560px);
+    max-height: calc(100vh - 1.25rem);
+    overflow-y: auto;
+  }
+
+  .tutorial-stage,
+  .tutorial-preview-body {
+    grid-template-columns: 1fr;
+  }
+
+  .tutorial-game-preview {
+    min-height: 0;
+  }
+
+  .tutorial-preview-side {
+    grid-template-columns: repeat(3, 1fr);
   }
 }
 
@@ -2855,6 +3144,15 @@ kbd {
   box-shadow: var(--app-shadow);
 }
 
+.app-content-shell .tier-guide-card {
+  border-color: var(--app-line-strong);
+  color: var(--app-ink);
+  background:
+    radial-gradient(circle at 96% 8%, color-mix(in srgb, var(--green-light) 8%, transparent), transparent 10rem),
+    var(--app-panel);
+  box-shadow: var(--app-shadow);
+}
+
 .app-content-shell .online-field span,
 .app-content-shell fieldset legend,
 .app-content-shell .online-message,
@@ -2896,10 +3194,15 @@ kbd {
 
 .app-content-shell .profile-stats span,
 .app-content-shell .match-history p,
+.app-content-shell .tier-guide-item,
 .app-content-shell .leaderboard-row,
 .app-content-shell .waiting-room {
   border-color: var(--app-line);
   background: var(--app-panel-muted);
+}
+
+.app-content-shell .tier-guide-item small {
+  color: var(--app-ink-soft);
 }
 
 .app-content-shell .leaderboard-row > strong {
@@ -3331,5 +3634,18 @@ kbd {
     position: sticky;
     bottom: 0.5rem;
     z-index: 20;
+  }
+
+  .tutorial-panel {
+    padding: 0.9rem;
+  }
+
+  .tutorial-preview-side,
+  .tutorial-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .tier-guide-list {
+    grid-template-columns: 1fr;
   }
 }

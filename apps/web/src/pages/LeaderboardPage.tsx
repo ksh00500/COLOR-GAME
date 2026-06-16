@@ -4,6 +4,18 @@ import { AppSidebar } from "../components/AppSidebar";
 import { RankBadge } from "../components/RankBadge";
 import { SettingsPanel } from "../components/SettingsPanel";
 
+const tierGuide = [
+  { label: "시작", rating: 1000, description: "색이 없는 빈 팔레트" },
+  { label: "레드", rating: 1050, description: "첫 색을 채운 티어" },
+  { label: "오렌지", rating: 1125, description: "두 번째 색상" },
+  { label: "옐로", rating: 1200, description: "세 번째 색상" },
+  { label: "그린", rating: 1300, description: "네 번째 색상" },
+  { label: "블루", rating: 1400, description: "다섯 번째 색상" },
+  { label: "네이비", rating: 1500, description: "여섯 번째 색상" },
+  { label: "보라", rating: 1600, description: "일곱 색 완성" },
+  { label: "무지개", rating: 1600, leaderboardRank: 1, description: "보라 완성 + 상위 50명" },
+] as const;
+
 export function LeaderboardPage() {
   const [players, setPlayers] = useState<PublicProfile[]>([]);
   const [message, setMessage] = useState<string | null>(null);
@@ -22,9 +34,29 @@ export function LeaderboardPage() {
       <section className="online-shell account-shell app-content-shell" aria-labelledby="leaderboard-title">
         <div className="online-copy">
           <p className="eyebrow">RANKED LADDER</p>
-          <h1 id="leaderboard-title">팔레트는 경쟁 게임 결과로 채워집니다.</h1>
-          <p>상위 50명의 레이팅, 전적, 승률을 표시합니다. 보라 팔레트를 완성한 top 50 플레이어는 무지개 팔레트를 얻습니다.</p>
+          <h1 id="leaderboard-title">팔레트 티어와 순위를 확인하세요.</h1>
+          <p>경쟁 게임 결과로 팔레트가 채워집니다. 보라 팔레트를 완성한 상위 50명은 무지개 팔레트를 얻습니다.</p>
         </div>
+
+        <section className="tier-guide-card" aria-label="팔레트 티어 구성">
+          <div className="tier-guide-heading">
+            <p className="eyebrow">PALETTE TIERS</p>
+            <strong>티어 순서</strong>
+          </div>
+          <div className="tier-guide-list">
+            {tierGuide.map((tier, index) => (
+              <article className="tier-guide-item" key={tier.label}>
+                <span>{index + 1}</span>
+                <RankBadge
+                  rating={tier.rating}
+                  leaderboardRank={"leaderboardRank" in tier ? tier.leaderboardRank : null}
+                  compact
+                />
+                <small>{tier.description}</small>
+              </article>
+            ))}
+          </div>
+        </section>
 
         <div className="online-card leaderboard-card">
           {message !== null && <p className="online-message">{message}</p>}
