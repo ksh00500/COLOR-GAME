@@ -28,9 +28,23 @@
   --shadow-soft: 0 18px 55px rgba(73, 48, 28, 0.1);
   --shadow-card: 0 12px 30px rgba(54, 34, 20, 0.12);
   --duration: 180ms;
+  --app-page: #f2eadf;
+  --app-page-deep: #dfd0bd;
+  --app-ink: #2f2a24;
+  --app-ink-soft: rgba(47, 42, 36, 0.66);
+  --app-line: rgba(79, 61, 42, 0.16);
+  --app-line-strong: rgba(79, 61, 42, 0.28);
+  --app-panel: rgba(255, 250, 241, 0.66);
+  --app-panel-strong: rgba(255, 250, 241, 0.86);
+  --app-panel-muted: rgba(79, 61, 42, 0.06);
+  --app-sidebar: rgba(248, 240, 229, 0.92);
+  --app-sidebar-hover: rgba(111, 75, 50, 0.08);
+  --app-inverted: #fff8ee;
+  --app-shadow: 0 18px 48px rgba(73, 48, 28, 0.12);
 }
 
 :root[data-theme="dark"] {
+  color-scheme: dark;
   color: #ece5d9;
   background: #191a1b;
   --page: #191a1b;
@@ -55,6 +69,23 @@
   --bronze: #a57c4d;
   --shadow-soft: 0 24px 70px rgba(0, 0, 0, 0.28);
   --shadow-card: 0 16px 40px rgba(0, 0, 0, 0.24);
+  --app-page: #171716;
+  --app-page-deep: #24221f;
+  --app-ink: #eee8dd;
+  --app-ink-soft: rgba(245, 236, 222, 0.68);
+  --app-line: rgba(255, 245, 225, 0.09);
+  --app-line-strong: rgba(255, 245, 225, 0.16);
+  --app-panel: rgba(255, 255, 255, 0.045);
+  --app-panel-strong: rgba(255, 255, 255, 0.072);
+  --app-panel-muted: rgba(0, 0, 0, 0.18);
+  --app-sidebar: rgba(26, 25, 23, 0.94);
+  --app-sidebar-hover: rgba(255, 255, 255, 0.07);
+  --app-inverted: #fff8ee;
+  --app-shadow: 0 22px 58px rgba(0, 0, 0, 0.3);
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
 }
 
 :root[data-palette="colorblind"] {
@@ -323,16 +354,6 @@ p {
 .hero-board .tile-a { background: var(--burgundy); }
 .hero-board .tile-b { background: var(--navy); }
 .hero-board .tile-c { background: var(--green); }
-
-.hero-line {
-  position: absolute;
-  top: 33%;
-  left: 22%;
-  width: 48%;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, #fff5dd, transparent);
-  box-shadow: 0 0 18px rgba(255, 241, 208, 0.9);
-}
 
 .mode-section {
   padding: 5rem max(1.5rem, calc((100% - 1260px) / 2));
@@ -605,6 +626,84 @@ p {
   font-size: 1.15rem;
 }
 
+.account-title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.account-title-row h2 {
+  margin: 0;
+}
+
+.rank-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: fit-content;
+  padding: 0.38rem 0.55rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--ink);
+  background: color-mix(in srgb, var(--surface-raised) 76%, transparent);
+}
+
+.rank-badge.compact {
+  padding: 0.25rem 0.38rem;
+  gap: 0.35rem;
+}
+
+.rank-yut {
+  display: inline-flex;
+  align-items: end;
+  gap: 3px;
+}
+
+.rank-yut i {
+  display: block;
+  width: 6px;
+  height: 24px;
+  border: 1px solid color-mix(in srgb, var(--walnut-dark) 32%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface-muted) 82%, var(--walnut));
+  transform: rotate(-9deg);
+}
+
+.rank-yut i.flipped {
+  background: linear-gradient(180deg, var(--bronze), var(--burgundy));
+  box-shadow: inset 0 2px 1px rgba(255,255,255,0.18), 0 3px 7px rgba(0,0,0,0.16);
+  transform: rotate(8deg) translateY(-2px);
+}
+
+.rank-copy {
+  display: grid;
+  gap: 0;
+  line-height: 1;
+}
+
+.rank-copy strong {
+  color: var(--burgundy);
+  font-size: 0.9rem;
+  font-weight: 950;
+}
+
+.rank-copy small {
+  color: var(--ink-soft);
+  font-size: 0.48rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.rank-badge.compact .rank-yut i {
+  width: 5px;
+  height: 19px;
+}
+
+.rank-badge.compact .rank-copy strong {
+  font-size: 0.78rem;
+}
+
 .profile-stats {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -656,11 +755,11 @@ p {
 }
 
 .leaderboard-row {
-  grid-template-columns: 2.4rem 1fr auto;
+  grid-template-columns: 2.4rem auto 1fr auto;
   align-items: center;
 }
 
-.leaderboard-row span {
+.leaderboard-rank {
   display: grid;
   width: 2rem;
   height: 2rem;
@@ -671,13 +770,13 @@ p {
   font-family: Georgia, serif;
 }
 
-.leaderboard-row strong {
+.leaderboard-row > strong {
   color: var(--green);
   font-size: 1.05rem;
 }
 
 .leaderboard-row small {
-  grid-column: 2 / -1;
+  grid-column: 3 / -1;
 }
 
 .matchmaking-card {
@@ -2125,11 +2224,11 @@ kbd {
   display: grid;
   grid-template-columns: 214px minmax(0, 1fr);
   min-height: 100vh;
-  color: #eee8dd;
+  color: var(--app-ink);
   background:
-    radial-gradient(circle at 18% 18%, rgba(166, 120, 80, 0.16), transparent 30rem),
-    radial-gradient(circle at 80% 42%, rgba(40, 83, 67, 0.17), transparent 25rem),
-    linear-gradient(135deg, #171716, #24221f);
+    radial-gradient(circle at 18% 18%, color-mix(in srgb, var(--bronze) 14%, transparent), transparent 30rem),
+    radial-gradient(circle at 80% 42%, color-mix(in srgb, var(--green) 13%, transparent), transparent 25rem),
+    linear-gradient(135deg, var(--app-page), var(--app-page-deep));
 }
 
 .app-sidebar {
@@ -2139,9 +2238,9 @@ kbd {
   height: 100vh;
   flex-direction: column;
   padding: 1.1rem 0.65rem;
-  border-right: 1px solid rgba(255, 245, 225, 0.08);
-  background: rgba(26, 25, 23, 0.94);
-  box-shadow: 12px 0 36px rgba(0, 0, 0, 0.24);
+  border-right: 1px solid var(--app-line);
+  background: var(--app-sidebar);
+  box-shadow: 10px 0 30px color-mix(in srgb, var(--app-page-deep) 28%, transparent);
 }
 
 .sidebar-brand {
@@ -2152,19 +2251,19 @@ kbd {
   padding: 0 0.55rem;
   border: 0;
   border-radius: 12px;
-  color: #f3ecdf;
+  color: var(--app-ink);
   background: transparent;
   cursor: pointer;
 }
 
 .app-sidebar .brand-symbol {
-  border-color: rgba(255, 245, 225, 0.14);
-  background: #2b2926;
+  border-color: var(--app-line-strong);
+  background: var(--app-panel-strong);
 }
 
 .app-sidebar .brand-copy small,
 .app-sidebar .brand-copy strong {
-  color: #f3ecdf;
+  color: var(--app-ink);
 }
 
 .sidebar-nav {
@@ -2182,7 +2281,7 @@ kbd {
   padding: 0 0.85rem;
   border: 0;
   border-radius: 10px;
-  color: rgba(245, 236, 222, 0.82);
+  color: var(--app-ink-soft);
   background: transparent;
   font-size: 1rem;
   font-weight: 800;
@@ -2191,8 +2290,8 @@ kbd {
 
 .sidebar-nav button:hover,
 .sidebar-bottom button:hover {
-  color: #fff8eb;
-  background: rgba(255, 255, 255, 0.07);
+  color: var(--app-ink);
+  background: var(--app-sidebar-hover);
 }
 
 .sidebar-bottom {
@@ -2205,25 +2304,28 @@ kbd {
   display: grid;
   grid-template-columns: minmax(410px, 0.95fr) minmax(360px, 0.75fr);
   align-items: center;
-  gap: clamp(2rem, 5vw, 5rem);
+  gap: clamp(2rem, 4.5vw, 4.5rem);
   min-height: 100vh;
   padding: clamp(1.25rem, 3.5vh, 3rem) clamp(1.5rem, 5vw, 5rem);
 }
 
 .home-board-card {
   justify-self: center;
-  width: min(44vw, 660px);
+  width: min(40vw, 620px);
 }
 
 .home-stage .hero-board {
   width: 100%;
-  gap: 0;
-  padding: 0;
-  overflow: hidden;
-  border: 0;
-  border-radius: 10px;
-  background: #7b9b58;
-  box-shadow: 0 28px 70px rgba(0, 0, 0, 0.42);
+  gap: clamp(6px, 0.9vw, 10px);
+  padding: clamp(16px, 2.1vw, 28px);
+  overflow: visible;
+  border: clamp(8px, 1.2vw, 12px) solid var(--walnut-dark);
+  border-radius: clamp(22px, 3vw, 32px);
+  background:
+    repeating-linear-gradient(93deg, rgba(255,255,255,0.035) 0 1px, transparent 1px 28px),
+    repeating-linear-gradient(2deg, rgba(0,0,0,0.04) 0 1px, transparent 1px 38px),
+    linear-gradient(135deg, var(--walnut-light), var(--walnut));
+  box-shadow: var(--app-shadow), inset 0 0 0 2px rgba(255,255,255,0.08), inset 0 0 22px rgba(23,12,6,0.2);
   transform: none;
 }
 
@@ -2232,23 +2334,19 @@ kbd {
 }
 
 .home-stage .hero-board i {
-  --home-square: #ecefd2;
-  border: 0;
-  border-radius: 0;
-  background: var(--home-square);
-  box-shadow: none;
-}
-
-.home-stage .hero-board i:nth-child(even) {
-  --home-square: #789a56;
+  position: relative;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 241, 218, 0.13);
+  border-radius: clamp(8px, 1.2vw, 13px);
+  background: rgba(39, 22, 12, 0.27);
+  box-shadow: inset 0 3px 7px rgba(28, 13, 6, 0.28), 0 1px 0 rgba(255,255,255,0.04);
 }
 
 .home-stage .hero-board .tile-a,
 .home-stage .hero-board .tile-b,
 .home-stage .hero-board .tile-c {
-  position: relative;
-  background: var(--home-square);
-  box-shadow: none;
+  background: rgba(39, 22, 12, 0.27);
 }
 
 .home-stage .hero-board .tile-a::after,
@@ -2256,8 +2354,8 @@ kbd {
 .home-stage .hero-board .tile-c::after {
   content: "";
   position: absolute;
-  inset: 13%;
-  border-radius: 10px;
+  inset: 0;
+  border-radius: inherit;
   box-shadow: inset 0 3px 2px rgba(255,255,255,0.16), 0 6px 16px rgba(0,0,0,0.25);
 }
 
@@ -2279,18 +2377,18 @@ kbd {
 
 .home-copy h1 {
   margin-bottom: 1.2rem;
-  color: #f8f1e6;
+  color: var(--app-ink);
   font-family: Inter, Pretendard, "Noto Sans KR", system-ui, sans-serif;
-  font-size: clamp(3rem, 5vw, 5.6rem);
+  font-size: clamp(3rem, 4.8vw, 5.3rem);
   font-weight: 950;
-  line-height: 1.05;
+  line-height: 1.04;
   letter-spacing: -0.07em;
   word-break: keep-all;
 }
 
 .home-copy > p:not(.eyebrow) {
   max-width: 470px;
-  color: rgba(248, 241, 230, 0.72);
+  color: var(--app-ink-soft);
   font-size: 1.15rem;
   font-weight: 700;
   line-height: 1.65;
@@ -2316,16 +2414,16 @@ kbd {
 
 .home-primary {
   border: 0;
-  color: #fff8ee;
+  color: var(--app-inverted);
   background: linear-gradient(180deg, var(--green-light), var(--green));
   box-shadow: 0 6px 0 color-mix(in srgb, var(--green) 70%, black), 0 16px 34px rgba(0,0,0,0.24);
 }
 
 .home-secondary {
-  border: 1px solid rgba(255, 245, 225, 0.12);
-  color: #f6ecdd;
-  background: linear-gradient(180deg, #33312d, #252421);
-  box-shadow: 0 5px 0 rgba(0,0,0,0.28);
+  border: 1px solid var(--app-line-strong);
+  color: var(--app-ink);
+  background: var(--app-panel);
+  box-shadow: 0 5px 0 color-mix(in srgb, var(--walnut-dark) 18%, transparent);
 }
 
 .quick-config {
@@ -2335,15 +2433,15 @@ kbd {
   gap: 0.35rem;
   margin-top: 0.6rem;
   padding: 0.35rem;
-  border: 1px solid rgba(255, 245, 225, 0.1);
+  border: 1px solid var(--app-line);
   border-radius: 10px;
-  background: rgba(0, 0, 0, 0.16);
+  background: var(--app-panel-muted);
 }
 
 .quick-config span {
   min-width: 54px;
   padding-left: 0.55rem;
-  color: rgba(248, 241, 230, 0.58);
+  color: var(--app-ink-soft);
   font-size: 0.72rem;
   font-weight: 900;
   letter-spacing: 0.08em;
@@ -2354,7 +2452,7 @@ kbd {
   min-height: 34px;
   border: 0;
   border-radius: 7px;
-  color: rgba(248, 241, 230, 0.72);
+  color: var(--app-ink-soft);
   background: transparent;
   font-size: 0.78rem;
   font-weight: 850;
@@ -2362,8 +2460,8 @@ kbd {
 }
 
 .quick-config button.active {
-  color: #fff8ee;
-  background: rgba(255, 255, 255, 0.1);
+  color: var(--app-ink);
+  background: var(--app-panel-strong);
 }
 
 .home-mode-strip {
@@ -2379,22 +2477,22 @@ kbd {
   gap: 0.2rem;
   min-height: 78px;
   padding: 0.75rem;
-  border: 1px solid rgba(255, 245, 225, 0.1);
+  border: 1px solid var(--app-line);
   border-radius: 12px;
-  color: #f6ecdd;
-  background: rgba(255, 255, 255, 0.045);
+  color: var(--app-ink);
+  background: var(--app-panel);
   text-align: left;
   cursor: pointer;
 }
 
 .home-mode:hover {
   transform: translateY(-2px);
-  border-color: rgba(255, 245, 225, 0.22);
-  background: rgba(255, 255, 255, 0.075);
+  border-color: var(--app-line-strong);
+  background: var(--app-panel-strong);
 }
 
 .home-mode small {
-  color: rgba(248, 241, 230, 0.5);
+  color: var(--app-ink-soft);
   font-size: 0.55rem;
   font-weight: 900;
   letter-spacing: 0.12em;
@@ -2405,7 +2503,7 @@ kbd {
 }
 
 .home-mode span {
-  color: rgba(248, 241, 230, 0.62);
+  color: var(--app-ink-soft);
   font-size: 0.75rem;
   font-weight: 800;
 }
@@ -2419,9 +2517,9 @@ kbd {
 .online-page.app-frame {
   min-height: 100vh;
   background:
-    radial-gradient(circle at 78% 12%, rgba(166, 120, 80, 0.14), transparent 28rem),
-    radial-gradient(circle at 32% 34%, rgba(125, 41, 59, 0.1), transparent 24rem),
-    linear-gradient(135deg, #171716, #24221f);
+    radial-gradient(circle at 78% 12%, color-mix(in srgb, var(--bronze) 13%, transparent), transparent 28rem),
+    radial-gradient(circle at 32% 34%, color-mix(in srgb, var(--burgundy) 9%, transparent), transparent 24rem),
+    linear-gradient(135deg, var(--app-page), var(--app-page-deep));
 }
 
 .app-content-shell {
@@ -2432,7 +2530,7 @@ kbd {
 }
 
 .app-content-shell .online-copy h1 {
-  color: #f8f1e6;
+  color: var(--app-ink);
   font-family: Inter, Pretendard, "Noto Sans KR", system-ui, sans-serif;
   font-size: clamp(2.8rem, 5.4vw, 5.2rem);
   font-weight: 950;
@@ -2441,16 +2539,16 @@ kbd {
 }
 
 .app-content-shell .online-copy p:last-child {
-  color: rgba(248, 241, 230, 0.68);
+  color: var(--app-ink-soft);
   font-size: 1rem;
   font-weight: 650;
 }
 
 .app-content-shell .online-card {
-  border-color: rgba(255, 245, 225, 0.12);
-  color: #f8f1e6;
-  background: rgba(255, 255, 255, 0.06);
-  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.28);
+  border-color: var(--app-line-strong);
+  color: var(--app-ink);
+  background: var(--app-panel);
+  box-shadow: var(--app-shadow);
 }
 
 .app-content-shell .online-field span,
@@ -2458,49 +2556,49 @@ kbd {
 .app-content-shell .online-message,
 .app-content-shell .match-history small,
 .app-content-shell .leaderboard-row small {
-  color: rgba(248, 241, 230, 0.62);
+  color: var(--app-ink-soft);
 }
 
 .app-content-shell .online-field input,
 .app-content-shell .join-row input {
-  border-color: rgba(255, 245, 225, 0.12);
-  color: #f8f1e6;
-  background: rgba(0, 0, 0, 0.22);
+  border-color: var(--app-line);
+  color: var(--app-ink);
+  background: var(--app-panel-strong);
 }
 
 .app-content-shell .segmented-control,
 .app-content-shell .choice-row {
-  border-color: rgba(255, 245, 225, 0.1);
-  background: rgba(0, 0, 0, 0.18);
+  border-color: var(--app-line);
+  background: var(--app-panel-muted);
 }
 
 .app-content-shell .segmented-control button,
 .app-content-shell .choice-row button {
-  color: rgba(248, 241, 230, 0.62);
+  color: var(--app-ink-soft);
 }
 
 .app-content-shell .segmented-control button.active,
 .app-content-shell .choice-row button.active {
-  color: #fff8ee;
-  background: rgba(255, 255, 255, 0.08);
+  color: var(--app-ink);
+  background: var(--app-panel-strong);
   box-shadow: none;
 }
 
 .app-content-shell .account-summary h2,
 .app-content-shell .account-summary h3,
 .app-content-shell .matchmaking-card h2 {
-  color: #f8f1e6;
+  color: var(--app-ink);
 }
 
 .app-content-shell .profile-stats span,
 .app-content-shell .match-history p,
 .app-content-shell .leaderboard-row,
 .app-content-shell .waiting-room {
-  border-color: rgba(255, 245, 225, 0.1);
-  background: rgba(0, 0, 0, 0.16);
+  border-color: var(--app-line);
+  background: var(--app-panel-muted);
 }
 
-.app-content-shell .leaderboard-row strong {
+.app-content-shell .leaderboard-row > strong {
   color: var(--green-light);
 }
 
@@ -2528,13 +2626,13 @@ kbd {
 
 .game-topbar .match-label span,
 .game-topbar .match-label strong {
-  color: rgba(248, 241, 230, 0.72);
+  color: var(--app-ink-soft);
 }
 
 .game-topbar .icon-button {
-  border-color: rgba(255, 245, 225, 0.12);
-  color: rgba(248, 241, 230, 0.8);
-  background: rgba(255, 255, 255, 0.045);
+  border-color: var(--app-line);
+  color: var(--app-ink-soft);
+  background: var(--app-panel);
 }
 
 .game-page .game-layout {
@@ -2557,7 +2655,7 @@ kbd {
 }
 
 .game-page .board-caption {
-  color: rgba(248, 241, 230, 0.58);
+  color: var(--app-ink-soft);
 }
 
 .game-page .game-board-frame {
@@ -2584,10 +2682,10 @@ kbd {
   gap: 0.55rem 0.75rem;
   min-height: 0;
   padding: 0.8rem;
-  border-color: rgba(255, 245, 225, 0.1);
+  border-color: var(--app-line);
   border-radius: 12px;
-  color: #f8f1e6;
-  background: rgba(255, 255, 255, 0.055);
+  color: var(--app-ink);
+  background: var(--app-panel);
   box-shadow: none;
 }
 
@@ -2600,8 +2698,8 @@ kbd {
 .game-control-panel .player-card-status {
   grid-column: 1 / -1;
   padding-bottom: 0.48rem;
-  border-bottom-color: rgba(255, 245, 225, 0.08);
-  color: rgba(248, 241, 230, 0.55);
+  border-bottom-color: var(--app-line);
+  color: var(--app-ink-soft);
 }
 
 .game-control-panel .player-avatar {
@@ -2610,7 +2708,7 @@ kbd {
   width: 52px;
   height: 52px;
   margin: 0;
-  background: rgba(0, 0, 0, 0.16);
+  background: var(--app-panel-muted);
 }
 
 .game-control-panel .player-avatar i {
@@ -2633,14 +2731,14 @@ kbd {
 }
 
 .game-control-panel .player-identity strong {
-  color: #f8f1e6;
+  color: var(--app-ink);
   font-family: Inter, Pretendard, "Noto Sans KR", system-ui, sans-serif;
   font-size: 0.98rem;
   font-weight: 900;
 }
 
 .game-control-panel .player-identity span {
-  color: rgba(248, 241, 230, 0.55);
+  color: var(--app-ink-soft);
 }
 
 .game-control-panel .player-meters {
@@ -2657,7 +2755,7 @@ kbd {
 .game-control-panel .score-ring::after,
 .game-control-panel .timer-ring::after {
   inset: 5px;
-  background: #20201f;
+  background: var(--app-page);
 }
 
 .game-control-panel .score-ring strong {
@@ -2679,24 +2777,24 @@ kbd {
   min-height: 0;
   margin: 0;
   padding: 0.85rem;
-  border-color: rgba(255, 245, 225, 0.1);
-  color: #f8f1e6;
-  background: rgba(0, 0, 0, 0.16);
+  border-color: var(--app-line);
+  color: var(--app-ink);
+  background: var(--app-panel-muted);
   box-shadow: none;
 }
 
 .game-control-panel .turn-banner small {
   grid-column: 2;
   justify-self: start;
-  color: rgba(248, 241, 230, 0.55);
+  color: var(--app-ink-soft);
 }
 
 .game-control-panel .color-picker {
   display: grid;
   gap: 0.55rem;
   padding: 0.75rem;
-  border-color: rgba(255, 245, 225, 0.1);
-  background: rgba(255, 255, 255, 0.055);
+  border-color: var(--app-line);
+  background: var(--app-panel);
   box-shadow: none;
 }
 
@@ -2707,7 +2805,7 @@ kbd {
   align-items: baseline;
   justify-content: space-between;
   padding: 0;
-  color: rgba(248, 241, 230, 0.68);
+  color: var(--app-ink-soft);
 }
 
 .game-control-panel .color-options {
@@ -2717,8 +2815,8 @@ kbd {
 .game-control-panel .color-option {
   grid-template-columns: 1fr auto;
   min-height: 44px;
-  border-color: rgba(255, 245, 225, 0.1);
-  background: rgba(0, 0, 0, 0.14);
+  border-color: var(--app-line);
+  background: var(--app-panel-muted);
 }
 
 .game-control-panel .color-name {
@@ -2727,9 +2825,9 @@ kbd {
 
 .game-control-panel .resign-button {
   min-height: 46px;
-  border-color: rgba(255, 245, 225, 0.12);
-  color: rgba(248, 241, 230, 0.72);
-  background: rgba(0, 0, 0, 0.12);
+  border-color: var(--app-line);
+  color: var(--app-ink-soft);
+  background: var(--app-panel);
 }
 
 .game-control-panel .score-delta {

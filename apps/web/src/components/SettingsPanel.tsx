@@ -80,7 +80,10 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
             <input
               type="checkbox"
               checked={settings.colorBlindPalette}
-              onChange={(event) => updateSettings({ colorBlindPalette: event.target.checked })}
+              onChange={(event) => updateSettings({
+                colorBlindPalette: event.target.checked,
+                showShapes: event.target.checked ? settings.showShapes : false,
+              })}
             />
           </label>
           <label className="switch-row">

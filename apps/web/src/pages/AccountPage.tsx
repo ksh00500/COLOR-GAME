@@ -9,6 +9,7 @@ import {
   type MatchHistoryItem,
 } from "../api";
 import { AppSidebar } from "../components/AppSidebar";
+import { RankBadge } from "../components/RankBadge";
 import { SettingsPanel } from "../components/SettingsPanel";
 
 type AuthMode = "login" | "register";
@@ -125,7 +126,10 @@ export function AccountPage() {
           ) : (
             <section className="account-summary">
               <p className="eyebrow">SIGNED IN</p>
-              <h2>{account.displayName}</h2>
+              <div className="account-title-row">
+                <h2>{account.displayName}</h2>
+                <RankBadge rating={account.rating} />
+              </div>
               <div className="profile-stats">
                 <span><small>레이팅</small><strong>{account.rating}</strong></span>
                 <span><small>경기</small><strong>{account.gamesPlayed}</strong></span>

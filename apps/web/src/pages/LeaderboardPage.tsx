@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { fetchLeaderboard, type PublicProfile } from "../api";
 import { AppSidebar } from "../components/AppSidebar";
+import { RankBadge } from "../components/RankBadge";
 import { SettingsPanel } from "../components/SettingsPanel";
 
 export function LeaderboardPage() {
@@ -32,7 +33,8 @@ export function LeaderboardPage() {
             const winRate = rankedGames === 0 ? 0 : Math.round((player.rankedWins / rankedGames) * 100);
             return (
               <article className="leaderboard-row" key={player.id}>
-                <span>{index + 1}</span>
+                <span className="leaderboard-rank">{index + 1}</span>
+                <RankBadge rating={player.rating} compact />
                 <b>{player.displayName}</b>
                 <strong>{player.rating}</strong>
                 <small>{player.rankedWins}승 {player.rankedLosses}패 · {winRate}%</small>

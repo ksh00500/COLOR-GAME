@@ -75,7 +75,6 @@ export function LobbyPage() {
             {Array.from({ length: 25 }, (_, index) => (
               <i key={index} className={[6, 7, 8].includes(index) ? "tile-a" : [12, 17].includes(index) ? "tile-b" : index === 18 ? "tile-c" : ""} />
             ))}
-            <span className="hero-line" />
           </div>
         </div>
 
