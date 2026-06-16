@@ -1,5 +1,4 @@
 import { FormEvent, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import {
   clearAuthToken,
   fetchMatches,
@@ -9,7 +8,8 @@ import {
   type Account,
   type MatchHistoryItem,
 } from "../api";
-import { BrandMark } from "../components/BrandMark";
+import { AppSidebar } from "../components/AppSidebar";
+import { SettingsPanel } from "../components/SettingsPanel";
 
 type AuthMode = "login" | "register";
 
@@ -19,7 +19,6 @@ const matchOutcome = (match: MatchHistoryItem, accountId: string): string => {
 };
 
 export function AccountPage() {
-  const navigate = useNavigate();
   const [mode, setMode] = useState<AuthMode>("login");
   const [account, setAccount] = useState<Account | null>(null);
   const [matches, setMatches] = useState<MatchHistoryItem[]>([]);
@@ -29,6 +28,7 @@ export function AccountPage() {
   const [avatarId, setAvatarId] = useState("orbit");
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   useEffect(() => {
     void fetchMe()
@@ -68,18 +68,10 @@ export function AccountPage() {
   };
 
   return (
-    <main className="online-page">
-      <header className="site-header">
-        <button className="brand-button" type="button" onClick={() => navigate("/")} aria-label="메인 화면으로">
-          <BrandMark />
-        </button>
-        <nav aria-label="계정 메뉴">
-          <button className="header-button" type="button" onClick={() => navigate("/leaderboard")}>리더보드</button>
-          <button className="header-button" type="button" onClick={() => navigate("/")}>로비</button>
-        </nav>
-      </header>
+    <main className="online-page app-frame">
+      <AppSidebar onSettings={() => setSettingsOpen(true)} />
 
-      <section className="online-shell account-shell" aria-labelledby="account-title">
+      <section className="online-shell account-shell app-content-shell" aria-labelledby="account-title">
         <div className="online-copy">
           <p className="eyebrow">PLAYER ACCOUNT</p>
           <h1 id="account-title">전적과 레이팅은 계정에 저장됩니다.</h1>
@@ -158,6 +150,7 @@ export function AccountPage() {
           )}
         </div>
       </section>
+      <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </main>
   );
 }

@@ -3,6 +3,7 @@ import type { TileColorId } from "@color-game/shared-types";
 interface ColorPickerProps {
   selected: TileColorId;
   disabled: boolean;
+  showShapes?: boolean;
   onSelect: (color: TileColorId) => void;
 }
 
@@ -12,7 +13,7 @@ const colorOptions: Array<{ id: TileColorId; name: string; shortcut: string; sha
   { id: "colorC", name: "딥그린", shortcut: "3", shape: "■" },
 ];
 
-export function ColorPicker({ selected, disabled, onSelect }: ColorPickerProps) {
+export function ColorPicker({ selected, disabled, showShapes = false, onSelect }: ColorPickerProps) {
   return (
     <section className="color-picker" aria-label="타일 색상 선택">
       <div className="picker-label">
@@ -29,7 +30,7 @@ export function ColorPicker({ selected, disabled, onSelect }: ColorPickerProps) 
             onClick={() => onSelect(option.id)}
             aria-pressed={selected === option.id}
           >
-            <span className="color-swatch" aria-hidden="true">{option.shape}</span>
+            <span className="color-swatch" aria-hidden="true">{showShapes ? option.shape : ""}</span>
             <span className="color-name">{option.name}</span>
             <kbd>{option.shortcut}</kbd>
           </button>
@@ -38,4 +39,3 @@ export function ColorPicker({ selected, disabled, onSelect }: ColorPickerProps) 
     </section>
   );
 }
-

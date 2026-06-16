@@ -110,6 +110,7 @@ export function GamePage() {
 
   const human = game.players[0];
   const ai = game.players[1];
+  const showColorShapes = settings.colorBlindPalette && settings.showShapes;
   const humanTurn = game.currentPlayerId === HUMAN_ID;
   const aiTurn = game.currentPlayerId === AI_ID;
   const canHumanPlay = game.status === "playing" && humanTurn && !isAnimating;
@@ -276,7 +277,7 @@ export function GamePage() {
               board={visualBoard ?? game.board}
               selectedColor={selectedColors[HUMAN_ID] ?? "colorA"}
               canPlay={canHumanPlay}
-              showShapes={settings.showShapes}
+              showShapes={showColorShapes}
               focusedIndex={focusedIndex}
               scoringCells={scoringCells}
               lastPlaced={lastPlaced}
@@ -305,6 +306,7 @@ export function GamePage() {
             <ColorPicker
               selected={selectedColors[HUMAN_ID] ?? "colorA"}
               disabled={!canHumanPlay}
+              showShapes={showColorShapes}
               onSelect={(color) => setSelectedColors((current) => ({ ...current, [HUMAN_ID]: color }))}
             />
 

@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { fetchLeaderboard, type PublicProfile } from "../api";
-import { BrandMark } from "../components/BrandMark";
+import { AppSidebar } from "../components/AppSidebar";
+import { SettingsPanel } from "../components/SettingsPanel";
 
 export function LeaderboardPage() {
-  const navigate = useNavigate();
   const [players, setPlayers] = useState<PublicProfile[]>([]);
   const [message, setMessage] = useState<string | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   useEffect(() => {
     void fetchLeaderboard()
@@ -15,18 +15,10 @@ export function LeaderboardPage() {
   }, []);
 
   return (
-    <main className="online-page">
-      <header className="site-header">
-        <button className="brand-button" type="button" onClick={() => navigate("/")} aria-label="메인 화면으로">
-          <BrandMark />
-        </button>
-        <nav aria-label="리더보드 메뉴">
-          <button className="header-button" type="button" onClick={() => navigate("/account")}>계정</button>
-          <button className="header-button" type="button" onClick={() => navigate("/")}>로비</button>
-        </nav>
-      </header>
+    <main className="online-page app-frame">
+      <AppSidebar onSettings={() => setSettingsOpen(true)} />
 
-      <section className="online-shell account-shell" aria-labelledby="leaderboard-title">
+      <section className="online-shell account-shell app-content-shell" aria-labelledby="leaderboard-title">
         <div className="online-copy">
           <p className="eyebrow">RANKED LADDER</p>
           <h1 id="leaderboard-title">레이팅은 경쟁 게임 결과로 갱신됩니다.</h1>
@@ -49,6 +41,7 @@ export function LeaderboardPage() {
           })}
         </div>
       </section>
+      <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </main>
   );
 }

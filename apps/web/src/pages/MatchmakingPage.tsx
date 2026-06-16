@@ -3,7 +3,8 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { io, type Socket } from "socket.io-client";
 import type { RoomSnapshot } from "@color-game/shared-types";
 import { getAuthToken } from "../api";
-import { BrandMark } from "../components/BrandMark";
+import { AppSidebar } from "../components/AppSidebar";
+import { SettingsPanel } from "../components/SettingsPanel";
 
 const socketUrl = import.meta.env.VITE_SOCKET_URL ?? "http://localhost:8080";
 const roomPlayerPrefix = "color-game-room-player:";
@@ -27,6 +28,7 @@ export function MatchmakingPage() {
   const socketRef = useRef<Socket | null>(null);
   const [status, setStatus] = useState("서버 연결 중");
   const [queued, setQueued] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const token = useMemo(() => getAuthToken(), []);
 
   useEffect(() => {
@@ -88,18 +90,10 @@ export function MatchmakingPage() {
   };
 
   return (
-    <main className="online-page">
-      <header className="site-header">
-        <button className="brand-button" type="button" onClick={() => navigate("/")} aria-label="메인 화면으로">
-          <BrandMark />
-        </button>
-        <nav aria-label="매칭 메뉴">
-          <button className="header-button" type="button" onClick={() => navigate("/account")}>계정</button>
-          <button className="header-button" type="button" onClick={() => navigate("/leaderboard")}>리더보드</button>
-        </nav>
-      </header>
+    <main className="online-page app-frame">
+      <AppSidebar onSettings={() => setSettingsOpen(true)} />
 
-      <section className="online-shell" aria-labelledby="matchmaking-title">
+      <section className="online-shell app-content-shell" aria-labelledby="matchmaking-title">
         <div className="online-copy">
           <p className="eyebrow">{mode === "ranked" ? "RANKED MATCH" : "CASUAL MATCH"}</p>
           <h1 id="matchmaking-title">{mode === "ranked" ? "레이팅이 걸린 경쟁 게임" : "가볍게 만나는 일반 게임"}</h1>
@@ -122,6 +116,7 @@ export function MatchmakingPage() {
           )}
         </div>
       </section>
+      <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </main>
   );
 }

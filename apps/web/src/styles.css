@@ -1459,6 +1459,7 @@ fieldset legend {
 .color-name {
   font-size: 0.68rem;
   font-weight: 800;
+  white-space: nowrap;
 }
 
 kbd {
@@ -2231,26 +2232,45 @@ kbd {
 }
 
 .home-stage .hero-board i {
+  --home-square: #ecefd2;
   border: 0;
   border-radius: 0;
-  background: #ecefd2;
+  background: var(--home-square);
   box-shadow: none;
 }
 
-.home-stage .hero-board i:nth-child(2n) {
-  background: #789a56;
-}
-
-.home-stage .hero-board i:nth-child(4n) {
-  background: #ecefd2;
+.home-stage .hero-board i:nth-child(even) {
+  --home-square: #789a56;
 }
 
 .home-stage .hero-board .tile-a,
 .home-stage .hero-board .tile-b,
 .home-stage .hero-board .tile-c {
-  margin: 13%;
+  position: relative;
+  background: var(--home-square);
+  box-shadow: none;
+}
+
+.home-stage .hero-board .tile-a::after,
+.home-stage .hero-board .tile-b::after,
+.home-stage .hero-board .tile-c::after {
+  content: "";
+  position: absolute;
+  inset: 13%;
   border-radius: 10px;
   box-shadow: inset 0 3px 2px rgba(255,255,255,0.16), 0 6px 16px rgba(0,0,0,0.25);
+}
+
+.home-stage .hero-board .tile-a::after {
+  background: linear-gradient(145deg, var(--burgundy-light), var(--burgundy));
+}
+
+.home-stage .hero-board .tile-b::after {
+  background: linear-gradient(145deg, var(--navy-light), var(--navy));
+}
+
+.home-stage .hero-board .tile-c::after {
+  background: linear-gradient(145deg, var(--green-light), var(--green));
 }
 
 .home-copy {
@@ -2394,6 +2414,94 @@ kbd {
   height: 100vh;
   min-height: 0;
   overflow: hidden;
+}
+
+.online-page.app-frame {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 78% 12%, rgba(166, 120, 80, 0.14), transparent 28rem),
+    radial-gradient(circle at 32% 34%, rgba(125, 41, 59, 0.1), transparent 24rem),
+    linear-gradient(135deg, #171716, #24221f);
+}
+
+.app-content-shell {
+  width: min(100% - 3rem, 1180px);
+  min-height: 100vh;
+  align-content: center;
+  padding-block: clamp(2rem, 6vh, 5rem);
+}
+
+.app-content-shell .online-copy h1 {
+  color: #f8f1e6;
+  font-family: Inter, Pretendard, "Noto Sans KR", system-ui, sans-serif;
+  font-size: clamp(2.8rem, 5.4vw, 5.2rem);
+  font-weight: 950;
+  line-height: 1.08;
+  letter-spacing: -0.07em;
+}
+
+.app-content-shell .online-copy p:last-child {
+  color: rgba(248, 241, 230, 0.68);
+  font-size: 1rem;
+  font-weight: 650;
+}
+
+.app-content-shell .online-card {
+  border-color: rgba(255, 245, 225, 0.12);
+  color: #f8f1e6;
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.28);
+}
+
+.app-content-shell .online-field span,
+.app-content-shell fieldset legend,
+.app-content-shell .online-message,
+.app-content-shell .match-history small,
+.app-content-shell .leaderboard-row small {
+  color: rgba(248, 241, 230, 0.62);
+}
+
+.app-content-shell .online-field input,
+.app-content-shell .join-row input {
+  border-color: rgba(255, 245, 225, 0.12);
+  color: #f8f1e6;
+  background: rgba(0, 0, 0, 0.22);
+}
+
+.app-content-shell .segmented-control,
+.app-content-shell .choice-row {
+  border-color: rgba(255, 245, 225, 0.1);
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.app-content-shell .segmented-control button,
+.app-content-shell .choice-row button {
+  color: rgba(248, 241, 230, 0.62);
+}
+
+.app-content-shell .segmented-control button.active,
+.app-content-shell .choice-row button.active {
+  color: #fff8ee;
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: none;
+}
+
+.app-content-shell .account-summary h2,
+.app-content-shell .account-summary h3,
+.app-content-shell .matchmaking-card h2 {
+  color: #f8f1e6;
+}
+
+.app-content-shell .profile-stats span,
+.app-content-shell .match-history p,
+.app-content-shell .leaderboard-row,
+.app-content-shell .waiting-room {
+  border-color: rgba(255, 245, 225, 0.1);
+  background: rgba(0, 0, 0, 0.16);
+}
+
+.app-content-shell .leaderboard-row strong {
+  color: var(--green-light);
 }
 
 .game-shell {
@@ -2607,9 +2715,14 @@ kbd {
 }
 
 .game-control-panel .color-option {
+  grid-template-columns: 1fr auto;
   min-height: 44px;
   border-color: rgba(255, 245, 225, 0.1);
   background: rgba(0, 0, 0, 0.14);
+}
+
+.game-control-panel .color-name {
+  display: none;
 }
 
 .game-control-panel .resign-button {

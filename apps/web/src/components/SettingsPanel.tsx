@@ -86,11 +86,12 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
           <label className="switch-row">
             <span>
               <strong>타일 도형 표시</strong>
-              <small>원, 삼각형, 사각형으로 색상을 구분합니다.</small>
+              <small>색약 대응 팔레트를 켰을 때만 원, 삼각형, 사각형을 표시합니다.</small>
             </span>
             <input
               type="checkbox"
               checked={settings.showShapes}
+              disabled={!settings.colorBlindPalette}
               onChange={(event) => updateSettings({ showShapes: event.target.checked })}
             />
           </label>

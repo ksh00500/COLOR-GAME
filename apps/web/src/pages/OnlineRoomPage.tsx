@@ -7,7 +7,7 @@ import type {
   RoomSnapshot,
   TileColorId,
 } from "@color-game/shared-types";
-import { BrandMark } from "../components/BrandMark";
+import { AppSidebar } from "../components/AppSidebar";
 import { ColorPicker } from "../components/ColorPicker";
 import { GameBoard } from "../components/GameBoard";
 import { HelpPanel } from "../components/HelpPanel";
@@ -135,6 +135,7 @@ export function OnlineRoomPage() {
   const currentPlayerId = game?.currentPlayerId ?? null;
   const myTurn = playerId !== null && currentPlayerId === playerId;
   const selectedColor = playerId === null ? "colorA" : selectedColors[playerId] ?? "colorA";
+  const showColorShapes = settings.colorBlindPalette && settings.showShapes;
   const canPlay = game?.status === "playing" && myTurn && busyLabel === null && connectionStatus === "connected";
 
   const clearEffectTimers = useCallback(() => {
@@ -328,20 +329,10 @@ export function OnlineRoomPage() {
 
   if (room === null || game === null) {
     return (
-      <main className="online-page">
-        <header className="site-header">
-          <button className="brand-button" type="button" onClick={() => navigate("/")} aria-label="메인 화면으로">
-            <BrandMark />
-          </button>
-          <nav aria-label="온라인 메뉴">
-            <span className={`service-status status-${connectionStatus}`}><i /> {connectionStatus.toUpperCase()}</span>
-            <button className="header-button" type="button" onClick={() => setSettingsOpen(true)}>
-              <span aria-hidden="true">◌</span> 설정
-            </button>
-          </nav>
-        </header>
+      <main className="online-page app-frame">
+        <AppSidebar onSettings={() => setSettingsOpen(true)} />
 
-        <section className="online-shell" aria-labelledby="private-title">
+        <section className="online-shell app-content-shell" aria-labelledby="private-title">
           <div className="online-copy">
             <p className="eyebrow">PRIVATE ONLINE ROOM</p>
             <h1 id="private-title">친구와 같은 색을 두고, 서로 다른 순간을 노리세요.</h1>
@@ -430,90 +421,86 @@ export function OnlineRoomPage() {
       : `${opponent.nickname} 차례`;
 
   return (
-    <main className="game-page">
-      <header className="game-header">
-        <button className="brand-button" type="button" onClick={() => navigate("/")} aria-label="메인 화면으로">
-          <BrandMark />
-        </button>
-        <div className="match-label">
-          <span>PRIVATE ROOM {room.code}</span>
-          <strong>TURN {game.turnNumber}</strong>
-        </div>
-        <div className="header-actions">
-          <button className="icon-button labeled" type="button" onClick={() => setHelpOpen(true)}><span>?</span><small>규칙</small></button>
-          <button className="icon-button labeled" type="button" onClick={() => setSettingsOpen(true)}><span>◌</span><small>설정</small></button>
-        </div>
-      </header>
-
-      <div className={`turn-banner ${myTurn ? "mine" : "theirs"}`} role="status" aria-live="polite">
-        <span className="turn-indicator" />
-        <strong>{turnLabel}</strong>
-        <small>{myTurn ? "서버가 수를 검증합니다." : "상대의 수를 기다리는 중입니다."}</small>
-      </div>
+    <main className="game-page app-frame">
+      <AppSidebar onSettings={() => setSettingsOpen(true)} />
 
       {message !== null && <p className="online-toast" role="status">{message}</p>}
 
-      <section className="game-layout">
-        <div className="player-slot opponent-slot">
-          <PlayerCard
-            player={opponent}
-            active={opponentTurn}
-            targetScore={game.config.targetScore}
-            remainingSeconds={opponentTurn ? remainingSeconds : null}
-            scoreDelta={scoreNotice?.playerId === opponent.id ? scoreNotice.score : null}
-            descriptor={opponent.connectionStatus === "connected" ? "온라인 상대" : "연결 끊김"}
-          />
-        </div>
-
-        <div className="board-stage">
-          <div className="board-caption">
-            <span><i /> SERVER AUTHORITATIVE FIELD</span>
-            <small>ROOM {room.code}</small>
-          </div>
-          <GameBoard
-            board={visualBoard ?? game.board}
-            selectedColor={selectedColor}
-            canPlay={canPlay}
-            showShapes={settings.showShapes}
-            focusedIndex={focusedIndex}
-            scoringCells={scoringCells}
-            lastPlaced={lastPlaced}
-            invalidCell={invalidCell}
-            onFocusedIndexChange={setFocusedIndex}
-            onPlace={placeTileOnline}
-          />
-        </div>
-
-        <div className="player-slot human-slot">
-          <PlayerCard
-            player={me}
-            active={myTurn}
-            targetScore={game.config.targetScore}
-            remainingSeconds={myTurn ? remainingSeconds : null}
-            scoreDelta={scoreNotice?.playerId === me.id ? scoreNotice.score : null}
-            descriptor="나"
-          />
-          <button className="resign-button" type="button" onClick={() => setResignOpen(true)} disabled={game.status !== "playing" || busyLabel !== null}>
-            대전 포기
+      <section className="game-shell">
+        <header className="game-topbar">
+          <button className="icon-button labeled" type="button" onClick={() => navigate("/")}>
+            <span>←</span><small>로비</small>
           </button>
-        </div>
+          <div className="match-label">
+            <span>PRIVATE ROOM {room.code}</span>
+            <strong>TURN {game.turnNumber}</strong>
+          </div>
+          <div className="header-actions">
+            <button className="icon-button labeled" type="button" onClick={() => setHelpOpen(true)}><span>?</span><small>규칙</small></button>
+            <button className="icon-button labeled" type="button" onClick={() => setSettingsOpen(true)}><span>◌</span><small>설정</small></button>
+          </div>
+        </header>
 
-        <div className="picker-slot">
-          <ColorPicker
-            selected={selectedColor}
-            disabled={!canPlay || playerId === null}
-            onSelect={(color) => {
-              if (playerId === null) return;
-              setSelectedColors((current) => ({ ...current, [playerId]: color }));
-            }}
-          />
-        </div>
+        <section className="game-layout">
+          <div className="board-stage">
+            <div className="board-caption">
+              <span><i /> SERVER AUTHORITATIVE FIELD</span>
+              <small>ROOM {room.code}</small>
+            </div>
+            <GameBoard
+              board={visualBoard ?? game.board}
+              selectedColor={selectedColor}
+              canPlay={canPlay}
+              showShapes={showColorShapes}
+              focusedIndex={focusedIndex}
+              scoringCells={scoringCells}
+              lastPlaced={lastPlaced}
+              invalidCell={invalidCell}
+              onFocusedIndexChange={setFocusedIndex}
+              onPlace={placeTileOnline}
+            />
+          </div>
+
+          <aside className="game-control-panel" aria-label="온라인 대전 정보">
+            <PlayerCard
+              player={opponent}
+              active={opponentTurn}
+              targetScore={game.config.targetScore}
+              remainingSeconds={opponentTurn ? remainingSeconds : null}
+              scoreDelta={scoreNotice?.playerId === opponent.id ? scoreNotice.score : null}
+              descriptor={opponent.connectionStatus === "connected" ? "온라인 상대" : "연결 끊김"}
+            />
+
+            <div className={`turn-banner ${myTurn ? "mine" : "theirs"}`} role="status" aria-live="polite">
+              <span className="turn-indicator" />
+              <strong>{turnLabel}</strong>
+              <small>{myTurn ? "서버가 수를 검증합니다." : "상대의 수를 기다리는 중입니다."}</small>
+            </div>
+
+            <ColorPicker
+              selected={selectedColor}
+              disabled={!canPlay || playerId === null}
+              showShapes={showColorShapes}
+              onSelect={(color) => {
+                if (playerId === null) return;
+                setSelectedColors((current) => ({ ...current, [playerId]: color }));
+              }}
+            />
+
+            <PlayerCard
+              player={me}
+              active={myTurn}
+              targetScore={game.config.targetScore}
+              remainingSeconds={myTurn ? remainingSeconds : null}
+              scoreDelta={scoreNotice?.playerId === me.id ? scoreNotice.score : null}
+              descriptor="나"
+            />
+            <button className="resign-button" type="button" onClick={() => setResignOpen(true)} disabled={game.status !== "playing" || busyLabel !== null}>
+              대전 포기
+            </button>
+          </aside>
+        </section>
       </section>
-
-      <div className="game-footnote">
-        <span>SOCKET SERVER · {connectionStatus.toUpperCase()}</span>
-        <span>목표 점수 {game.config.targetScore} · 턴당 60초</span>
-      </div>
 
       {resignOpen && (
         <div className="modal-backdrop" role="presentation" onMouseDown={() => setResignOpen(false)}>
