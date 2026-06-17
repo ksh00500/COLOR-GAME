@@ -709,13 +709,22 @@ p {
 }
 
 .palette-tier-icon.rainbow .palette-wood {
-  stroke: color-mix(in srgb, var(--green-light) 50%, var(--burgundy));
+  stroke: rgba(255,255,255,0.42);
   stroke-width: 3.2;
 }
 
-.palette-rainbow-ring circle {
-  stroke: rgba(255,255,255,0.2);
-  stroke-width: 0.8;
+.palette-rainbow-sheen {
+  fill: rgba(255,255,255,0.2);
+  mix-blend-mode: screen;
+}
+
+.palette-rainbow-depth {
+  fill: rgba(0,0,0,0.16);
+  mix-blend-mode: multiply;
+}
+
+.palette-tier-icon.rainbow .palette-highlight {
+  fill: rgba(255,255,255,0.26);
 }
 
 .rank-badge.rainbow .rank-copy strong {
