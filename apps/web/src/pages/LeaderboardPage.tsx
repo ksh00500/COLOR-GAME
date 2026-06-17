@@ -1,19 +1,19 @@
 import { useEffect, useState } from "react";
 import { fetchLeaderboard, type PublicProfile } from "../api";
 import { AppSidebar } from "../components/AppSidebar";
-import { RankBadge } from "../components/RankBadge";
+import { PaletteTierIcon, RankBadge } from "../components/RankBadge";
 import { SettingsPanel } from "../components/SettingsPanel";
 
 const tierGuide = [
-  { label: "시작", rating: 1000, description: "색이 없는 빈 팔레트" },
-  { label: "레드", rating: 1050, description: "첫 색을 채운 티어" },
-  { label: "오렌지", rating: 1125, description: "두 번째 색상" },
-  { label: "옐로", rating: 1200, description: "세 번째 색상" },
-  { label: "그린", rating: 1300, description: "네 번째 색상" },
-  { label: "블루", rating: 1400, description: "다섯 번째 색상" },
-  { label: "네이비", rating: 1500, description: "여섯 번째 색상" },
-  { label: "보라", rating: 1600, description: "일곱 색 완성" },
-  { label: "무지개", rating: 1600, leaderboardRank: 1, description: "보라 완성 + 상위 50명" },
+  { label: "빈 팔레트", filledCount: 0, description: "색이 없는 시작 단계" },
+  { label: "레드", filledCount: 1, description: "첫 색을 채운 티어" },
+  { label: "오렌지", filledCount: 2, description: "두 번째 색상" },
+  { label: "옐로", filledCount: 3, description: "세 번째 색상" },
+  { label: "그린", filledCount: 4, description: "네 번째 색상" },
+  { label: "블루", filledCount: 5, description: "다섯 번째 색상" },
+  { label: "네이비", filledCount: 6, description: "여섯 번째 색상" },
+  { label: "보라", filledCount: 7, description: "일곱 색 완성" },
+  { label: "무지개", filledCount: 7, isRainbow: true, description: "보라 완성 + 상위 50명" },
 ] as const;
 
 export function LeaderboardPage() {
@@ -46,13 +46,12 @@ export function LeaderboardPage() {
           <div className="tier-guide-list">
             {tierGuide.map((tier, index) => (
               <article className="tier-guide-item" key={tier.label}>
-                <span>{index + 1}</span>
-                <RankBadge
-                  rating={tier.rating}
-                  leaderboardRank={"leaderboardRank" in tier ? tier.leaderboardRank : null}
-                  compact
-                />
-                <small>{tier.description}</small>
+                <span className="tier-guide-index">{index + 1}</span>
+                <PaletteTierIcon filledCount={tier.filledCount} isRainbow={"isRainbow" in tier ? tier.isRainbow : false} />
+                <div className="tier-guide-copy">
+                  <strong>{tier.label}</strong>
+                  <small>{tier.description}</small>
+                </div>
               </article>
             ))}
           </div>

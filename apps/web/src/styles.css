@@ -657,80 +657,65 @@ p {
 .rank-palette {
   position: relative;
   display: block;
-  width: 70px;
-  height: 48px;
+  width: 78px;
+  height: 58px;
   flex: 0 0 auto;
 }
 
-.rank-palette-board {
-  position: relative;
+.palette-tier-icon {
   display: block;
-  width: 70px;
-  height: 45px;
-  border: 1px solid color-mix(in srgb, var(--bronze) 70%, white);
-  border-radius: 54% 46% 52% 48% / 58% 48% 52% 42%;
-  background:
-    radial-gradient(circle at 28% 36%, rgba(255,255,255,0.22), transparent 0.3rem),
-    linear-gradient(145deg, #e0b766, #b87a2d);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.38), 0 4px 10px rgba(0,0,0,0.14);
-  transform: rotate(-4deg);
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  filter: drop-shadow(0 5px 9px rgba(0,0,0,0.16));
 }
 
-.rank-palette-board::before {
-  content: "";
-  position: absolute;
-  left: 5px;
-  top: 15px;
-  width: 13px;
-  height: 13px;
-  border: 1px solid color-mix(in srgb, var(--walnut-dark) 38%, transparent);
-  border-radius: 50%;
-  background: var(--surface-raised);
-  box-shadow: inset 0 1px 2px rgba(0,0,0,0.12);
+.palette-wood-shadow {
+  fill: rgba(0,0,0,0.18);
+  transform: translateY(2px);
 }
 
-.rank-palette-board i {
-  position: absolute;
-  display: block;
-  width: 13px;
-  height: 10px;
-  border: 0;
-  border-radius: 58% 42% 56% 44% / 62% 52% 48% 38%;
-  background: transparent;
-  box-shadow: none;
+.palette-wood {
+  fill: #d5a24a;
+  stroke: color-mix(in srgb, var(--bronze) 64%, #f7d68a);
+  stroke-width: 2.5;
+}
+
+.palette-highlight {
+  fill: rgba(255,255,255,0.2);
+}
+
+.palette-hole {
+  fill: color-mix(in srgb, var(--walnut-dark) 88%, black);
+}
+
+.palette-hole-highlight {
+  fill: rgba(255,255,255,0.24);
+}
+
+.palette-paint {
+  stroke: rgba(255,255,255,0.34);
+  stroke-width: 1.4;
   opacity: 0;
-  transform: rotate(var(--paint-rotate, -8deg));
 }
 
-.rank-palette-board i.filled {
+.palette-paint.filled {
   opacity: 1;
-  border: 1px solid color-mix(in srgb, var(--paint-color) 72%, white);
-  border-color: color-mix(in srgb, var(--paint-color) 72%, white);
-  background:
-    radial-gradient(circle at 32% 28%, rgba(255,255,255,0.52), transparent 0.14rem),
-    var(--paint-color);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.44), 0 2px 4px rgba(0,0,0,0.16);
 }
-
-.rank-palette-board i:nth-child(1) { left: 22px; top: 6px; --paint-rotate: -11deg; }
-.rank-palette-board i:nth-child(2) { left: 39px; top: 5px; --paint-rotate: 10deg; }
-.rank-palette-board i:nth-child(3) { left: 54px; top: 14px; --paint-rotate: 14deg; }
-.rank-palette-board i:nth-child(4) { left: 49px; top: 29px; --paint-rotate: -6deg; }
-.rank-palette-board i:nth-child(5) { left: 35px; top: 31px; --paint-rotate: 7deg; }
-.rank-palette-board i:nth-child(6) { left: 21px; top: 28px; --paint-rotate: -14deg; }
-.rank-palette-board i:nth-child(7) { left: 10px; top: 24px; --paint-rotate: 9deg; }
 
 .rank-badge.rainbow {
   border-color: color-mix(in srgb, var(--green-light) 48%, var(--burgundy));
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--green-light) 14%, transparent);
 }
 
-.rank-badge.rainbow .rank-palette-board {
-  border-color: transparent;
-  background:
-    linear-gradient(#d4a052, #d4a052) padding-box,
-    conic-gradient(from 220deg, #b84d69, #d88a2d, #e0c13c, #3f8a61, #3d7aa8, #223a66, #6c3d9b, #b84d69) border-box;
-  border-width: 2px;
+.palette-tier-icon.rainbow .palette-wood {
+  stroke: color-mix(in srgb, var(--green-light) 50%, var(--burgundy));
+  stroke-width: 3.2;
+}
+
+.palette-rainbow-ring circle {
+  stroke: rgba(255,255,255,0.2);
+  stroke-width: 0.8;
 }
 
 .rank-badge.rainbow .rank-copy strong {
@@ -759,37 +744,12 @@ p {
 }
 
 .rank-badge.compact .rank-palette {
-  width: 58px;
-  height: 39px;
+  width: 66px;
+  height: 48px;
 }
-
-.rank-badge.compact .rank-palette-board {
-  width: 58px;
-  height: 37px;
-}
-
-.rank-badge.compact .rank-palette-board::before {
-  left: 4px;
-  top: 12px;
-  width: 10px;
-  height: 10px;
-}
-
-.rank-badge.compact .rank-palette-board i {
-  width: 10px;
-  height: 8px;
-}
-
-.rank-badge.compact .rank-palette-board i:nth-child(1) { left: 18px; top: 5px; }
-.rank-badge.compact .rank-palette-board i:nth-child(2) { left: 32px; top: 4px; }
-.rank-badge.compact .rank-palette-board i:nth-child(3) { left: 45px; top: 11px; }
-.rank-badge.compact .rank-palette-board i:nth-child(4) { left: 40px; top: 24px; }
-.rank-badge.compact .rank-palette-board i:nth-child(5) { left: 29px; top: 26px; }
-.rank-badge.compact .rank-palette-board i:nth-child(6) { left: 17px; top: 23px; }
-.rank-badge.compact .rank-palette-board i:nth-child(7) { left: 9px; top: 20px; }
 
 .rank-badge.compact .rank-copy {
-  min-width: 44px;
+  min-width: 52px;
 }
 
 .rank-badge.compact .rank-copy strong {
@@ -857,23 +817,24 @@ p {
 
 .tier-guide-list {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(185px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(245px, 1fr));
   gap: 0.55rem;
 }
 
 .tier-guide-item {
   display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 0.45rem 0.55rem;
+  grid-template-columns: 2rem 86px minmax(0, 1fr);
+  gap: 0.55rem;
   align-items: center;
   min-width: 0;
-  padding: 0.65rem;
+  min-height: 86px;
+  padding: 0.7rem 0.8rem;
   border: 1px solid var(--line);
   border-radius: 14px;
   background: var(--surface);
 }
 
-.tier-guide-item > span {
+.tier-guide-index {
   display: grid;
   width: 1.7rem;
   height: 1.7rem;
@@ -885,15 +846,31 @@ p {
   font-weight: 950;
 }
 
-.tier-guide-item .rank-badge {
-  max-width: 100%;
+.tier-guide-item > .palette-tier-icon {
+  width: 86px;
+  height: 64px;
+  justify-self: center;
 }
 
-.tier-guide-item small {
-  grid-column: 2;
+.tier-guide-copy {
+  display: grid;
+  gap: 0.16rem;
+  min-width: 0;
+}
+
+.tier-guide-copy strong {
+  color: var(--burgundy);
+  font-size: 0.95rem;
+  font-weight: 950;
+  word-break: keep-all;
+}
+
+.tier-guide-copy small {
   color: var(--ink-soft);
   font-size: 0.62rem;
   font-weight: 850;
+  line-height: 1.35;
+  word-break: keep-all;
 }
 
 .match-history p,
@@ -3201,7 +3178,7 @@ kbd {
   background: var(--app-panel-muted);
 }
 
-.app-content-shell .tier-guide-item small {
+.app-content-shell .tier-guide-copy small {
   color: var(--app-ink-soft);
 }
 
