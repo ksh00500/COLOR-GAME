@@ -8,7 +8,7 @@ export const paletteSteps = [
   { label: "보라", name: "Violet Palette", minRating: 1600, color: "#6c3d9b" },
 ] as const;
 
-const rainbowRankLimit = 50;
+export const rainbowRankLimit = 50;
 
 const paintSpots = [
   { cx: 53, cy: 26, rx: 7.4, ry: 5.8, rotate: -12 },
@@ -78,7 +78,6 @@ export function PaletteTierIcon({
     <svg
       className={`palette-tier-icon${isRainbow ? " rainbow" : ""}`}
       viewBox="0 0 112 84"
-      role="img"
       aria-hidden="true"
       focusable="false"
     >

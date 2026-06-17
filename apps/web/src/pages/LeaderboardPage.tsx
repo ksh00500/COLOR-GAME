@@ -1,20 +1,48 @@
 import { useEffect, useState } from "react";
 import { fetchLeaderboard, type PublicProfile } from "../api";
 import { AppSidebar } from "../components/AppSidebar";
-import { PaletteTierIcon, RankBadge } from "../components/RankBadge";
+import { PaletteTierIcon, paletteSteps, rainbowRankLimit, RankBadge } from "../components/RankBadge";
 import { SettingsPanel } from "../components/SettingsPanel";
 
-const tierGuide = [
-  { label: "빈 팔레트", filledCount: 0, description: "색이 없는 시작 단계" },
-  { label: "레드", filledCount: 1, description: "첫 색을 채운 티어" },
-  { label: "오렌지", filledCount: 2, description: "두 번째 색상" },
-  { label: "옐로", filledCount: 3, description: "세 번째 색상" },
-  { label: "그린", filledCount: 4, description: "네 번째 색상" },
-  { label: "블루", filledCount: 5, description: "다섯 번째 색상" },
-  { label: "네이비", filledCount: 6, description: "여섯 번째 색상" },
-  { label: "보라", filledCount: 7, description: "일곱 색 완성" },
-  { label: "무지개", filledCount: 7, isRainbow: true, description: "보라 완성 + 상위 50명" },
+interface TierGuideItem {
+  label: string;
+  filledCount: number;
+  requirement: string;
+  description: string;
+  isRainbow?: boolean;
+}
+
+const tierDescriptions = [
+  "첫 번째 색을 채웁니다.",
+  "두 번째 색을 채웁니다.",
+  "세 번째 색을 채웁니다.",
+  "네 번째 색을 채웁니다.",
+  "다섯 번째 색을 채웁니다.",
+  "여섯 번째 색을 채웁니다.",
+  "일곱 색을 모두 채웁니다.",
 ] as const;
+
+const tierGuide: TierGuideItem[] = [
+  {
+    label: "빈 팔레트",
+    filledCount: 0,
+    requirement: `레이팅 ${paletteSteps[0]!.minRating} 미만`,
+    description: "처음 시작하면 이 상태입니다.",
+  },
+  ...paletteSteps.map((step, index) => ({
+    label: step.label,
+    filledCount: index + 1,
+    requirement: `레이팅 ${step.minRating}+`,
+    description: tierDescriptions[index]!,
+  })),
+  {
+    label: "무지개",
+    filledCount: paletteSteps.length,
+    isRainbow: true,
+    requirement: `레이팅 ${paletteSteps[paletteSteps.length - 1]!.minRating}+ · 상위 ${rainbowRankLimit}명`,
+    description: "보라 완성 후 랭킹 보상입니다.",
+  },
+];
 
 export function LeaderboardPage() {
   const [players, setPlayers] = useState<PublicProfile[]>([]);
@@ -47,9 +75,12 @@ export function LeaderboardPage() {
             {tierGuide.map((tier, index) => (
               <article className="tier-guide-item" key={tier.label}>
                 <span className="tier-guide-index">{index + 1}</span>
-                <PaletteTierIcon filledCount={tier.filledCount} isRainbow={"isRainbow" in tier ? tier.isRainbow : false} />
+                <span className="tier-guide-icon-wrap" aria-hidden="true">
+                  <PaletteTierIcon filledCount={tier.filledCount} isRainbow={tier.isRainbow ?? false} />
+                </span>
                 <div className="tier-guide-copy">
                   <strong>{tier.label}</strong>
+                  <span className="tier-requirement">{tier.requirement}</span>
                   <small>{tier.description}</small>
                 </div>
               </article>
