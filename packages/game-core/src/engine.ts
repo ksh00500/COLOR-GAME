@@ -17,12 +17,12 @@ import type {
 
 export const DEFAULT_GAME_CONFIG: GameConfig = {
   boardSize: 5,
-  targetScore: 10,
+  targetScore: 7,
   colors: ["colorA", "colorB", "colorC"],
   scoreRules: {
     3: 1,
-    4: 3,
-    5: 5,
+    4: 2,
+    5: 4,
   },
   turnTimeLimitSeconds: 60,
 };

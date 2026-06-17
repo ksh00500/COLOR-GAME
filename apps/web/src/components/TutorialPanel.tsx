@@ -1,6 +1,6 @@
 import { useEffect, useId, useState } from "react";
 
-const tutorialKey = "color-line-tutorial-complete-v2";
+const tutorialKey = "color-line-tutorial-complete-v3";
 
 const tutorialSteps = [
   {
@@ -20,7 +20,7 @@ const tutorialSteps = [
   },
   {
     title: "목표 점수 먼저 달성",
-    body: "10점을 먼저 만들면 승리합니다. 보드가 꽉 차면 흔들림 후 타일이 비워지고 대전은 계속됩니다.",
+    body: "7점을 먼저 만들면 승리합니다. 보드가 꽉 차면 흔들림 후 타일이 비워지고 대전은 계속됩니다.",
     preview: "win",
   },
 ] as const;
@@ -107,7 +107,7 @@ export function TutorialPanel() {
                   <b>색 선택</b>
                 </span>
                 <span className="tutorial-preview-score">
-                  <strong>{step.preview === "win" ? "10" : step.preview === "score" ? "3" : "0"}</strong>/10
+                  <strong>{step.preview === "win" ? "7" : step.preview === "score" ? "1" : "0"}</strong>/7
                 </span>
               </div>
             </div>

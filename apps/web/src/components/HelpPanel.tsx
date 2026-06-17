@@ -31,12 +31,11 @@ export function HelpPanel({ open, onClose }: { open: boolean; onClose: () => voi
         </ol>
         <div className="score-table" aria-label="연결 점수">
           <span><i>3</i><strong>1점</strong></span>
-          <span><i>4</i><strong>3점</strong></span>
-          <span><i>5</i><strong>5점</strong></span>
+          <span><i>4</i><strong>2점</strong></span>
+          <span><i>5</i><strong>4점</strong></span>
         </div>
         <p className="help-note">득점에 사용된 타일은 제거되며, 중력과 연쇄 콤보는 없습니다.</p>
       </section>
     </div>
   );
 }
-

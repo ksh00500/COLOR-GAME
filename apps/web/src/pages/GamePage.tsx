@@ -309,7 +309,7 @@ export function GamePage() {
           <div className="board-stage">
             <div className="board-caption">
               <span><i /> SHARED COLOR FIELD</span>
-              <small>3 = 1PT · 4 = 3PT · 5 = 5PT</small>
+              <small>3 = 1PT · 4 = 2PT · 5 = 4PT</small>
             </div>
             <GameBoard
               board={visualBoard ?? game.board}

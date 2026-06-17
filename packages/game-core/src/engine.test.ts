@@ -130,10 +130,10 @@ describe("scoring lines", () => {
     ]);
 
     expect(findScoringLines(four, { row: 0, col: 2 }, "colorB")).toMatchObject([
-      { length: 4, score: 3 },
+      { length: 4, score: 2 },
     ]);
     expect(findScoringLines(five, { row: 1, col: 2 }, "colorC")).toMatchObject([
-      { length: 5, score: 5 },
+      { length: 5, score: 4 },
     ]);
   });
 });
@@ -219,7 +219,7 @@ describe("game completion", () => {
         [null, null, null, null, null],
       ]),
     );
-    state.players[0].score = 9;
+    state.players[0].score = 6;
     const result = placeTile(state, {
       playerId: "player1",
       row: 0,
