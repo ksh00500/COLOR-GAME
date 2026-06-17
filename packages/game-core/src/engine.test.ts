@@ -235,7 +235,7 @@ describe("game completion", () => {
     expect(result.state.result).toBe("target-score");
   });
 
-  it("clears every tile and keeps playing when the board fills without scoring", () => {
+  it("clears the placed color and keeps playing when the board fills without scoring", () => {
     const state = gameWithBoard(
       boardFrom([
         ["colorA", "colorB", "colorC", "colorA", "colorB"],
@@ -261,8 +261,25 @@ describe("game completion", () => {
     expect(result.state.currentPlayerId).toBe("player2");
     expect(result.state.turnNumber).toBe(2);
     expect(result.move.earnedScore).toBe(0);
-    expect(result.move.removedCells).toHaveLength(25);
-    expect(result.state.board.flat().every((cell) => cell === null)).toBe(true);
+    expect(result.move.removedCells).toEqual([
+      { row: 0, col: 2 },
+      { row: 1, col: 1 },
+      { row: 1, col: 4 },
+      { row: 2, col: 0 },
+      { row: 2, col: 3 },
+      { row: 3, col: 2 },
+      { row: 4, col: 1 },
+      { row: 4, col: 4 },
+    ]);
+    expect(result.state.board).toEqual(
+      boardFrom([
+        ["colorA", "colorB", null, "colorA", "colorB"],
+        ["colorB", null, "colorA", "colorB", null],
+        [null, "colorA", "colorB", null, "colorA"],
+        ["colorA", "colorB", null, "colorA", "colorB"],
+        ["colorB", null, "colorA", "colorB", null],
+      ]),
+    );
   });
 
   it("awards a timeout win to the opponent", () => {

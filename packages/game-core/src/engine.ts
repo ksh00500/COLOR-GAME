@@ -216,9 +216,11 @@ export const removeCells = (board: Board, positions: Position[]): Board => {
   return nextBoard;
 };
 
-const getAllCells = (board: Board): Position[] =>
+const getCellsByColor = (board: Board, color: TileColorId): Position[] =>
   board.flatMap((row, rowIndex) =>
-    row.map((_cell, colIndex) => ({ row: rowIndex, col: colIndex })),
+    row.flatMap((cell, colIndex) =>
+      cell === color ? [{ row: rowIndex, col: colIndex }] : [],
+    ),
   );
 
 const isBoardFull = (board: Board): boolean =>
@@ -352,9 +354,9 @@ export const placeTile = (state: GameState, input: MoveInput): MoveResult => {
   );
   const earnedScore = calculateScore(scoringLines);
   const scoringRemovedCells = getCellsToRemove(scoringLines);
-  const shouldClearFullBoard = scoringRemovedCells.length === 0 && isBoardFull(placedBoard);
-  const removedCells = shouldClearFullBoard
-    ? getAllCells(placedBoard)
+  const shouldClearPlacedColor = scoringRemovedCells.length === 0 && isBoardFull(placedBoard);
+  const removedCells = shouldClearPlacedColor
+    ? getCellsByColor(placedBoard, input.color)
     : scoringRemovedCells;
   const nextBoard = removeCells(placedBoard, removedCells);
   const players = state.players.map((player) =>
