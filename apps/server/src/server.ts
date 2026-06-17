@@ -1,3 +1,4 @@
+import { readFile } from "node:fs/promises";
 import cors from "@fastify/cors";
 import Fastify from "fastify";
 import { Server, type Socket } from "socket.io";
@@ -76,6 +77,25 @@ const analyticsHeartbeatSchema = z.object({
   visitorId: z.string().trim().min(8).max(128),
   path: z.string().trim().max(256).optional().default("/"),
 });
+
+let cachedWebIndexHtml: string | null | undefined;
+const webIndexUrl = new URL("../../web/dist/index.html", import.meta.url);
+
+const acceptsHtml = (accept: unknown) =>
+  typeof accept === "string" && accept.toLowerCase().includes("text/html");
+
+const readWebIndexHtml = async () => {
+  if (cachedWebIndexHtml !== undefined) {
+    return cachedWebIndexHtml;
+  }
+
+  try {
+    cachedWebIndexHtml = await readFile(webIndexUrl, "utf8");
+  } catch {
+    cachedWebIndexHtml = null;
+  }
+  return cachedWebIndexHtml;
+};
 
 const bearerToken = (authorization: unknown): string | null => {
   if (typeof authorization !== "string") return null;
@@ -368,6 +388,13 @@ export const createServer = (options: ServerOptions = {}) => {
   });
 
   app.get("/leaderboard", async (request, reply) => {
+    if (acceptsHtml(request.headers.accept)) {
+      const indexHtml = await readWebIndexHtml();
+      if (indexHtml !== null) {
+        return reply.type("text/html; charset=utf-8").send(indexHtml);
+      }
+    }
+
     if (!accountStore.enabled) {
       return reply.code(503).send({ code: "DATABASE_DISABLED", message: "Account database is not configured." });
     }
