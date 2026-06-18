@@ -96,7 +96,7 @@ export function LobbyPage() {
             </button>
           </div>
 
-          <div className="quick-config" aria-label="AI 대전 설정">
+          <div className="quick-config" aria-label={t("AI 대전 설정")}>
             <span>AI</span>
             {(["easy", "normal", "hard"] as const).map((level) => {
               const locked = level !== "easy";
@@ -106,8 +106,8 @@ export function LobbyPage() {
                   type="button"
                   className={`${difficulty === level ? "active" : ""}${locked ? " locked" : ""}`}
                   aria-disabled={locked}
-                  title={locked ? "아직 준비중입니다." : undefined}
-                  data-tooltip={locked ? "아직 준비중입니다." : undefined}
+                  title={locked ? t("아직 준비중입니다.") : undefined}
+                  data-tooltip={locked ? t("아직 준비중입니다.") : undefined}
                   onClick={() => {
                     if (!locked) setDifficulty(level);
                   }}
@@ -119,8 +119,8 @@ export function LobbyPage() {
             })}
           </div>
 
-          <div className="quick-config" aria-label="선공 설정">
-            <span>선공</span>
+          <div className="quick-config" aria-label={t("선공 설정")}>
+            <span>{t("선공")}</span>
             {(["human", "ai", "random"] as const).map((option) => (
               <button
                 key={option}
@@ -133,7 +133,7 @@ export function LobbyPage() {
             ))}
           </div>
 
-          <section className="home-mode-strip" aria-label="게임 모드">
+          <section className="home-mode-strip" aria-label={t("게임 모드")}>
             {modes.map((mode) => (
               <button key={mode.id} className={`home-mode ${mode.accent}`} type="button" onClick={() => openMode(mode.id)}>
                 <small>{mode.state}</small>
@@ -143,7 +143,7 @@ export function LobbyPage() {
             ))}
           </section>
 
-          <section className="visitor-strip" aria-label="접속자 현황">
+          <section className="visitor-strip" aria-label={t("접속자 현황")}>
             <span>
               <small>{t("실시간")}</small>
               <strong>{visitorCounts?.realtime === undefined ? "-" : formatNumber(visitorCounts.realtime)}</strong>

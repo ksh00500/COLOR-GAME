@@ -18,6 +18,8 @@ import {
 import { GameRoomService, type PlayerProfile, type RoomError } from "./game-room-service.js";
 import { NullGameHistoryStore, type GameHistoryStore } from "./history-store.js";
 import { ServerMetrics } from "./metrics.js";
+import { attendanceDateFor } from "./attendance.js";
+import { RoomPersistenceCoordinator } from "./room-persistence.js";
 import {
   gameMoveSchema,
   gameResignSchema,
@@ -77,6 +79,10 @@ const matchmakingSchema = z.object({
 const analyticsHeartbeatSchema = z.object({
   visitorId: z.string().trim().min(8).max(128),
   path: z.string().trim().max(256).optional().default("/"),
+});
+
+const attendanceCheckInSchema = z.object({
+  timeZone: z.string().trim().max(120).optional(),
 });
 
 let cachedWebIndexHtml: string | null | undefined;
@@ -140,6 +146,7 @@ export const createServer = (options: ServerOptions = {}) => {
     casual: [],
     ranked: [],
   };
+  const roomPersistence = new RoomPersistenceCoordinator(historyStore);
   const io = new Server(app.server, {
     cors: {
       origin: options.corsOrigin ?? true,
@@ -150,22 +157,6 @@ export const createServer = (options: ServerOptions = {}) => {
     origin: options.corsOrigin ?? true,
   });
 
-  const persistRoom = async (room: RoomSnapshot): Promise<void> => {
-    if (!historyStore.enabled) return;
-    await historyStore.recordRoomSnapshot(room);
-  };
-
-  const persistMoveApplication = async (
-    room: RoomSnapshot,
-    move: Move | null,
-  ): Promise<void> => {
-    if (!historyStore.enabled) return;
-    await historyStore.recordRoomSnapshot(room);
-    if (move !== null) {
-      await historyStore.recordMove(room, move);
-    }
-  };
-
   const recordFinishedRoom = async (room: RoomSnapshot): Promise<void> => {
     if (room.game?.status !== "finished") return;
     metrics.gameFinished();
@@ -174,7 +165,7 @@ export const createServer = (options: ServerOptions = {}) => {
   };
 
   const persistRoomLater = (room: RoomSnapshot, context: string): void => {
-    void persistRoom(room).catch((error: unknown) => {
+    void roomPersistence.enqueue(room).catch((error: unknown) => {
       app.log.error({ err: error, roomCode: room.code }, context);
     });
   };
@@ -184,7 +175,7 @@ export const createServer = (options: ServerOptions = {}) => {
     move: Move | null,
     context: string,
   ): void => {
-    void persistMoveApplication(room, move).catch((error: unknown) => {
+    void roomPersistence.enqueue(room, move).catch((error: unknown) => {
       app.log.error(
         { err: error, roomCode: room.code, gameId: room.game?.id, turnNumber: move?.turnNumber },
         context,
@@ -197,14 +188,7 @@ export const createServer = (options: ServerOptions = {}) => {
     move: Move | null,
     context: string,
   ): void => {
-    void (async () => {
-      if (move === null) {
-        await persistRoom(room);
-      } else {
-        await persistMoveApplication(room, move);
-      }
-      await recordFinishedRoom(room);
-    })().catch((error: unknown) => {
+    void roomPersistence.enqueue(room, move, recordFinishedRoom).catch((error: unknown) => {
       app.log.error(
         { err: error, roomCode: room.code, gameId: room.game?.id },
         context,
@@ -457,7 +441,12 @@ export const createServer = (options: ServerOptions = {}) => {
     if (account === null || !accountStore.enabled) {
       return reply.code(401).send({ code: "UNAUTHORIZED", message: "Sign in is required." });
     }
-    const updated = await accountStore.checkInAttendance(account.id);
+    const parsed = attendanceCheckInSchema.safeParse(request.body ?? {});
+    if (!parsed.success) {
+      return reply.code(400).send({ code: "INVALID_REQUEST", details: parsed.error.flatten() });
+    }
+    const attendedOn = attendanceDateFor(parsed.data.timeZone);
+    const updated = await accountStore.checkInAttendance(account.id, attendedOn);
     if (updated === null) {
       return reply.code(404).send({ code: "PROFILE_NOT_FOUND", message: "Profile was not found." });
     }
@@ -748,6 +737,7 @@ export const createServer = (options: ServerOptions = {}) => {
   app.addHook("onClose", async () => {
     clearInterval(turnTimer);
     await io.close();
+    await roomPersistence.drain();
     await historyStore.close();
     await accountStore.close();
     await analyticsStore.close();

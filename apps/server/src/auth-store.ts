@@ -2,6 +2,7 @@ import { randomBytes, randomUUID, scrypt as scryptCallback, timingSafeEqual, cre
 import { promisify } from "node:util";
 import { Pool, type PoolConfig } from "pg";
 import type { GamePlayer, RoomSnapshot } from "@color-game/shared-types";
+import { nextAttendanceStreak } from "./attendance.js";
 
 const scrypt = promisify(scryptCallback);
 const kFactor = 32;
@@ -65,7 +66,7 @@ export interface AccountStore {
   getPublicProfile(accountId: string): Promise<PublicProfile | null>;
   getLeaderboard(limit: number): Promise<PublicProfile[]>;
   getMatchHistory(accountId: string, limit: number): Promise<MatchHistoryItem[]>;
-  checkInAttendance(accountId: string): Promise<AccountSummary | null>;
+  checkInAttendance(accountId: string, attendedOn: string): Promise<AccountSummary | null>;
   recordFinishedRoom(room: RoomSnapshot): Promise<void>;
 }
 
@@ -331,12 +332,7 @@ export class PostgresAccountStore implements AccountStore {
     }));
   }
 
-  async checkInAttendance(accountId: string): Promise<AccountSummary | null> {
-    const today = new Date().toISOString().slice(0, 10);
-    const yesterdayDate = new Date(`${today}T00:00:00.000Z`);
-    yesterdayDate.setUTCDate(yesterdayDate.getUTCDate() - 1);
-    const yesterday = yesterdayDate.toISOString().slice(0, 10);
-
+  async checkInAttendance(accountId: string, attendedOn: string): Promise<AccountSummary | null> {
     const client = await this.pool.connect();
     try {
       await client.query("begin");
@@ -350,14 +346,16 @@ export class PostgresAccountStore implements AccountStore {
         return null;
       }
 
-      if (account.last_attendance_date === today) {
+      if (account.last_attendance_date === attendedOn) {
         await client.query("commit");
         return toAccountSummary(account);
       }
 
-      const nextStreak = account.last_attendance_date === yesterday
-        ? account.attendance_streak + 1
-        : 1;
+      const nextStreak = nextAttendanceStreak(
+        account.last_attendance_date,
+        attendedOn,
+        account.attendance_streak,
+      );
       const nextLongest = Math.max(account.longest_attendance_streak, nextStreak);
 
       await client.query(
@@ -366,7 +364,7 @@ export class PostgresAccountStore implements AccountStore {
           values ($1, $2::date)
           on conflict (account_id, attended_on) do nothing
         `,
-        [accountId, today],
+        [accountId, attendedOn],
       );
       const updated = await client.query<AccountRow>(
         `
@@ -378,7 +376,7 @@ export class PostgresAccountStore implements AccountStore {
           where id = $1
           returning *
         `,
-        [accountId, nextStreak, nextLongest, today],
+        [accountId, nextStreak, nextLongest, attendedOn],
       );
       await client.query("commit");
       const row = updated.rows[0];

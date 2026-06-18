@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   checkInAttendance,
+  ApiError,
   clearAuthToken,
   fetchLeaderboard,
   fetchMatches,
@@ -74,7 +75,7 @@ export function AccountPage() {
       setAccount(checkedInAccount);
       await refreshAccountData(checkedInAccount);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "계정 요청을 처리하지 못했습니다.");
+      setMessage(error instanceof ApiError ? error.code : "계정 요청을 처리하지 못했습니다.");
     } finally {
       setBusy(false);
     }
@@ -137,7 +138,7 @@ export function AccountPage() {
               <button className="primary-action" type="submit" disabled={busy}>
                 {mode === "login" ? t("로그인") : t("계정 만들기")} <span aria-hidden="true">↗</span>
               </button>
-              {message !== null && <p className="online-message">{message}</p>}
+              {message !== null && <p className="online-message">{t(message)}</p>}
             </form>
           ) : (
             <section className="account-summary">

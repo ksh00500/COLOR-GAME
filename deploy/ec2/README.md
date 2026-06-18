@@ -33,13 +33,13 @@ sudo cp deploy/ec2/color-game-server.service.example /etc/systemd/system/color-g
 sudo systemctl daemon-reload
 sudo systemctl enable --now color-game-server
 
-sudo cp deploy/ec2/nginx-color-game.conf.example /etc/nginx/sites-available/color-game
-sudo ln -s /etc/nginx/sites-available/color-game /etc/nginx/sites-enabled/color-game
+sudo cp deploy/ec2/nginx-color-game.conf.example /etc/nginx/conf.d/color-game.conf
+sudo cp deploy/ec2/nginx-color-game-locations.inc.example /etc/nginx/conf.d/color-game-locations.inc
 sudo nginx -t
 sudo systemctl reload nginx
 ```
 
-HTTPS는 EC2에서 도메인을 연결한 뒤 Certbot 또는 사용자가 선택한 인증서 방식으로 설정하면 됩니다.
+HTTPS 설정은 `colortile.kro.kr`의 기존 Certbot 인증서를 사용하며 HTTP와 HTTPS를 모두 제공합니다.
 
 ## Required Environment
 
@@ -49,7 +49,7 @@ HTTPS는 EC2에서 도메인을 연결한 뒤 Certbot 또는 사용자가 선택
 NODE_ENV=production
 HOST=127.0.0.1
 PORT=8080
-CORS_ORIGIN=http://colortile.kro.kr,http://3.26.178.31
+CORS_ORIGIN=http://colortile.kro.kr,http://3.26.178.31,https://colortile.kro.kr
 DATABASE_URL=postgresql://user:password@your-rds-endpoint:5432/color_game
 DATABASE_SSL=true
 DATABASE_REQUIRED=true
@@ -82,8 +82,10 @@ Nginx는 다음 경로를 `127.0.0.1:8080` 서버로 프록시해야 합니다.
 - `GET /metrics`
 - `POST /analytics/heartbeat`, `GET /analytics/visitors`
 - `POST /auth/register`, `POST /auth/login`, `GET /auth/me`
+- `POST /attendance/check-in`
 - `GET /leaderboard`
 - `GET /profiles/:accountId`, `GET /profiles/:accountId/matches`
+- `GET /replays/:gameId`
 - `GET /rooms/:code`
 - `/socket.io/`
 

@@ -328,7 +328,7 @@ export function GamePage() {
             />
           </div>
 
-          <aside className="game-control-panel" aria-label="대전 정보">
+          <aside className="game-control-panel" aria-label={t("대전 정보")}>
             <PlayerCard
               player={ai}
               active={aiTurn}

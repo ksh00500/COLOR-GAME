@@ -90,7 +90,7 @@ export function MatchmakingPage() {
       },
       (response: MatchAck) => {
         if (!response.ok) {
-          setStatus(response.error?.message ?? "매칭에 참가하지 못했습니다.");
+          setStatus(response.error?.code ?? "매칭에 참가하지 못했습니다.");
           return;
         }
         if (response.status === "queued") {

@@ -14,7 +14,7 @@ import { useI18n } from "../i18n";
 interface SpectateAck {
   ok: boolean;
   room?: RoomSnapshot;
-  error?: { message?: string };
+  error?: { code?: string; message?: string };
 }
 
 export function SpectatePage() {
@@ -32,7 +32,7 @@ export function SpectatePage() {
     socket.on("connect", () => {
       socket.emit("room:spectate", { code }, (response: SpectateAck) => {
         if (!response.ok || response.room === undefined) {
-          setMessage(response.error?.message ?? "관전할 방을 찾지 못했습니다.");
+          setMessage(response.error?.code ?? "관전할 방을 찾지 못했습니다.");
           return;
         }
         setRoom(response.room);
@@ -49,7 +49,7 @@ export function SpectatePage() {
   const shareSpectate = async () => {
     const url = `${window.location.origin}/spectate/${encodeURIComponent(code.toUpperCase())}`;
     try {
-      const result = await shareUrl({ title: "Color Line 관전", text: "진행 중인 대전을 함께 보세요.", url });
+      const result = await shareUrl({ title: t("Color Line 관전"), text: t("진행 중인 대전을 함께 보세요."), url });
       setMessage(result === "copied" ? "관전 링크를 복사했습니다." : "공유했습니다.");
     } catch {
       setMessage("공유를 완료하지 못했습니다.");
@@ -85,7 +85,7 @@ export function SpectatePage() {
           </div>
         </header>
         <section className="replay-layout">
-          <PlayerCard player={game.players[0]} active={game.currentPlayerId === game.players[0].id} targetScore={game.config.targetScore} remainingSeconds={null} scoreDelta={null} descriptor="플레이어 1" />
+          <PlayerCard player={game.players[0]} active={game.currentPlayerId === game.players[0].id} targetScore={game.config.targetScore} remainingSeconds={null} scoreDelta={null} descriptor={t("플레이어 1")} />
           <div className="replay-board-column">
             <GameBoard
               board={game.board}
@@ -101,7 +101,7 @@ export function SpectatePage() {
             />
             {message !== "" && <p className="online-message">{t(message)}</p>}
           </div>
-          <PlayerCard player={game.players[1]} active={game.currentPlayerId === game.players[1].id} targetScore={game.config.targetScore} remainingSeconds={null} scoreDelta={null} descriptor="플레이어 2" />
+          <PlayerCard player={game.players[1]} active={game.currentPlayerId === game.players[1].id} targetScore={game.config.targetScore} remainingSeconds={null} scoreDelta={null} descriptor={t("플레이어 2")} />
         </section>
       </section>
       <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />

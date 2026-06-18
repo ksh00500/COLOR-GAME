@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { fetchLeaderboard, type PublicProfile } from "../api";
+import { ApiError, fetchLeaderboard, type PublicProfile } from "../api";
 import { AppSidebar } from "../components/AppSidebar";
 import { PaletteTierIcon, paletteSteps, rainbowRankLimit, RankBadge } from "../components/RankBadge";
 import { SettingsPanel } from "../components/SettingsPanel";
@@ -8,7 +8,8 @@ import { useI18n } from "../i18n";
 interface TierGuideItem {
   label: string;
   filledCount: number;
-  requirement: string;
+  minRating: number;
+  requirementKind: "below" | "atLeast" | "top";
   description: string;
   isRainbow?: boolean;
 }
@@ -27,20 +28,23 @@ const tierGuide: TierGuideItem[] = [
   {
     label: "빈 팔레트",
     filledCount: 0,
-    requirement: `레이팅 ${paletteSteps[0]!.minRating} 미만`,
+    minRating: paletteSteps[0]!.minRating,
+    requirementKind: "below",
     description: "처음 시작하면 이 상태입니다.",
   },
   ...paletteSteps.map((step, index) => ({
     label: step.label,
     filledCount: index + 1,
-    requirement: `레이팅 ${step.minRating}+`,
+    minRating: step.minRating,
+    requirementKind: "atLeast" as const,
     description: tierDescriptions[index]!,
   })),
   {
     label: "무지개",
     filledCount: paletteSteps.length,
     isRainbow: true,
-    requirement: `레이팅 ${paletteSteps[paletteSteps.length - 1]!.minRating}+ · 상위 ${rainbowRankLimit}명`,
+    minRating: paletteSteps[paletteSteps.length - 1]!.minRating,
+    requirementKind: "top",
     description: "보라 완성 후 랭킹 보상입니다.",
   },
 ];
@@ -54,7 +58,7 @@ export function LeaderboardPage() {
   useEffect(() => {
     void fetchLeaderboard()
       .then(setPlayers)
-      .catch((error) => setMessage(error instanceof Error ? error.message : "리더보드를 불러오지 못했습니다."));
+      .catch((error) => setMessage(error instanceof ApiError ? error.code : "리더보드를 불러오지 못했습니다."));
   }, []);
 
   return (
@@ -68,7 +72,7 @@ export function LeaderboardPage() {
           <p>{t("경쟁 게임 결과로 팔레트가 채워집니다. 보라 팔레트를 완성한 상위 50명은 무지개 팔레트를 얻습니다.")}</p>
         </div>
 
-        <section className="tier-guide-card" aria-label="팔레트 티어 구성">
+        <section className="tier-guide-card" aria-label={t("팔레트 티어 구성")}>
           <div className="tier-guide-heading">
             <p className="eyebrow">PALETTE TIERS</p>
             <strong>{t("티어 순서")}</strong>
@@ -82,7 +86,13 @@ export function LeaderboardPage() {
                 </span>
                 <div className="tier-guide-copy">
                   <strong>{t(tier.label)}</strong>
-                  <span className="tier-requirement">{t(tier.requirement)}</span>
+                  <span className="tier-requirement">
+                    {tier.requirementKind === "below"
+                      ? t("레이팅 {rating} 미만", { rating: formatNumber(tier.minRating) })
+                      : tier.requirementKind === "top"
+                        ? t("레이팅 {rating}+ · 상위 {count}명", { rating: formatNumber(tier.minRating), count: rainbowRankLimit })
+                        : t("레이팅 {rating}+", { rating: formatNumber(tier.minRating) })}
+                  </span>
                   <small>{t(tier.description)}</small>
                 </div>
               </article>

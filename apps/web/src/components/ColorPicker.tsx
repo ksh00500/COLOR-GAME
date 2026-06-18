@@ -20,7 +20,7 @@ export function ColorPicker({ selected, disabled, showShapes = false, onSelect }
     <section className="color-picker" aria-label={t("타일 색상 선택")}>
       <div className="picker-label">
         <span>SELECT COLOR</span>
-        <small>숫자키 1 · 2 · 3</small>
+        <small>{t("숫자키 1 · 2 · 3")}</small>
       </div>
       <div className="color-options">
         {colorOptions.map((option) => (

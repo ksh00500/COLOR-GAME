@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
 import type { GamePlayer } from "@color-game/shared-types";
+import { useI18n } from "../i18n";
 
 interface PlayerCardProps {
   player: GamePlayer;
@@ -26,6 +27,7 @@ export function PlayerCard({
   scoreDelta,
   descriptor,
 }: PlayerCardProps) {
+  const { t } = useI18n();
   const scoreProgress = Math.min(100, (player.score / targetScore) * 100);
   const timerProgress = remainingSeconds === null ? 100 : Math.min(100, (remainingSeconds / 60) * 100);
   const timerUrgency = remainingSeconds !== null && remainingSeconds <= 10;
@@ -48,7 +50,7 @@ export function PlayerCard({
         <div
           className="score-ring"
           style={{ "--progress": `${scoreProgress}%` } as CSSProperties}
-          aria-label={`${player.score}/${targetScore}점`}
+          aria-label={t("{score}/{target}점", { score: player.score, target: targetScore })}
         >
           <span><strong>{player.score}</strong><small>/{targetScore}</small></span>
         </div>
@@ -56,7 +58,7 @@ export function PlayerCard({
           <div
             className={`timer-ring ${timerUrgency ? "urgent" : ""}`}
             style={{ "--timer-progress": `${timerProgress}%` } as CSSProperties}
-            aria-label={`${remainingSeconds}초 남음`}
+            aria-label={t("{seconds}초 남음", { seconds: remainingSeconds })}
           >
             <strong>{remainingSeconds}</strong>
             <small>SEC</small>

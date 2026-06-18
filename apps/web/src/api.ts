@@ -55,6 +55,13 @@ const apiUrl = (
 ).replace(/\/+$/, "");
 const tokenKey = "color-game-auth-token";
 
+export class ApiError extends Error {
+  constructor(readonly code: string, message: string) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
+
 export const getAuthToken = (): string | null =>
   window.localStorage.getItem(tokenKey);
 
@@ -67,9 +74,9 @@ export const clearAuthToken = (): void => {
 };
 
 const parseResponse = async <T>(response: Response): Promise<T> => {
-  const data = await response.json().catch(() => ({})) as T & { message?: string };
+  const data = await response.json().catch(() => ({})) as T & { code?: string; message?: string };
   if (!response.ok) {
-    throw new Error(data.message ?? "요청을 처리하지 못했습니다.");
+    throw new ApiError(data.code ?? "REQUEST_FAILED", data.message ?? "Request failed.");
   }
   return data;
 };
@@ -136,9 +143,10 @@ export const fetchMatches = async (accountId: string): Promise<MatchHistoryItem[
 };
 
 export const checkInAttendance = async (): Promise<Account> => {
+  const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
   const data = await request<{ account: Account }>("/attendance/check-in", {
     method: "POST",
-    body: "{}",
+    body: JSON.stringify({ timeZone }),
   });
   return data.account;
 };

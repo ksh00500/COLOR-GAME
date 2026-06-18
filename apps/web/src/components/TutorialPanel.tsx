@@ -120,13 +120,13 @@ export function TutorialPanel() {
             <p>{t(step.body)}</p>
           </div>
         </div>
-        <div className="tutorial-dots" aria-label="튜토리얼 진행도">
+        <div className="tutorial-dots" aria-label={t("튜토리얼 진행도")}>
           {tutorialSteps.map((item, index) => (
             <button
               key={item.title}
               type="button"
               className={index === stepIndex ? "active" : ""}
-              aria-label={`${index + 1}단계로 이동`}
+              aria-label={t("{step}단계로 이동", { step: index + 1 })}
               onClick={() => setStepIndex(index)}
             />
           ))}

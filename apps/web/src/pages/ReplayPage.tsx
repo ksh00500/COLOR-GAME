@@ -5,7 +5,7 @@ import { AppSidebar } from "../components/AppSidebar";
 import { GameBoard } from "../components/GameBoard";
 import { PlayerCard } from "../components/PlayerCard";
 import { SettingsPanel } from "../components/SettingsPanel";
-import { fetchReplay } from "../api";
+import { ApiError, fetchReplay } from "../api";
 import { shareUrl } from "../share";
 import { useSettings } from "../settings";
 import { useI18n } from "../i18n";
@@ -74,7 +74,7 @@ export function ReplayPage() {
       })
       .catch((error) => {
         if (!cancelled) {
-          setMessage(error instanceof Error ? error.message : "리플레이를 불러오지 못했습니다.");
+          setMessage(error instanceof ApiError ? error.code : "리플레이를 불러오지 못했습니다.");
         }
       });
     return () => {
@@ -99,8 +99,8 @@ export function ReplayPage() {
     const url = `${window.location.origin}/replay/${encodeURIComponent(replay.gameId)}?move=${step}`;
     try {
       const result = await shareUrl({
-        title: "Color Line 리플레이",
-        text: `${step}번째 수를 확인해 보세요.`,
+        title: t("Color Line 리플레이"),
+        text: t("{step}번째 수를 확인해 보세요.", { step }),
         url,
       });
       setMessage(result === "copied" ? "현재 수의 공유 링크를 복사했습니다." : "공유했습니다.");
@@ -139,7 +139,7 @@ export function ReplayPage() {
         </header>
 
         <section className="replay-layout">
-          <PlayerCard player={frame.players[0]} active={currentMove?.playerId === frame.players[0].id} targetScore={replay.finalState.config.targetScore} remainingSeconds={null} scoreDelta={null} descriptor="플레이어 1" />
+          <PlayerCard player={frame.players[0]} active={currentMove?.playerId === frame.players[0].id} targetScore={replay.finalState.config.targetScore} remainingSeconds={null} scoreDelta={null} descriptor={t("플레이어 1")} />
           <div className="replay-board-column">
             <GameBoard
               board={frame.board}
@@ -163,7 +163,7 @@ export function ReplayPage() {
                 min={0}
                 max={replay.moves.length}
                 value={step}
-                aria-label="리플레이 수순"
+                aria-label={t("리플레이 수순")}
                 onChange={(event) => setStep(Number(event.target.value))}
               />
               <div className="replay-buttons">
@@ -175,7 +175,7 @@ export function ReplayPage() {
               {message !== "" && <p className="online-message">{t(message)}</p>}
             </div>
           </div>
-          <PlayerCard player={frame.players[1]} active={currentMove?.playerId === frame.players[1].id} targetScore={replay.finalState.config.targetScore} remainingSeconds={null} scoreDelta={null} descriptor="플레이어 2" />
+          <PlayerCard player={frame.players[1]} active={currentMove?.playerId === frame.players[1].id} targetScore={replay.finalState.config.targetScore} remainingSeconds={null} scoreDelta={null} descriptor={t("플레이어 2")} />
         </section>
       </section>
       <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />

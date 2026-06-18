@@ -95,14 +95,8 @@ const boardWithPlacement = (
 };
 
 const describeError = (error: ServerError | undefined): string => {
-  if (error === undefined) return "요청을 처리하지 못했습니다.";
-  if (error.gameErrorCode === "NOT_YOUR_TURN") return "아직 내 차례가 아닙니다.";
-  if (error.gameErrorCode === "CELL_NOT_EMPTY") return "이미 타일이 놓인 칸입니다.";
-  if (error.gameErrorCode === "TURN_TIME_EXPIRED") return "제한 시간이 끝났습니다.";
-  if (error.code === "ROOM_NOT_FOUND") return "방을 찾을 수 없습니다.";
-  if (error.code === "ROOM_FULL") return "이미 두 명이 들어온 방입니다.";
-  if (error.code === "PLAYER_NOT_IN_ROOM") return "현재 연결된 플레이어와 요청 정보가 맞지 않습니다.";
-  return error.message ?? "요청을 처리하지 못했습니다.";
+  if (error === undefined) return "REQUEST_FAILED";
+  return error.gameErrorCode ?? error.code ?? "REQUEST_FAILED";
 };
 
 export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?: boolean }) {
@@ -424,8 +418,8 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
       : `/spectate/${encodeURIComponent(room.code)}`;
     try {
       const result = await shareUrl({
-        title: kind === "invite" ? "Color Line 초대" : "Color Line 관전",
-        text: kind === "invite" ? "초대 링크로 대전에 참가하세요." : "진행 중인 대전을 함께 보세요.",
+        title: kind === "invite" ? t("Color Line 초대") : t("Color Line 관전"),
+        text: kind === "invite" ? t("초대 링크로 대전에 참가하세요.") : t("진행 중인 대전을 함께 보세요."),
         url: `${window.location.origin}${path}`,
       });
       setMessage(result === "copied"
@@ -614,7 +608,7 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
             />
           </div>
 
-          <aside className="game-control-panel" aria-label="온라인 대전 정보">
+          <aside className="game-control-panel" aria-label={t("온라인 대전 정보")}>
             <PlayerCard
               player={opponent}
               active={opponentTurn}

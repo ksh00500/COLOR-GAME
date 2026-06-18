@@ -5,7 +5,8 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-User=ubuntu
+User=ec2-user
+Group=ec2-user
 WorkingDirectory=/srv/color-game/COLOR-GAME
 EnvironmentFile=/etc/color-game/server.env
 ExecStart=/usr/bin/pnpm --filter @color-game/server start

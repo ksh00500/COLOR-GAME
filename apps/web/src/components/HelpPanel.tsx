@@ -32,10 +32,10 @@ export function HelpPanel({ open, onClose }: { open: boolean; onClose: () => voi
           <li><strong>{t("방향별 합산")}</strong><span>{t("한 타일로 가로와 세로를 만들면 두 점수를 모두 받습니다.")}</span></li>
           <li><strong>{t("보드 포화")}</strong><span>{t("득점 없이 보드가 꽉 차면 마지막에 둔 색 타일만 사라집니다.")}</span></li>
         </ol>
-        <div className="score-table" aria-label="연결 점수">
-          <span><i>3</i><strong>1점</strong></span>
-          <span><i>4</i><strong>2점</strong></span>
-          <span><i>5</i><strong>4점</strong></span>
+        <div className="score-table" aria-label={t("연결 점수")}>
+          <span><i>3</i><strong>{t("{points}점", { points: 1 })}</strong></span>
+          <span><i>4</i><strong>{t("{points}점", { points: 2 })}</strong></span>
+          <span><i>5</i><strong>{t("{points}점", { points: 4 })}</strong></span>
         </div>
         <p className="help-note">{t("득점에 사용된 타일은 제거되며, 중력과 연쇄 콤보는 없습니다.")}</p>
       </section>

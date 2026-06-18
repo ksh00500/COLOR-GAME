@@ -84,18 +84,17 @@ class MemoryAccountStore implements AccountStore {
     return [];
   }
 
-  async checkInAttendance(accountId: string): Promise<AccountSummary | null> {
+  async checkInAttendance(accountId: string, attendedOn: string): Promise<AccountSummary | null> {
     const account = this.accounts.get(accountId);
     if (account === undefined) return null;
-    const today = new Date().toISOString().slice(0, 10);
-    const nextStreak = account.lastAttendanceDate === today
+    const nextStreak = account.lastAttendanceDate === attendedOn
       ? account.attendanceStreak
       : account.attendanceStreak + 1;
     const updated = {
       ...account,
       attendanceStreak: nextStreak,
       longestAttendanceStreak: Math.max(account.longestAttendanceStreak, nextStreak),
-      lastAttendanceDate: today,
+      lastAttendanceDate: attendedOn,
     };
     this.accounts.set(accountId, updated);
     return updated;
@@ -185,6 +184,7 @@ describe("auth routes", () => {
       method: "POST",
       url: "/attendance/check-in",
       headers: { authorization: `Bearer ${authBody.token}` },
+      payload: { timeZone: "Asia/Seoul" },
     });
     expect(firstCheckIn.statusCode).toBe(200);
     expect(firstCheckIn.json<{ account: AccountSummary }>().account.attendanceStreak).toBe(1);
@@ -193,6 +193,7 @@ describe("auth routes", () => {
       method: "POST",
       url: "/attendance/check-in",
       headers: { authorization: `Bearer ${authBody.token}` },
+      payload: { timeZone: "Asia/Seoul" },
     });
     expect(repeatedCheckIn.json<{ account: AccountSummary }>().account.attendanceStreak).toBe(1);
 

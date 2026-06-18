@@ -34,7 +34,7 @@ export function ResultPanel({
         ? "보드가 가득 찼습니다."
         : primaryWon
           ? "마지막 연결이 목표 점수를 완성했습니다."
-          : `${opponent.nickname} 플레이어가 목표 점수에 먼저 도달했습니다.`;
+          : "{name} 플레이어가 목표 점수에 먼저 도달했습니다.";
 
   return (
     <div className="modal-backdrop result-backdrop">
@@ -50,7 +50,7 @@ export function ResultPanel({
           </span>
         </div>
         <h2 id="result-title">{t(title)}</h2>
-        <p>{t(reason)}</p>
+        <p>{t(reason, { name: opponent.nickname })}</p>
         <div className="final-score">
           <span><small>{primary.nickname}</small><strong>{primary.score}</strong></span>
           <i>:</i>
