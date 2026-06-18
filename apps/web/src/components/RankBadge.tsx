@@ -1,4 +1,5 @@
 import { useId } from "react";
+import { useI18n } from "../i18n";
 
 export const paletteSteps = [
   { label: "레드", name: "Red Palette", minRating: 1050, color: "#b84d69" },
@@ -145,18 +146,19 @@ export function RankBadge({
   leaderboardRank,
 }: RankBadgeProps) {
   const tier = getRankTier(rating, leaderboardRank);
+  const { t, formatNumber } = useI18n();
 
   return (
     <span
       className={`rank-badge palette${compact ? " compact" : ""}${tier.isRainbow ? " rainbow" : ""}`}
-      aria-label={`팔레트 티어 ${tier.label}, 레이팅 ${rating}`}
-      title={`팔레트 티어 ${tier.label} · ${rating}`}
+      aria-label={t("팔레트 티어 {tier}, 레이팅 {rating}", { tier: t(tier.label), rating: formatNumber(rating) })}
+      title={t("팔레트 티어 {tier} · {rating}", { tier: t(tier.label), rating: formatNumber(rating) })}
     >
       <span className="rank-palette" aria-hidden="true">
         <PaletteTierIcon filledCount={tier.filledCount} isRainbow={tier.isRainbow} />
       </span>
       <span className="rank-copy">
-        <strong>{tier.label}</strong>
+        <strong>{t(tier.label)}</strong>
         {!compact && <small>{tier.name}</small>}
       </span>
     </span>

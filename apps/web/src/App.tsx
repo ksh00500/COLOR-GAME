@@ -5,6 +5,8 @@ import { LeaderboardPage } from "./pages/LeaderboardPage";
 import { LobbyPage } from "./pages/LobbyPage";
 import { MatchmakingPage } from "./pages/MatchmakingPage";
 import { OnlineRoomPage } from "./pages/OnlineRoomPage";
+import { ReplayPage } from "./pages/ReplayPage";
+import { SpectatePage } from "./pages/SpectatePage";
 import { TutorialPanel } from "./components/TutorialPanel";
 
 export function App() {
@@ -18,6 +20,8 @@ export function App() {
         <Route path="/private" element={<OnlineRoomPage />} />
         <Route path="/account" element={<AccountPage />} />
         <Route path="/leaderboard" element={<LeaderboardPage />} />
+        <Route path="/replay/:gameId" element={<ReplayPage />} />
+        <Route path="/spectate/:code" element={<SpectatePage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <TutorialPanel />

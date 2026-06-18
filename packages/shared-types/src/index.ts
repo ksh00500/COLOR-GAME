@@ -144,3 +144,13 @@ export interface RoomSnapshot {
   createdAt: number;
   updatedAt: number;
 }
+
+export interface GameReplay {
+  gameId: string;
+  roomCode: string;
+  mode: GameMode;
+  finalState: GameState;
+  moves: Move[];
+  startedAt: string;
+  finishedAt: string | null;
+}

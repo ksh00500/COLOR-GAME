@@ -16,7 +16,9 @@ import { ResultPanel } from "../components/ResultPanel";
 import { SettingsPanel } from "../components/SettingsPanel";
 import { getAuthToken } from "../api";
 import { playOpponentTurnCue } from "../audio";
+import { shareUrl } from "../share";
 import { useSettings } from "../settings";
+import { useI18n } from "../i18n";
 import { createAppSocket } from "../socket";
 
 type ConnectionStatus = "connecting" | "connected" | "disconnected" | "error";
@@ -105,6 +107,7 @@ const describeError = (error: ServerError | undefined): string => {
 
 export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?: boolean }) {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const [searchParams] = useSearchParams();
   const initialCode = searchParams.get("code")?.trim().toUpperCase() ?? "";
   const matchmakingMode = searchParams.get("mode") === "ranked" ? "ranked" : "casual";
@@ -414,6 +417,25 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
     });
   };
 
+  const shareRoomLink = async (kind: "invite" | "spectate") => {
+    if (room === null) return;
+    const path = kind === "invite"
+      ? `/private?code=${encodeURIComponent(room.code)}`
+      : `/spectate/${encodeURIComponent(room.code)}`;
+    try {
+      const result = await shareUrl({
+        title: kind === "invite" ? "Color Line 초대" : "Color Line 관전",
+        text: kind === "invite" ? "초대 링크로 대전에 참가하세요." : "진행 중인 대전을 함께 보세요.",
+        url: `${window.location.origin}${path}`,
+      });
+      setMessage(result === "copied"
+        ? kind === "invite" ? "초대 링크를 복사했습니다." : "관전 링크를 복사했습니다."
+        : "공유했습니다.");
+    } catch {
+      setMessage("공유를 완료하지 못했습니다.");
+    }
+  };
+
   if (matchmakingEntry && (room === null || game === null)) {
     const entryMessage = message ?? (
       connectionStatus === "connected"
@@ -431,15 +453,15 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
           <div className="match-entry-card" role="status" aria-live="polite">
             <span className="match-entry-pulse" aria-hidden="true" />
             <p className="eyebrow">{matchmakingMode === "ranked" ? "RANKED MATCH" : "CASUAL MATCH"}</p>
-            <h1 id="match-entry-title">게임을 준비하고 있습니다</h1>
-            <p>{entryMessage}</p>
+            <h1 id="match-entry-title">{t("게임을 준비하고 있습니다")}</h1>
+            <p>{t(entryMessage)}</p>
             {message !== null && (
               <button
                 className="secondary-action"
                 type="button"
                 onClick={() => navigate(`/matchmaking?mode=${matchmakingMode}`, { replace: true })}
               >
-                매칭으로 돌아가기
+                {t("매칭으로 돌아가기")}
               </button>
             )}
           </div>
@@ -458,16 +480,13 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
         <section className="online-shell app-content-shell" aria-labelledby="private-title">
           <div className="online-copy">
             <p className="eyebrow">PRIVATE ONLINE ROOM</p>
-            <h1 id="private-title">친구와 같은 색을 두고, 서로 다른 순간을 노리세요.</h1>
-            <p>
-              방을 만들면 6자리 초대 코드가 생성됩니다. 두 플레이어가 모두 준비하면 서버가
-              선공, 턴, 점수, 승패를 권위 있게 처리합니다.
-            </p>
+            <h1 id="private-title">{t("친구와 같은 색을 두고, 서로 다른 순간을 노리세요.")}</h1>
+            <p>{t("방을 만들면 6자리 초대 코드가 생성됩니다. 두 플레이어가 모두 준비하면 서버가 선공, 턴, 점수, 승패를 처리합니다.")}</p>
           </div>
 
           <div className="online-card">
             <label className="online-field">
-              <span>닉네임</span>
+              <span>{t("닉네임")}</span>
               <input
                 value={profile.nickname}
                 maxLength={24}
@@ -475,7 +494,7 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
               />
             </label>
             <fieldset>
-              <legend>아바타</legend>
+              <legend>{t("아바타")}</legend>
               <div className="segmented-control two-up">
                 {(["orbit", "prism"] as const).map((avatarId) => (
                   <button
@@ -491,17 +510,17 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
             </fieldset>
 
             <button className="primary-action" type="button" onClick={createRoom} disabled={connectionStatus !== "connected" || busyLabel !== null}>
-              새 사설방 만들기 <span aria-hidden="true">↗</span>
+              {t("새 사설방 만들기")} <span aria-hidden="true">↗</span>
             </button>
 
             <div className="join-row">
               <input
                 value={joinCode}
-                placeholder="초대 코드"
+                placeholder={t("초대 코드")}
                 onChange={(event) => setJoinCode(event.target.value.toUpperCase())}
               />
               <button className="secondary-action" type="button" onClick={joinRoom} disabled={connectionStatus !== "connected" || busyLabel !== null}>
-                참가
+                {t("참가")}
               </button>
             </div>
 
@@ -512,19 +531,23 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
                 <div className="waiting-players">
                   {room.players.map((player, index) => (
                     <p key={player?.id ?? `empty-${index}`}>
-                      <b>{player?.nickname ?? "대기 중"}</b>
-                      <small>{player === null ? "초대 코드를 공유하세요" : player.ready ? "READY" : "NOT READY"}</small>
+                      <b>{player?.nickname ?? t("대기 중")}</b>
+                      <small>{player === null ? t("초대 코드를 공유하세요") : player.ready ? "READY" : "NOT READY"}</small>
                     </p>
                   ))}
                 </div>
+                <div className="room-share-actions">
+                  <button className="secondary-action" type="button" onClick={() => void shareRoomLink("invite")}>{t("초대 링크 공유")}</button>
+                  <button className="secondary-action" type="button" onClick={() => void shareRoomLink("spectate")}>{t("관전 링크 공유")}</button>
+                </div>
                 <button className="primary-action" type="button" onClick={toggleReady} disabled={busyLabel !== null || roomPlayer === null || opponentRoomPlayer === null}>
-                  {roomPlayer?.ready ? "준비 취소" : "준비 완료"} <span aria-hidden="true">✓</span>
+                  {roomPlayer?.ready ? t("준비 취소") : t("준비 완료")} <span aria-hidden="true">✓</span>
                 </button>
               </section>
             )}
 
             {(message !== null || busyLabel !== null) && (
-              <p className="online-message">{busyLabel ?? message}</p>
+              <p className="online-message">{t(busyLabel ?? message ?? "")}</p>
             )}
           </div>
         </section>
@@ -538,10 +561,10 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
   const opponent = game.players.find((player) => player.id !== me.id) ?? game.players[1];
   const opponentTurn = currentPlayerId === opponent.id;
   const turnLabel = game.status === "finished"
-    ? "대전 종료"
+    ? t("대전 종료")
     : myTurn
-      ? "내 차례"
-      : `${opponent.nickname} 차례`;
+      ? t("내 차례")
+      : t("{name} 차례", { name: opponent.nickname });
   const matchLabel = room.mode === "ranked"
     ? "RANKED MATCH"
     : room.mode === "casual"
@@ -552,20 +575,21 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
     <main className="game-page app-frame">
       <AppSidebar onSettings={() => setSettingsOpen(true)} />
 
-      {message !== null && <p className="online-toast" role="status">{message}</p>}
+      {message !== null && <p className="online-toast" role="status">{t(message)}</p>}
 
       <section className="game-shell">
         <header className="game-topbar">
           <button className="icon-button labeled" type="button" onClick={() => navigate("/")}>
-            <span>←</span><small>로비</small>
+            <span>←</span><small>{t("로비")}</small>
           </button>
           <div className="match-label">
             <span>{matchLabel}</span>
             <strong>TURN {game.turnNumber}</strong>
           </div>
           <div className="header-actions">
-            <button className="icon-button labeled" type="button" onClick={() => setHelpOpen(true)}><span>?</span><small>규칙</small></button>
-            <button className="icon-button labeled" type="button" onClick={() => setSettingsOpen(true)}><span>◌</span><small>설정</small></button>
+            <button className="icon-button labeled" type="button" onClick={() => void shareRoomLink("spectate")}><span>◎</span><small>{t("관전 공유")}</small></button>
+            <button className="icon-button labeled" type="button" onClick={() => setHelpOpen(true)}><span>?</span><small>{t("규칙")}</small></button>
+            <button className="icon-button labeled" type="button" onClick={() => setSettingsOpen(true)}><span>◌</span><small>{t("설정")}</small></button>
           </div>
         </header>
 
@@ -597,13 +621,13 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
               targetScore={game.config.targetScore}
               remainingSeconds={opponentTurn ? remainingSeconds : null}
               scoreDelta={scoreNotice?.playerId === opponent.id ? scoreNotice.score : null}
-              descriptor={opponent.connectionStatus === "connected" ? "온라인 상대" : "연결 끊김"}
+              descriptor={opponent.connectionStatus === "connected" ? t("온라인 상대") : t("연결 끊김")}
             />
 
             <div className={`turn-banner ${myTurn ? "mine" : "theirs"}${turnCueActive ? " turn-ready-effect" : ""}`} role="status" aria-live="polite">
               <span className="turn-indicator" />
               <strong>{turnLabel}</strong>
-              <small>{myTurn ? "서버가 수를 검증합니다." : "상대의 수를 기다리는 중입니다."}</small>
+              <small>{myTurn ? t("서버가 수를 검증합니다.") : t("상대의 수를 기다리는 중입니다.")}</small>
             </div>
 
             <ColorPicker
@@ -622,10 +646,10 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
               targetScore={game.config.targetScore}
               remainingSeconds={myTurn ? remainingSeconds : null}
               scoreDelta={scoreNotice?.playerId === me.id ? scoreNotice.score : null}
-              descriptor="나"
+              descriptor={t("나")}
             />
             <button className="resign-button" type="button" onClick={() => setResignOpen(true)} disabled={game.status !== "playing" || busyLabel !== null}>
-              대전 포기
+              {t("대전 포기")}
             </button>
           </aside>
         </section>
@@ -635,11 +659,11 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
         <div className="modal-backdrop" role="presentation" onMouseDown={() => setResignOpen(false)}>
           <section className="confirm-panel" role="dialog" aria-modal="true" aria-labelledby="resign-title" onMouseDown={(event) => event.stopPropagation()}>
             <p className="eyebrow">CONFIRM RESIGNATION</p>
-            <h2 id="resign-title">게임을 포기하시겠습니까?</h2>
-            <p>현재 온라인 대전은 패배로 종료됩니다.</p>
+            <h2 id="resign-title">{t("게임을 포기하시겠습니까?")}</h2>
+            <p>{t("현재 온라인 대전은 패배로 종료됩니다.")}</p>
             <div className="result-actions">
-              <button className="secondary-action" type="button" onClick={() => setResignOpen(false)}>계속하기</button>
-              <button className="danger-action" type="button" onClick={resignOnline}>기권하기</button>
+              <button className="secondary-action" type="button" onClick={() => setResignOpen(false)}>{t("계속하기")}</button>
+              <button className="danger-action" type="button" onClick={resignOnline}>{t("기권하기")}</button>
             </div>
           </section>
         </div>
@@ -651,10 +675,15 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
         game={game}
         elapsedSeconds={Math.max(0, Math.floor((now - matchStartedAt) / 1_000))}
         perspectivePlayerId={me.id}
-        rematchLabel="새 방 만들기"
+        rematchLabel={t("새 방 만들기")}
         onRematch={() => navigate("/private")}
         onLobby={() => navigate("/")}
       />
+      {game.status === "finished" && (
+        <button className="floating-replay-link" type="button" onClick={() => navigate(`/replay/${encodeURIComponent(game.id)}`)}>
+          {t("대전 리플레이 보기")}
+        </button>
+      )}
     </main>
   );
 }

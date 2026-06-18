@@ -10,6 +10,7 @@ import {
 export type ThemePreference = "system" | "light" | "dark";
 export type AnimationLevel = "full" | "reduced" | "off";
 export type PresentationSpeed = "standard" | "fast";
+export type AppLanguage = "auto" | "ko" | "en" | "ja" | "es" | "pt-BR";
 
 export interface AppSettings {
   theme: ThemePreference;
@@ -18,6 +19,7 @@ export interface AppSettings {
   animationLevel: AnimationLevel;
   presentationSpeed: PresentationSpeed;
   soundEnabled: boolean;
+  language: AppLanguage;
 }
 
 interface SettingsContextValue {
@@ -34,6 +36,17 @@ const defaultSettings: AppSettings = {
   animationLevel: "full",
   presentationSpeed: "standard",
   soundEnabled: true,
+  language: "auto",
+};
+
+export const resolveAppLanguage = (language: AppLanguage): Exclude<AppLanguage, "auto"> => {
+  if (language !== "auto") return language;
+  const browserLanguage = navigator.language.toLowerCase();
+  if (browserLanguage.startsWith("ko")) return "ko";
+  if (browserLanguage.startsWith("ja")) return "ja";
+  if (browserLanguage.startsWith("es")) return "es";
+  if (browserLanguage.startsWith("pt")) return "pt-BR";
+  return "en";
 };
 
 const readSettings = (): AppSettings => {
@@ -64,6 +77,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       : "default";
     document.documentElement.dataset.motion = settings.animationLevel;
     document.documentElement.dataset.speed = settings.presentationSpeed;
+    document.documentElement.lang = resolveAppLanguage(settings.language);
   }, [settings]);
 
   useEffect(() => {

@@ -1,5 +1,6 @@
 import { useEffect, useId } from "react";
-import { useSettings, type AnimationLevel, type ThemePreference } from "../settings";
+import { useI18n } from "../i18n";
+import { useSettings, type AnimationLevel, type AppLanguage, type ThemePreference } from "../settings";
 
 interface SettingsPanelProps {
   open: boolean;
@@ -18,9 +19,19 @@ const motionOptions: Array<{ value: AnimationLevel; label: string }> = [
   { value: "off", label: "끄기" },
 ];
 
+const languageOptions: Array<{ value: AppLanguage; label: string }> = [
+  { value: "auto", label: "자동" },
+  { value: "ko", label: "한국어" },
+  { value: "en", label: "English" },
+  { value: "ja", label: "日本語" },
+  { value: "es", label: "Español" },
+  { value: "pt-BR", label: "Português (Brasil)" },
+];
+
 export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
   const titleId = useId();
   const { settings, updateSettings } = useSettings();
+  const { t } = useI18n();
 
   useEffect(() => {
     if (!open) return undefined;
@@ -45,17 +56,36 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
         <div className="panel-heading">
           <div>
             <p className="eyebrow">PREFERENCES</p>
-            <h2 id={titleId}>게임 설정</h2>
+            <h2 id={titleId}>{t("게임 설정")}</h2>
           </div>
-          <button className="icon-button" type="button" onClick={onClose} aria-label="설정 닫기">
+          <button className="icon-button" type="button" onClick={onClose} aria-label={t("설정 닫기")}>
             ×
           </button>
         </div>
 
         <div className="setting-group">
           <div className="setting-label">
-            <strong>화면 테마</strong>
-            <span>선택한 값은 이 기기에 저장됩니다.</span>
+            <strong>{t("언어")}</strong>
+            <span>{t("브라우저 언어를 자동으로 사용합니다.")}</span>
+          </div>
+          <div className="language-grid">
+            {languageOptions.map((option) => (
+              <button
+                type="button"
+                key={option.value}
+                className={settings.language === option.value ? "active" : ""}
+                onClick={() => updateSettings({ language: option.value })}
+              >
+                {option.value === "auto" ? t(option.label) : option.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="setting-group">
+          <div className="setting-label">
+            <strong>{t("화면 테마")}</strong>
+            <span>{t("선택한 값은 이 기기에 저장됩니다.")}</span>
           </div>
           <div className="segmented-control">
             {themeOptions.map((option) => (
@@ -65,7 +95,7 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
                 className={settings.theme === option.value ? "active" : ""}
                 onClick={() => updateSettings({ theme: option.value })}
               >
-                {option.label}
+                {t(option.label)}
               </button>
             ))}
           </div>
@@ -74,8 +104,8 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
         <div className="setting-group setting-stack">
           <label className="switch-row">
             <span>
-              <strong>색약 대응 팔레트</strong>
-              <small>색상 간 명도와 대비를 넓힙니다.</small>
+              <strong>{t("색약 대응 팔레트")}</strong>
+              <small>{t("색상 간 명도와 대비를 넓힙니다.")}</small>
             </span>
             <input
               type="checkbox"
@@ -88,8 +118,8 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
           </label>
           <label className="switch-row">
             <span>
-              <strong>타일 도형 표시</strong>
-              <small>색약 대응 팔레트를 켰을 때만 원, 삼각형, 사각형을 표시합니다.</small>
+              <strong>{t("타일 도형 표시")}</strong>
+              <small>{t("색약 대응 팔레트를 켰을 때만 원, 삼각형, 사각형을 표시합니다.")}</small>
             </span>
             <input
               type="checkbox"
@@ -100,8 +130,8 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
           </label>
           <label className="switch-row">
             <span>
-              <strong>효과음</strong>
-              <small>현재 시제품은 설정 상태만 보존합니다.</small>
+              <strong>{t("효과음")}</strong>
+              <small>{t("상대 턴 알림과 게임 효과음을 켜거나 끕니다.")}</small>
             </span>
             <input
               type="checkbox"
@@ -113,8 +143,8 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
 
         <div className="setting-group">
           <div className="setting-label">
-            <strong>애니메이션</strong>
-            <span>움직임과 전환 효과의 강도를 조절합니다.</span>
+            <strong>{t("애니메이션")}</strong>
+            <span>{t("움직임과 전환 효과의 강도를 조절합니다.")}</span>
           </div>
           <div className="segmented-control">
             {motionOptions.map((option) => (
@@ -124,7 +154,7 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
                 className={settings.animationLevel === option.value ? "active" : ""}
                 onClick={() => updateSettings({ animationLevel: option.value })}
               >
-                {option.label}
+                {t(option.label)}
               </button>
             ))}
           </div>
@@ -132,8 +162,8 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
 
         <div className="setting-group">
           <div className="setting-label">
-            <strong>게임 연출 속도</strong>
-            <span>빠름은 효과를 없애지 않고 시간을 줄입니다.</span>
+            <strong>{t("게임 연출 속도")}</strong>
+            <span>{t("빠름은 효과를 없애지 않고 시간을 줄입니다.")}</span>
           </div>
           <div className="segmented-control two-up">
             <button
@@ -141,14 +171,14 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
               className={settings.presentationSpeed === "standard" ? "active" : ""}
               onClick={() => updateSettings({ presentationSpeed: "standard" })}
             >
-              기본
+              {t("기본")}
             </button>
             <button
               type="button"
               className={settings.presentationSpeed === "fast" ? "active" : ""}
               onClick={() => updateSettings({ presentationSpeed: "fast" })}
             >
-              빠름
+              {t("빠름")}
             </button>
           </div>
         </div>

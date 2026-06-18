@@ -14,15 +14,19 @@
 - Apprentice, Tactician, Mastermind AI 난이도
 - 플레이어별 색상 선택 상태 유지
 - 라이트·다크·시스템 테마
+- 한국어·영어·일본어·스페인어·브라질 포르투갈어와 브라우저 언어 자동 감지
 - 색약 대응 팔레트와 타일 도형 표시
 - 애니메이션 감소·끄기와 연출 속도 설정
 - 키보드 방향키 이동, 숫자키 색상 선택, Enter/Space 배치
 - 데스크톱·태블릿·모바일 반응형 UI
 - 설정 저장, 도움말, 기권, 결과 및 즉시 재경기
 - 사설방 생성, 초대 코드 참가, 준비 완료, 서버 권위형 온라인 대전
+- 초대 링크 공유, 읽기 전용 실시간 관전 링크
 - 계정 가입/로그인, 토큰 인증
 - 일반 자동 매칭과 경쟁전 자동 매칭
 - 경쟁전 레이팅 갱신, 리더보드, 프로필, 최근 전적
+- DB 경기 수순 리플레이, 특정 수 공유 링크, 계정 연속 출석
+- 최근 실제 매칭 시간을 이용한 예상 대기 시간
 - 운영 헬스 체크, readiness/liveness, Prometheus 텍스트 메트릭
 - RDS 저장, 서버 재시작 시 진행 중인 방 복구
 
@@ -95,6 +99,7 @@ pnpm db:check
 - Socket.IO 실시간 연결
 - `room:create`, `room:join`, `room:ready`
 - `game:move`, `game:resign`, `game:reconnect`
+- `room:spectate` 읽기 전용 관전
 - `matchmaking:join`, `matchmaking:leave`
 - 서버 측 턴 검증, 점수 계산, 타일 제거, 승패 처리
 - 연결 끊김 표시와 재접속 복구
@@ -103,6 +108,7 @@ pnpm db:check
 - 서버 재시작 시 RDS의 활성 방 스냅샷 복구
 - 계정 가입/로그인, JWT 형식 토큰 인증
 - 경쟁전 결과 저장, Elo 방식 레이팅 갱신, 리더보드/전적 API
+- `GET /replays/:gameId`, `POST /attendance/check-in`
 - `GET /livez`, `GET /readyz`, `GET /metrics` 운영 엔드포인트
 - `GET /rooms/:code` 디버그 조회
 

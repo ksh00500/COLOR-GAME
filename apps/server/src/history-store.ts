@@ -1,5 +1,5 @@
 import { Pool, type PoolClient, type PoolConfig } from "pg";
-import type { Move, RoomSnapshot } from "@color-game/shared-types";
+import type { GameReplay, GameState, Move, RoomSnapshot } from "@color-game/shared-types";
 
 export interface StoreHealth {
   enabled: boolean;
@@ -13,6 +13,7 @@ export interface GameHistoryStore {
   close(): Promise<void>;
   health(): Promise<StoreHealth>;
   loadActiveRooms(): Promise<RoomSnapshot[]>;
+  getReplay(gameId: string): Promise<GameReplay | null>;
   recordRoomSnapshot(room: RoomSnapshot): Promise<void>;
   recordMove(room: RoomSnapshot, move: Move): Promise<void>;
 }
@@ -30,6 +31,10 @@ export class NullGameHistoryStore implements GameHistoryStore {
 
   async loadActiveRooms(): Promise<RoomSnapshot[]> {
     return [];
+  }
+
+  async getReplay(): Promise<GameReplay | null> {
+    return null;
   }
 
   async recordRoomSnapshot(): Promise<void> {
@@ -105,6 +110,68 @@ export class PostgresGameHistoryStore implements GameHistoryStore {
     return result.rows
       .map((row) => row.last_snapshot)
       .filter((room): room is RoomSnapshot => room?.code !== undefined);
+  }
+
+  async getReplay(gameId: string): Promise<GameReplay | null> {
+    const gameResult = await this.pool.query<{
+      id: string;
+      room_code: string;
+      mode: GameReplay["mode"];
+      state: GameState;
+      started_at: Date;
+      finished_at: Date | null;
+    }>(
+      `
+        select id, room_code, mode, state, started_at, finished_at
+        from games
+        where id = $1
+          and status = 'finished'
+      `,
+      [gameId],
+    );
+    const game = gameResult.rows[0];
+    if (game === undefined) return null;
+
+    const moveResult = await this.pool.query<{
+      player_id: string;
+      row_index: number;
+      col_index: number;
+      color: Move["color"];
+      earned_score: number;
+      scoring_lines: Move["scoringLines"];
+      removed_cells: Move["removedCells"];
+      turn_number: number;
+      created_at: Date;
+    }>(
+      `
+        select player_id, row_index, col_index, color, earned_score,
+          scoring_lines, removed_cells, turn_number, created_at
+        from game_moves
+        where game_id = $1
+        order by turn_number asc
+      `,
+      [gameId],
+    );
+
+    return {
+      gameId: game.id,
+      roomCode: game.room_code,
+      mode: game.mode,
+      finalState: game.state,
+      moves: moveResult.rows.map((move) => ({
+        playerId: move.player_id,
+        row: move.row_index,
+        col: move.col_index,
+        color: move.color,
+        earnedScore: move.earned_score,
+        scoringLines: move.scoring_lines,
+        removedCells: move.removed_cells,
+        turnNumber: move.turn_number,
+        createdAt: move.created_at.getTime(),
+      })),
+      startedAt: game.started_at.toISOString(),
+      finishedAt: game.finished_at?.toISOString() ?? null,
+    };
   }
 
   async recordRoomSnapshot(room: RoomSnapshot): Promise<void> {

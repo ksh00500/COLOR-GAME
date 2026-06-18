@@ -1,4 +1,5 @@
 import { useEffect, useId, useState } from "react";
+import { useI18n } from "../i18n";
 
 const tutorialKey = "color-line-tutorial-complete-v3";
 
@@ -60,6 +61,7 @@ const markCompleted = () => {
 
 export function TutorialPanel() {
   const titleId = useId();
+  const { t } = useI18n();
   const [open, setOpen] = useState(() => !hasCompletedTutorial());
   const [stepIndex, setStepIndex] = useState(0);
   const step = tutorialSteps[stepIndex]!;
@@ -86,7 +88,7 @@ export function TutorialPanel() {
       <section className="tutorial-panel" role="dialog" aria-modal="true" aria-labelledby={titleId}>
         <div className="tutorial-heading">
           <p className="eyebrow">FIRST GUIDE</p>
-          <h2 id={titleId}>처음 한 판을 위한 빠른 안내</h2>
+          <h2 id={titleId}>{t("처음 한 판을 위한 빠른 안내")}</h2>
         </div>
         <div className="tutorial-stage">
           <div className={`tutorial-game-preview ${step.preview}`} aria-hidden="true">
@@ -101,10 +103,10 @@ export function TutorialPanel() {
                 ))}
               </div>
               <div className="tutorial-preview-side">
-                <span className="tutorial-preview-status">{step.preview === "turn" ? "내 차례" : "플레이 중"}</span>
+                <span className="tutorial-preview-status">{step.preview === "turn" ? t("내 차례") : t("플레이 중")}</span>
                 <span className="tutorial-preview-choice">
                   <i />
-                  <b>색 선택</b>
+                  <b>{t("색 선택")}</b>
                 </span>
                 <span className="tutorial-preview-score">
                   <strong>{step.preview === "win" ? "7" : step.preview === "score" ? "1" : "0"}</strong>/7
@@ -114,8 +116,8 @@ export function TutorialPanel() {
           </div>
           <div className="tutorial-card" aria-live="polite">
             <span className="tutorial-count">{String(stepIndex + 1).padStart(2, "0")}</span>
-            <strong>{step.title}</strong>
-            <p>{step.body}</p>
+            <strong>{t(step.title)}</strong>
+            <p>{t(step.body)}</p>
           </div>
         </div>
         <div className="tutorial-dots" aria-label="튜토리얼 진행도">
@@ -131,7 +133,7 @@ export function TutorialPanel() {
         </div>
         <div className="tutorial-actions">
           <button className="secondary-action" type="button" onClick={close}>
-            건너뛰기
+            {t("건너뛰기")}
           </button>
           <button
             className="primary-action"
@@ -144,10 +146,10 @@ export function TutorialPanel() {
               setStepIndex((current) => current + 1);
             }}
           >
-            {isLastStep ? "시작하기" : "다음"} <span aria-hidden="true">↗</span>
+            {isLastStep ? t("시작하기") : t("다음")} <span aria-hidden="true">↗</span>
           </button>
         </div>
-        <p className="tutorial-note">나중에는 게임 화면의 규칙 버튼에서 핵심 규칙을 다시 볼 수 있습니다.</p>
+        <p className="tutorial-note">{t("나중에는 게임 화면의 규칙 버튼에서 핵심 규칙을 다시 볼 수 있습니다.")}</p>
       </section>
     </div>
   );

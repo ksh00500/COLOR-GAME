@@ -6,13 +6,20 @@ import { getAuthToken } from "../api";
 import { AppSidebar } from "../components/AppSidebar";
 import { SettingsPanel } from "../components/SettingsPanel";
 import { createAppSocket } from "../socket";
+import { useI18n } from "../i18n";
 
 const roomPlayerPrefix = "color-game-room-player:";
 
 interface MatchAck {
   ok: boolean;
   status?: "queued" | "matched";
+  estimatedWaitSeconds?: number;
   error?: { code: string; message?: string };
+}
+
+interface QueuedEvent {
+  mode: "casual" | "ranked";
+  estimatedWaitSeconds: number;
 }
 
 interface MatchEvent {
@@ -23,11 +30,15 @@ interface MatchEvent {
 
 export function MatchmakingPage() {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const [searchParams] = useSearchParams();
   const mode = searchParams.get("mode") === "ranked" ? "ranked" : "casual";
   const socketRef = useRef<Socket | null>(null);
   const [status, setStatus] = useState("서버 연결 중");
   const [queued, setQueued] = useState(false);
+  const [queuedAt, setQueuedAt] = useState<number | null>(null);
+  const [estimatedWaitSeconds, setEstimatedWaitSeconds] = useState<number | null>(null);
+  const [now, setNow] = useState(Date.now());
   const [settingsOpen, setSettingsOpen] = useState(false);
   const token = useMemo(() => getAuthToken(), []);
 
@@ -37,8 +48,10 @@ export function MatchmakingPage() {
 
     socket.on("connect", () => setStatus("매칭을 시작할 수 있습니다."));
     socket.on("connect_error", () => setStatus("매칭 서버에 연결하지 못했습니다."));
-    socket.on("matchmaking:queued", () => {
+    socket.on("matchmaking:queued", (event: QueuedEvent) => {
       setQueued(true);
+      setQueuedAt((current) => current ?? Date.now());
+      setEstimatedWaitSeconds(event.estimatedWaitSeconds);
       setStatus("상대를 찾는 중입니다.");
     });
     socket.on("matchmaking:matched", (event: MatchEvent) => {
@@ -52,6 +65,12 @@ export function MatchmakingPage() {
       socketRef.current = null;
     };
   }, [navigate, mode, token]);
+
+  useEffect(() => {
+    if (!queued) return undefined;
+    const timer = window.setInterval(() => setNow(Date.now()), 1_000);
+    return () => window.clearInterval(timer);
+  }, [queued]);
 
   const joinQueue = () => {
     if (mode === "ranked" && token === null) {
@@ -76,6 +95,8 @@ export function MatchmakingPage() {
         }
         if (response.status === "queued") {
           setQueued(true);
+          setQueuedAt(Date.now());
+          setEstimatedWaitSeconds(response.estimatedWaitSeconds ?? null);
           setStatus("상대를 찾는 중입니다.");
         }
       },
@@ -85,6 +106,8 @@ export function MatchmakingPage() {
   const leaveQueue = () => {
     socketRef.current?.emit("matchmaking:leave", () => {
       setQueued(false);
+      setQueuedAt(null);
+      setEstimatedWaitSeconds(null);
       setStatus("매칭을 취소했습니다.");
     });
   };
@@ -96,23 +119,30 @@ export function MatchmakingPage() {
       <section className="online-shell app-content-shell" aria-labelledby="matchmaking-title">
         <div className="online-copy">
           <p className="eyebrow">{mode === "ranked" ? "RANKED MATCH" : "CASUAL MATCH"}</p>
-          <h1 id="matchmaking-title">{mode === "ranked" ? "레이팅이 걸린 경쟁 게임" : "가볍게 만나는 일반 게임"}</h1>
+          <h1 id="matchmaking-title">{mode === "ranked" ? t("레이팅이 걸린 경쟁 게임") : t("가볍게 만나는 일반 게임")}</h1>
           <p>
             {mode === "ranked"
-              ? "경쟁 게임은 로그인한 플레이어만 참가할 수 있습니다. 결과는 레이팅과 전적에 반영됩니다."
-              : "매칭 큐에 들어가면 부담 없이 다른 플레이어와 자동으로 방이 만들어집니다."}
+              ? t("경쟁 게임은 로그인한 플레이어만 참가할 수 있습니다. 결과는 레이팅과 전적에 반영됩니다.")
+              : t("매칭 큐에 들어가면 부담 없이 다른 플레이어와 자동으로 방이 만들어집니다.")}
           </p>
         </div>
 
         <div className="online-card matchmaking-card">
           <p className="eyebrow">MATCHMAKING STATUS</p>
-          <h2>{queued ? "대기 중" : "준비됨"}</h2>
-          <p className="online-message">{status}</p>
+          <h2>{queued ? t("대기 중") : t("준비됨")}</h2>
+          <p className="online-message">{t(status)}</p>
+          {queued && queuedAt !== null && (
+            <div className="queue-estimate" role="status">
+              <span>{t("현재 대기 {seconds}초", { seconds: Math.max(0, Math.floor((now - queuedAt) / 1_000)) })}</span>
+              <strong>{estimatedWaitSeconds === null ? t("예상 시간 계산 중") : t("예상 약 {seconds}초", { seconds: estimatedWaitSeconds })}</strong>
+              <small>{t("최근 실제 매칭 시간을 기준으로 계산한 예상치입니다.")}</small>
+            </div>
+          )}
           {queued ? (
-            <button className="secondary-action" type="button" onClick={leaveQueue}>매칭 취소</button>
+            <button className="secondary-action" type="button" onClick={leaveQueue}>{t("매칭 취소")}</button>
           ) : (
             <button className="primary-action" type="button" onClick={joinQueue}>
-              {mode === "ranked" ? "경쟁 매칭 시작" : "일반 매칭 시작"} <span aria-hidden="true">↗</span>
+              {mode === "ranked" ? t("경쟁 매칭 시작") : t("일반 매칭 시작")} <span aria-hidden="true">↗</span>
             </button>
           )}
         </div>

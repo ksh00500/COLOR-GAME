@@ -16,6 +16,9 @@ export interface AccountSummary {
   rankedWins: number;
   rankedLosses: number;
   rankedDraws: number;
+  attendanceStreak: number;
+  longestAttendanceStreak: number;
+  lastAttendanceDate: string | null;
   createdAt: string;
 }
 
@@ -62,6 +65,7 @@ export interface AccountStore {
   getPublicProfile(accountId: string): Promise<PublicProfile | null>;
   getLeaderboard(limit: number): Promise<PublicProfile[]>;
   getMatchHistory(accountId: string, limit: number): Promise<MatchHistoryItem[]>;
+  checkInAttendance(accountId: string): Promise<AccountSummary | null>;
   recordFinishedRoom(room: RoomSnapshot): Promise<void>;
 }
 
@@ -96,6 +100,10 @@ export class NullAccountStore implements AccountStore {
     return [];
   }
 
+  async checkInAttendance(): Promise<AccountSummary | null> {
+    return null;
+  }
+
   async recordFinishedRoom(): Promise<void> {
     return undefined;
   }
@@ -117,6 +125,9 @@ interface AccountRow {
   ranked_wins: number;
   ranked_losses: number;
   ranked_draws: number;
+  attendance_streak: number;
+  longest_attendance_streak: number;
+  last_attendance_date: string | null;
   created_at: Date;
 }
 
@@ -148,6 +159,9 @@ const toAccountSummary = (row: AccountRow): AccountSummary => ({
   rankedWins: row.ranked_wins,
   rankedLosses: row.ranked_losses,
   rankedDraws: row.ranked_draws,
+  attendanceStreak: row.attendance_streak,
+  longestAttendanceStreak: row.longest_attendance_streak,
+  lastAttendanceDate: row.last_attendance_date,
   createdAt: row.created_at.toISOString(),
 });
 
@@ -315,6 +329,66 @@ export class PostgresAccountStore implements AccountStore {
       turnNumber: row.turn_number,
       finishedAt: row.finished_at.toISOString(),
     }));
+  }
+
+  async checkInAttendance(accountId: string): Promise<AccountSummary | null> {
+    const today = new Date().toISOString().slice(0, 10);
+    const yesterdayDate = new Date(`${today}T00:00:00.000Z`);
+    yesterdayDate.setUTCDate(yesterdayDate.getUTCDate() - 1);
+    const yesterday = yesterdayDate.toISOString().slice(0, 10);
+
+    const client = await this.pool.connect();
+    try {
+      await client.query("begin");
+      const accountResult = await client.query<AccountRow>(
+        "select * from accounts where id = $1 for update",
+        [accountId],
+      );
+      const account = accountResult.rows[0];
+      if (account === undefined) {
+        await client.query("rollback");
+        return null;
+      }
+
+      if (account.last_attendance_date === today) {
+        await client.query("commit");
+        return toAccountSummary(account);
+      }
+
+      const nextStreak = account.last_attendance_date === yesterday
+        ? account.attendance_streak + 1
+        : 1;
+      const nextLongest = Math.max(account.longest_attendance_streak, nextStreak);
+
+      await client.query(
+        `
+          insert into attendance_days (account_id, attended_on)
+          values ($1, $2::date)
+          on conflict (account_id, attended_on) do nothing
+        `,
+        [accountId, today],
+      );
+      const updated = await client.query<AccountRow>(
+        `
+          update accounts set
+            attendance_streak = $2,
+            longest_attendance_streak = $3,
+            last_attendance_date = $4::date,
+            updated_at = now()
+          where id = $1
+          returning *
+        `,
+        [accountId, nextStreak, nextLongest, today],
+      );
+      await client.query("commit");
+      const row = updated.rows[0];
+      return row === undefined ? null : toAccountSummary(row);
+    } catch (error) {
+      await client.query("rollback");
+      throw error;
+    } finally {
+      client.release();
+    }
   }
 
   async recordFinishedRoom(room: RoomSnapshot): Promise<void> {

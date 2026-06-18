@@ -18,6 +18,7 @@ import { ResultPanel } from "../components/ResultPanel";
 import { SettingsPanel } from "../components/SettingsPanel";
 import { playOpponentTurnCue } from "../audio";
 import { useSettings } from "../settings";
+import { useI18n } from "../i18n";
 
 const HUMAN_ID = "player1";
 const AI_ID = "player2";
@@ -83,6 +84,7 @@ const boardWithPlacement = (
 };
 
 export function GamePage() {
+  const { t } = useI18n();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const difficulty = resolveDifficulty(searchParams.get("difficulty"));
@@ -279,12 +281,12 @@ export function GamePage() {
   };
 
   const turnLabel = game.status === "finished"
-    ? "대전 종료"
+    ? t("대전 종료")
     : humanTurn
-      ? "내 차례"
+      ? t("내 차례")
       : isAiThinking
         ? `${ai.nickname} 생각 중 ···`
-        : "상대 차례";
+        : t("상대 차례");
 
   return (
     <main className="game-page app-frame">
@@ -293,15 +295,15 @@ export function GamePage() {
       <section className="game-shell">
         <header className="game-topbar">
           <button className="icon-button labeled" type="button" onClick={() => navigate("/")}>
-            <span>←</span><small>로비</small>
+            <span>←</span><small>{t("로비")}</small>
           </button>
           <div className="match-label">
             <span>AI MATCH</span>
             <strong>TURN {game.turnNumber}</strong>
           </div>
           <div className="header-actions">
-            <button className="icon-button labeled" type="button" onClick={() => setHelpOpen(true)}><span>?</span><small>규칙</small></button>
-            <button className="icon-button labeled" type="button" onClick={() => setSettingsOpen(true)}><span>◌</span><small>설정</small></button>
+            <button className="icon-button labeled" type="button" onClick={() => setHelpOpen(true)}><span>?</span><small>{t("규칙")}</small></button>
+            <button className="icon-button labeled" type="button" onClick={() => setSettingsOpen(true)}><span>◌</span><small>{t("설정")}</small></button>
           </div>
         </header>
 
@@ -333,13 +335,13 @@ export function GamePage() {
               targetScore={game.config.targetScore}
               remainingSeconds={aiTurn ? remainingSeconds : null}
               scoreDelta={scoreNotice?.playerId === AI_ID ? scoreNotice.score : null}
-              descriptor={aiDescriptors[difficulty]}
+              descriptor={t(aiDescriptors[difficulty])}
             />
 
             <div className={`turn-banner ${humanTurn ? "mine" : "theirs"}${turnCueActive ? " turn-ready-effect" : ""}`} role="status" aria-live="polite">
               <span className="turn-indicator" />
               <strong>{turnLabel}</strong>
-              <small>{humanTurn ? "색상을 고르고 빈칸에 놓으세요." : "상대 수를 기다리는 중입니다."}</small>
+              <small>{humanTurn ? t("색상을 고르고 빈칸에 놓으세요.") : t("상대 수를 기다리는 중입니다.")}</small>
             </div>
 
             <ColorPicker
@@ -355,11 +357,11 @@ export function GamePage() {
               targetScore={game.config.targetScore}
               remainingSeconds={humanTurn ? remainingSeconds : null}
               scoreDelta={scoreNotice?.playerId === HUMAN_ID ? scoreNotice.score : null}
-              descriptor="게스트 플레이어"
+              descriptor={t("게스트 플레이어")}
             />
 
             <button className="resign-button" type="button" onClick={() => setResignOpen(true)} disabled={game.status !== "playing"}>
-              대전 포기
+              {t("대전 포기")}
             </button>
           </aside>
         </section>
@@ -369,14 +371,14 @@ export function GamePage() {
         <div className="modal-backdrop" role="presentation" onMouseDown={() => setResignOpen(false)}>
           <section className="confirm-panel" role="dialog" aria-modal="true" aria-labelledby="resign-title" onMouseDown={(event) => event.stopPropagation()}>
             <p className="eyebrow">CONFIRM RESIGNATION</p>
-            <h2 id="resign-title">게임을 포기하시겠습니까?</h2>
-            <p>현재 대전은 패배로 종료됩니다.</p>
+            <h2 id="resign-title">{t("게임을 포기하시겠습니까?")}</h2>
+            <p>{t("현재 대전은 패배로 종료됩니다.")}</p>
             <div className="result-actions">
-              <button className="secondary-action" type="button" onClick={() => setResignOpen(false)}>계속하기</button>
+              <button className="secondary-action" type="button" onClick={() => setResignOpen(false)}>{t("계속하기")}</button>
               <button className="danger-action" type="button" onClick={() => {
                 setGame((current) => resignGame(current, HUMAN_ID));
                 setResignOpen(false);
-              }}>기권하기</button>
+              }}>{t("기권하기")}</button>
             </div>
           </section>
         </div>

@@ -3,6 +3,7 @@ import { fetchLeaderboard, type PublicProfile } from "../api";
 import { AppSidebar } from "../components/AppSidebar";
 import { PaletteTierIcon, paletteSteps, rainbowRankLimit, RankBadge } from "../components/RankBadge";
 import { SettingsPanel } from "../components/SettingsPanel";
+import { useI18n } from "../i18n";
 
 interface TierGuideItem {
   label: string;
@@ -45,6 +46,7 @@ const tierGuide: TierGuideItem[] = [
 ];
 
 export function LeaderboardPage() {
+  const { t, formatNumber } = useI18n();
   const [players, setPlayers] = useState<PublicProfile[]>([]);
   const [message, setMessage] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -62,14 +64,14 @@ export function LeaderboardPage() {
       <section className="online-shell account-shell app-content-shell" aria-labelledby="leaderboard-title">
         <div className="online-copy">
           <p className="eyebrow">RANKED LADDER</p>
-          <h1 id="leaderboard-title">팔레트 티어와 순위를 확인하세요.</h1>
-          <p>경쟁 게임 결과로 팔레트가 채워집니다. 보라 팔레트를 완성한 상위 50명은 무지개 팔레트를 얻습니다.</p>
+          <h1 id="leaderboard-title">{t("팔레트 티어와 순위를 확인하세요.")}</h1>
+          <p>{t("경쟁 게임 결과로 팔레트가 채워집니다. 보라 팔레트를 완성한 상위 50명은 무지개 팔레트를 얻습니다.")}</p>
         </div>
 
         <section className="tier-guide-card" aria-label="팔레트 티어 구성">
           <div className="tier-guide-heading">
             <p className="eyebrow">PALETTE TIERS</p>
-            <strong>티어 순서</strong>
+            <strong>{t("티어 순서")}</strong>
           </div>
           <div className="tier-guide-list">
             {tierGuide.map((tier, index) => (
@@ -79,9 +81,9 @@ export function LeaderboardPage() {
                   <PaletteTierIcon filledCount={tier.filledCount} isRainbow={tier.isRainbow ?? false} />
                 </span>
                 <div className="tier-guide-copy">
-                  <strong>{tier.label}</strong>
-                  <span className="tier-requirement">{tier.requirement}</span>
-                  <small>{tier.description}</small>
+                  <strong>{t(tier.label)}</strong>
+                  <span className="tier-requirement">{t(tier.requirement)}</span>
+                  <small>{t(tier.description)}</small>
                 </div>
               </article>
             ))}
@@ -89,7 +91,7 @@ export function LeaderboardPage() {
         </section>
 
         <div className="online-card leaderboard-card">
-          {message !== null && <p className="online-message">{message}</p>}
+          {message !== null && <p className="online-message">{t(message)}</p>}
           {players.map((player, index) => {
             const rankedGames = player.rankedWins + player.rankedLosses + player.rankedDraws;
             const winRate = rankedGames === 0 ? 0 : Math.round((player.rankedWins / rankedGames) * 100);
@@ -98,8 +100,8 @@ export function LeaderboardPage() {
                 <span className="leaderboard-rank">{index + 1}</span>
                 <RankBadge rating={player.rating} leaderboardRank={index + 1} compact />
                 <b>{player.displayName}</b>
-                <strong>{player.rating}</strong>
-                <small>{player.rankedWins}승 {player.rankedLosses}패 · {winRate}%</small>
+                <strong>{formatNumber(player.rating)}</strong>
+                <small>{t("{wins}승 {losses}패 · {rate}%", { wins: player.rankedWins, losses: player.rankedLosses, rate: winRate })}</small>
               </article>
             );
           })}

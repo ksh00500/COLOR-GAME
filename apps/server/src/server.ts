@@ -44,6 +44,7 @@ interface QueuedPlayer {
   socketId: string;
   accountId: string | null;
   profile: PlayerProfile;
+  queuedAt: number;
 }
 
 const toClientError = (error: RoomError) => ({
@@ -116,6 +117,9 @@ const publicAccount = (account: AccountSummary) => ({
   rankedWins: account.rankedWins,
   rankedLosses: account.rankedLosses,
   rankedDraws: account.rankedDraws,
+  attendanceStreak: account.attendanceStreak,
+  longestAttendanceStreak: account.longestAttendanceStreak,
+  lastAttendanceDate: account.lastAttendanceDate,
   createdAt: account.createdAt,
 });
 
@@ -129,6 +133,10 @@ export const createServer = (options: ServerOptions = {}) => {
   const authSecret = options.authSecret ?? "dev-only-color-game-secret-for-local-development";
   const tokenTtlSeconds = options.tokenTtlSeconds ?? 60 * 60 * 24 * 30;
   const matchmakingQueues: Record<MatchmakingMode, QueuedPlayer[]> = {
+    casual: [],
+    ranked: [],
+  };
+  const matchmakingWaitSamples: Record<MatchmakingMode, number[]> = {
     casual: [],
     ranked: [],
   };
@@ -238,6 +246,16 @@ export const createServer = (options: ServerOptions = {}) => {
     }
   };
 
+  const estimatedWaitSeconds = (mode: MatchmakingMode): number => {
+    const samples = matchmakingWaitSamples[mode];
+    if (samples.length === 0) {
+      return mode === "casual" ? 20 : 30;
+    }
+    const sorted = [...samples].sort((a, b) => a - b);
+    const median = sorted[Math.floor(sorted.length / 2)] ?? 20;
+    return Math.max(5, Math.min(120, Math.round(median / 1_000)));
+  };
+
   const getSocketAccount = (socket: Socket): AccountSummary | null => {
     const account = socket.data.account;
     return account === undefined ? null : account as AccountSummary;
@@ -265,6 +283,14 @@ export const createServer = (options: ServerOptions = {}) => {
     secondSocket.join(room.code);
 
     metrics.matchStarted();
+    const matchedAt = Date.now();
+    matchmakingWaitSamples[mode].push(
+      matchedAt - first.queuedAt,
+      matchedAt - second.queuedAt,
+    );
+    if (matchmakingWaitSamples[mode].length > 40) {
+      matchmakingWaitSamples[mode].splice(0, matchmakingWaitSamples[mode].length - 40);
+    }
     persistRoomLater(room, "Failed to persist matched room");
     firstSocket.emit("matchmaking:matched", { ok: true, room, playerId: firstPlayer.id });
     secondSocket.emit("matchmaking:matched", { ok: true, room, playerId: secondPlayer.id });
@@ -426,6 +452,30 @@ export const createServer = (options: ServerOptions = {}) => {
     return { matches: await accountStore.getMatchHistory(params.accountId, query.limit) };
   });
 
+  app.post("/attendance/check-in", async (request, reply) => {
+    const account = await authenticateToken(bearerToken(request.headers.authorization));
+    if (account === null || !accountStore.enabled) {
+      return reply.code(401).send({ code: "UNAUTHORIZED", message: "Sign in is required." });
+    }
+    const updated = await accountStore.checkInAttendance(account.id);
+    if (updated === null) {
+      return reply.code(404).send({ code: "PROFILE_NOT_FOUND", message: "Profile was not found." });
+    }
+    return { account: publicAccount(updated) };
+  });
+
+  app.get("/replays/:gameId", async (request, reply) => {
+    if (!historyStore.enabled) {
+      return reply.code(503).send({ code: "DATABASE_DISABLED", message: "Replay database is not configured." });
+    }
+    const params = z.object({ gameId: z.string().min(1).max(160) }).parse(request.params);
+    const replay = await historyStore.getReplay(params.gameId);
+    if (replay === null) {
+      return reply.code(404).send({ code: "REPLAY_NOT_FOUND", message: "Replay was not found." });
+    }
+    return { replay };
+  });
+
   app.get("/rooms/:code", async (request, reply) => {
     const params = z.object({ code: z.string().toUpperCase() }).parse(request.params);
     const result = roomService.getRoom(params.code);
@@ -515,6 +565,21 @@ export const createServer = (options: ServerOptions = {}) => {
 
       persistRoomLater(result.value, "Failed to persist ready state");
       io.to(result.value.code).emit("game:state", result.value);
+      callback?.({ ok: true, room: result.value });
+    });
+
+    socket.on("room:spectate", (payload, callback?: (response: unknown) => void) => {
+      const parsed = z.object({ code: z.string().trim().toUpperCase().min(4).max(12) }).safeParse(payload ?? {});
+      if (!parsed.success) {
+        callback?.({ ok: false, error: parsed.error.flatten() });
+        return;
+      }
+      const result = roomService.getRoom(parsed.data.code);
+      if (!result.ok) {
+        callback?.({ ok: false, error: toClientError(result.error) });
+        return;
+      }
+      socket.join(result.value.code);
       callback?.({ ok: true, room: result.value });
     });
 
@@ -630,6 +695,7 @@ export const createServer = (options: ServerOptions = {}) => {
         socketId: socket.id,
         accountId: account?.id ?? null,
         profile: accountProfile(player, socket.id, account),
+        queuedAt: Date.now(),
       };
 
       const queue = matchmakingQueues[parsed.data.mode];
@@ -639,8 +705,9 @@ export const createServer = (options: ServerOptions = {}) => {
       if (opponent === undefined) {
         queue.push(queued);
         metrics.setQueueDepth(parsed.data.mode, queue.length);
-        callback?.({ ok: true, status: "queued", mode: parsed.data.mode });
-        socket.emit("matchmaking:queued", { mode: parsed.data.mode });
+        const estimate = estimatedWaitSeconds(parsed.data.mode);
+        callback?.({ ok: true, status: "queued", mode: parsed.data.mode, estimatedWaitSeconds: estimate });
+        socket.emit("matchmaking:queued", { mode: parsed.data.mode, estimatedWaitSeconds: estimate });
         return;
       }
 

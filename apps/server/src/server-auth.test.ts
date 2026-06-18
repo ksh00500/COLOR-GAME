@@ -39,6 +39,9 @@ class MemoryAccountStore implements AccountStore {
       rankedWins: 0,
       rankedLosses: 0,
       rankedDraws: 0,
+      attendanceStreak: 0,
+      longestAttendanceStreak: 0,
+      lastAttendanceDate: null,
       createdAt: new Date(0).toISOString(),
       password: input.password,
     };
@@ -79,6 +82,23 @@ class MemoryAccountStore implements AccountStore {
 
   async getMatchHistory(): Promise<MatchHistoryItem[]> {
     return [];
+  }
+
+  async checkInAttendance(accountId: string): Promise<AccountSummary | null> {
+    const account = this.accounts.get(accountId);
+    if (account === undefined) return null;
+    const today = new Date().toISOString().slice(0, 10);
+    const nextStreak = account.lastAttendanceDate === today
+      ? account.attendanceStreak
+      : account.attendanceStreak + 1;
+    const updated = {
+      ...account,
+      attendanceStreak: nextStreak,
+      longestAttendanceStreak: Math.max(account.longestAttendanceStreak, nextStreak),
+      lastAttendanceDate: today,
+    };
+    this.accounts.set(accountId, updated);
+    return updated;
   }
 
   async recordFinishedRoom(_room: RoomSnapshot): Promise<void> {
@@ -160,6 +180,21 @@ describe("auth routes", () => {
     });
     expect(me.statusCode).toBe(200);
     expect(me.json<{ account: AccountSummary }>().account.displayName).toBe("Player One");
+
+    const firstCheckIn = await app.inject({
+      method: "POST",
+      url: "/attendance/check-in",
+      headers: { authorization: `Bearer ${authBody.token}` },
+    });
+    expect(firstCheckIn.statusCode).toBe(200);
+    expect(firstCheckIn.json<{ account: AccountSummary }>().account.attendanceStreak).toBe(1);
+
+    const repeatedCheckIn = await app.inject({
+      method: "POST",
+      url: "/attendance/check-in",
+      headers: { authorization: `Bearer ${authBody.token}` },
+    });
+    expect(repeatedCheckIn.json<{ account: AccountSummary }>().account.attendanceStreak).toBe(1);
 
     const leaderboard = await app.inject({
       method: "GET",

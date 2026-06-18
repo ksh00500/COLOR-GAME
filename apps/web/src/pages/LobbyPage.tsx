@@ -4,6 +4,7 @@ import type { AiDifficulty } from "@color-game/ai-engine";
 import { AppSidebar } from "../components/AppSidebar";
 import { SettingsPanel } from "../components/SettingsPanel";
 import { useVisitorAnalytics } from "../visitorAnalytics";
+import { useI18n } from "../i18n";
 
 type FirstPlayer = "human" | "ai" | "random";
 
@@ -42,11 +43,9 @@ const modes = [
   },
 ] as const;
 
-const formatVisitorCount = (count: number | undefined) =>
-  count === undefined ? "-" : count.toLocaleString("ko-KR");
-
 export function LobbyPage() {
   const navigate = useNavigate();
+  const { t, formatNumber } = useI18n();
   const [difficulty, setDifficulty] = useState<AiDifficulty>("easy");
   const [firstPlayer, setFirstPlayer] = useState<FirstPlayer>("human");
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -85,15 +84,15 @@ export function LobbyPage() {
 
         <div className="home-copy">
           <p className="eyebrow">COLOR LINE STRATEGY</p>
-          <h1>색을 이어 점수를 완성하세요</h1>
-          <p>5×5 보드에서 같은 색 3개 이상을 만들면 점수를 얻습니다.</p>
+          <h1>{t("색을 이어 점수를 완성하세요")}</h1>
+          <p>{t("5×5 보드에서 같은 색 3개 이상을 만들면 점수를 얻습니다.")}</p>
 
           <div className="home-actions">
             <button className="home-primary" type="button" onClick={startGame}>
-              시작하세요
+              {t("시작하세요")}
             </button>
             <button className="home-secondary" type="button" onClick={() => navigate("/matchmaking?mode=casual")}>
-              온라인 매칭
+              {t("온라인 매칭")}
             </button>
           </div>
 
@@ -114,7 +113,7 @@ export function LobbyPage() {
                   }}
                 >
                   {level === "easy" ? "Easy" : level === "normal" ? "Normal" : "Hard"}
-                  {locked && <small>준비중</small>}
+                  {locked && <small>{t("준비중")}</small>}
                 </button>
               );
             })}
@@ -129,7 +128,7 @@ export function LobbyPage() {
                 className={firstPlayer === option ? "active" : ""}
                 onClick={() => setFirstPlayer(option)}
               >
-                {option === "human" ? "나" : option === "ai" ? "AI" : "랜덤"}
+                {option === "human" ? t("나") : option === "ai" ? "AI" : t("랜덤")}
               </button>
             ))}
           </div>
@@ -138,24 +137,24 @@ export function LobbyPage() {
             {modes.map((mode) => (
               <button key={mode.id} className={`home-mode ${mode.accent}`} type="button" onClick={() => openMode(mode.id)}>
                 <small>{mode.state}</small>
-                <strong>{mode.title}</strong>
-                <span>{mode.id === "ai" ? "바로 시작" : mode.id === "private" ? "방 만들기" : "매칭"}</span>
+                <strong>{t(mode.title)}</strong>
+                <span>{mode.id === "ai" ? t("바로 시작") : mode.id === "private" ? t("방 만들기") : t("매칭")}</span>
               </button>
             ))}
           </section>
 
           <section className="visitor-strip" aria-label="접속자 현황">
             <span>
-              <small>실시간</small>
-              <strong>{formatVisitorCount(visitorCounts?.realtime)}</strong>
+              <small>{t("실시간")}</small>
+              <strong>{visitorCounts?.realtime === undefined ? "-" : formatNumber(visitorCounts.realtime)}</strong>
             </span>
             <span>
-              <small>일간</small>
-              <strong>{formatVisitorCount(visitorCounts?.daily)}</strong>
+              <small>{t("일간")}</small>
+              <strong>{visitorCounts?.daily === undefined ? "-" : formatNumber(visitorCounts.daily)}</strong>
             </span>
             <span>
-              <small>월간</small>
-              <strong>{formatVisitorCount(visitorCounts?.monthly)}</strong>
+              <small>{t("월간")}</small>
+              <strong>{visitorCounts?.monthly === undefined ? "-" : formatNumber(visitorCounts.monthly)}</strong>
             </span>
           </section>
         </div>

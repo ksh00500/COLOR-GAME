@@ -1,3 +1,5 @@
+import type { GameReplay } from "@color-game/shared-types";
+
 export interface Account {
   id: string;
   email: string;
@@ -8,6 +10,9 @@ export interface Account {
   rankedWins: number;
   rankedLosses: number;
   rankedDraws: number;
+  attendanceStreak: number;
+  longestAttendanceStreak: number;
+  lastAttendanceDate: string | null;
   createdAt: string;
 }
 
@@ -128,6 +133,21 @@ export const fetchMatches = async (accountId: string): Promise<MatchHistoryItem[
     `/profiles/${encodeURIComponent(accountId)}/matches?limit=20`,
   );
   return data.matches;
+};
+
+export const checkInAttendance = async (): Promise<Account> => {
+  const data = await request<{ account: Account }>("/attendance/check-in", {
+    method: "POST",
+    body: "{}",
+  });
+  return data.account;
+};
+
+export const fetchReplay = async (gameId: string): Promise<GameReplay> => {
+  const data = await request<{ replay: GameReplay }>(
+    `/replays/${encodeURIComponent(gameId)}`,
+  );
+  return data.replay;
 };
 
 export const recordVisitorHeartbeat = async (

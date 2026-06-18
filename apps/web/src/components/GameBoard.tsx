@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import type { Board, Position, TileColorId } from "@color-game/shared-types";
+import { useI18n } from "../i18n";
 
 interface GameBoardProps {
   board: Board;
@@ -40,6 +41,7 @@ export function GameBoard({
   onFocusedIndexChange,
   onPlace,
 }: GameBoardProps) {
+  const { t } = useI18n();
   const boardRef = useRef<HTMLDivElement>(null);
   const size = board.length;
 
@@ -72,7 +74,7 @@ export function GameBoard({
         className="game-board"
         ref={boardRef}
         role="grid"
-        aria-label="5×5 게임 보드"
+        aria-label={t("5×5 게임 보드")}
         style={{ gridTemplateColumns: `repeat(${size}, 1fr)` }}
       >
         {board.flatMap((row, rowIndex) =>
@@ -83,8 +85,8 @@ export function GameBoard({
             const placed = lastPlaced?.row === rowIndex && lastPlaced.col === colIndex;
             const invalid = invalidCell?.row === rowIndex && invalidCell.col === colIndex;
             const label = cell === null
-              ? `${rowIndex + 1}행 ${colIndex + 1}열 빈칸, ${colorName[selectedColor]} 배치`
-              : `${rowIndex + 1}행 ${colIndex + 1}열 ${colorName[cell]} 타일`;
+              ? t("{row}행 {col}열 빈칸, {color} 배치", { row: rowIndex + 1, col: colIndex + 1, color: t(colorName[selectedColor]) })
+              : t("{row}행 {col}열 {color} 타일", { row: rowIndex + 1, col: colIndex + 1, color: t(colorName[cell]) });
 
             return (
               <button

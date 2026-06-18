@@ -1,4 +1,5 @@
 import type { GameState } from "@color-game/shared-types";
+import { useI18n } from "../i18n";
 
 interface ResultPanelProps {
   game: GameState;
@@ -17,6 +18,7 @@ export function ResultPanel({
   perspectivePlayerId,
   rematchLabel = "다시 하기",
 }: ResultPanelProps) {
+  const { t } = useI18n();
   if (game.status !== "finished") return null;
 
   const primary = game.players.find((player) => player.id === perspectivePlayerId) ?? game.players[0];
@@ -47,20 +49,20 @@ export function ResultPanel({
             <strong>{primary.nickname}</strong>
           </span>
         </div>
-        <h2 id="result-title">{title}</h2>
-        <p>{reason}</p>
+        <h2 id="result-title">{t(title)}</h2>
+        <p>{t(reason)}</p>
         <div className="final-score">
           <span><small>{primary.nickname}</small><strong>{primary.score}</strong></span>
           <i>:</i>
           <span><small>{opponent.nickname}</small><strong>{opponent.score}</strong></span>
         </div>
         <div className="result-meta">
-          <span><small>전체 턴</small><strong>{game.turnNumber}</strong></span>
-          <span><small>게임 시간</small><strong>{Math.floor(elapsedSeconds / 60)}:{String(elapsedSeconds % 60).padStart(2, "0")}</strong></span>
+          <span><small>{t("전체 턴")}</small><strong>{game.turnNumber}</strong></span>
+          <span><small>{t("게임 시간")}</small><strong>{Math.floor(elapsedSeconds / 60)}:{String(elapsedSeconds % 60).padStart(2, "0")}</strong></span>
         </div>
         <div className="result-actions">
-          <button type="button" className="secondary-action" onClick={onLobby}>메인으로</button>
-          <button type="button" className="primary-action" onClick={onRematch}>{rematchLabel} <span>↗</span></button>
+          <button type="button" className="secondary-action" onClick={onLobby}>{t("메인으로")}</button>
+          <button type="button" className="primary-action" onClick={onRematch}>{t(rematchLabel)} <span>↗</span></button>
         </div>
       </section>
     </div>
