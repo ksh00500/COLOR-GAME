@@ -1,7 +1,7 @@
 server {
   listen 80;
   listen [::]:80;
-  server_name colortile.kro.kr 3.26.178.31 _;
+  server_name colortile.kro.kr 3.26.178.31;
 
   include /etc/nginx/conf.d/color-game-locations.inc;
 }
