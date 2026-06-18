@@ -269,6 +269,11 @@ const messages: Record<string, Message> = {
   "준비 상태 변경 중": { en: "Updating ready state", ja: "準備状態を更新中", es: "Actualizando estado", "pt-BR": "Atualizando estado" },
   "수 전송 중": { en: "Sending move", ja: "手を送信中", es: "Enviando jugada", "pt-BR": "Enviando jogada" },
   "기권 처리 중": { en: "Processing resignation", ja: "投了を処理中", es: "Procesando rendición", "pt-BR": "Processando desistência" },
+  "경기를 유지한 채 링크를 복사할 수 있습니다.": { en: "Copy the link without leaving the match.", ja: "対戦を続けたままリンクをコピーできます。", es: "Copia el enlace sin salir de la partida.", "pt-BR": "Copie o link sem sair da partida." },
+  "공유 링크": { en: "Share link", ja: "共有リンク", es: "Enlace para compartir", "pt-BR": "Link de compartilhamento" },
+  "닫기": { en: "Close", ja: "閉じる", es: "Cerrar", "pt-BR": "Fechar" },
+  "링크 복사": { en: "Copy link", ja: "リンクをコピー", es: "Copiar enlace", "pt-BR": "Copiar link" },
+  "공유 링크를 직접 선택해 복사해 주세요.": { en: "Select and copy the share link manually.", ja: "共有リンクを選択してコピーしてください。", es: "Selecciona y copia el enlace manualmente.", "pt-BR": "Selecione e copie o link manualmente." },
 };
 
 export const hasTranslation = (key: string): boolean => messages[key] !== undefined;

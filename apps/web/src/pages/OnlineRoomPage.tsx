@@ -50,6 +50,7 @@ interface PlayerProfile {
 
 const profileKey = "color-game-player-profile";
 const roomPlayerPrefix = "color-game-room-player:";
+const roomSnapshotPrefix = "color-game-room-snapshot:";
 
 const defaultProfile = (): PlayerProfile => ({
   nickname: `Guest-${Math.floor(1000 + Math.random() * 9000)}`,
@@ -84,6 +85,26 @@ const saveRoomPlayer = (code: string, playerId: string) => {
 const readRoomPlayer = (code: string): string | null =>
   window.localStorage.getItem(`${roomPlayerPrefix}${code}`);
 
+const saveRoomSnapshot = (room: RoomSnapshot) => {
+  try {
+    window.sessionStorage.setItem(`${roomSnapshotPrefix}${room.code}`, JSON.stringify(room));
+  } catch {
+    // A snapshot is only a reconnect convenience; live server state remains authoritative.
+  }
+};
+
+const readRoomSnapshot = (code: string): RoomSnapshot | null => {
+  if (code === "") return null;
+  try {
+    const raw = window.sessionStorage.getItem(`${roomSnapshotPrefix}${code}`);
+    if (raw === null) return null;
+    const snapshot = JSON.parse(raw) as RoomSnapshot;
+    return snapshot.code === code ? snapshot : null;
+  } catch {
+    return null;
+  }
+};
+
 const boardWithPlacement = (
   board: Board,
   position: Position,
@@ -106,17 +127,16 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
   const initialCode = searchParams.get("code")?.trim().toUpperCase() ?? "";
   const matchmakingMode = searchParams.get("mode") === "ranked" ? "ranked" : "casual";
   const { settings } = useSettings();
+  const initialPlayerId = initialCode === "" ? null : readRoomPlayer(initialCode);
   const socketRef = useRef<Socket | null>(null);
   const roomCodeRef = useRef(initialCode);
-  const playerIdRef = useRef<string | null>(
-    initialCode === "" ? null : readRoomPlayer(initialCode),
-  );
+  const playerIdRef = useRef<string | null>(initialPlayerId);
   const effectTimers = useRef<number[]>([]);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>("connecting");
   const [profile, setProfile] = useState(readProfile);
   const [joinCode, setJoinCode] = useState(initialCode);
-  const [room, setRoom] = useState<RoomSnapshot | null>(null);
-  const [playerId, setPlayerId] = useState<string | null>(null);
+  const [room, setRoom] = useState<RoomSnapshot | null>(() => readRoomSnapshot(initialCode));
+  const [playerId, setPlayerId] = useState<string | null>(initialPlayerId);
   const [selectedColors, setSelectedColors] = useState<Record<string, TileColorId>>({});
   const [visualBoard, setVisualBoard] = useState<Board | null>(null);
   const [scoringCells, setScoringCells] = useState<Set<string>>(new Set());
@@ -129,6 +149,10 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
   const [turnCueActive, setTurnCueActive] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [shareNotice, setShareNotice] = useState<string | null>(null);
+  const [shareDialog, setShareDialog] = useState<{
+    kind: "invite" | "spectate";
+    url: string;
+  } | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [resignOpen, setResignOpen] = useState(false);
@@ -170,6 +194,7 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
 
   const applyRoom = useCallback((nextRoom: RoomSnapshot) => {
     roomCodeRef.current = nextRoom.code;
+    saveRoomSnapshot(nextRoom);
     setRoom((current) => {
       previousBoardRef.current = current?.game?.board ?? null;
       return nextRoom;
@@ -435,18 +460,41 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
     const path = kind === "invite"
       ? `/private?code=${encodeURIComponent(room.code)}`
       : `/spectate/${encodeURIComponent(room.code)}`;
+    const url = `${window.location.origin}${path}`;
+    if (game?.status === "playing") {
+      setShareDialog({ kind, url });
+      return;
+    }
+
     try {
       const result = await shareUrl({
         title: kind === "invite" ? t("Color Line 초대") : t("Color Line 관전"),
         text: kind === "invite" ? t("초대 링크로 대전에 참가하세요.") : t("진행 중인 대전을 함께 보세요."),
-        url: `${window.location.origin}${path}`,
-        copyOnly: game?.status === "playing",
+        url,
       });
       setShareNotice(result === "copied"
         ? kind === "invite" ? "초대 링크를 복사했습니다." : "관전 링크를 복사했습니다."
         : "공유했습니다.");
     } catch {
       setShareNotice("공유를 완료하지 못했습니다.");
+    }
+  };
+
+  const copyShareDialogLink = async () => {
+    if (shareDialog === null) return;
+    try {
+      await shareUrl({
+        title: shareDialog.kind === "invite" ? t("Color Line 초대") : t("Color Line 관전"),
+        text: shareDialog.kind === "invite" ? t("초대 링크로 대전에 참가하세요.") : t("진행 중인 대전을 함께 보세요."),
+        url: shareDialog.url,
+        copyOnly: true,
+      });
+      setShareNotice(
+        shareDialog.kind === "invite" ? "초대 링크를 복사했습니다." : "관전 링크를 복사했습니다.",
+      );
+      setShareDialog(null);
+    } catch {
+      setShareNotice("공유 링크를 직접 선택해 복사해 주세요.");
     }
   };
 
@@ -679,6 +727,33 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
             <div className="result-actions">
               <button className="secondary-action" type="button" onClick={() => setResignOpen(false)}>{t("계속하기")}</button>
               <button className="danger-action" type="button" onClick={resignOnline}>{t("기권하기")}</button>
+            </div>
+          </section>
+        </div>
+      )}
+
+      {shareDialog !== null && (
+        <div className="modal-backdrop" role="presentation" onMouseDown={() => setShareDialog(null)}>
+          <section
+            className="confirm-panel share-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="share-dialog-title"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <p className="eyebrow">SHARE MATCH</p>
+            <h2 id="share-dialog-title">{t("관전 링크 공유")}</h2>
+            <p>{t("경기를 유지한 채 링크를 복사할 수 있습니다.")}</p>
+            <input
+              className="share-link-field"
+              aria-label={t("공유 링크")}
+              readOnly
+              value={shareDialog.url}
+              onFocus={(event) => event.currentTarget.select()}
+            />
+            <div className="result-actions">
+              <button className="secondary-action" type="button" onClick={() => setShareDialog(null)}>{t("닫기")}</button>
+              <button className="primary-action" type="button" onClick={() => void copyShareDialogLink()}>{t("링크 복사")}</button>
             </div>
           </section>
         </div>

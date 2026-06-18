@@ -1085,6 +1085,20 @@ p {
   font-weight: 800;
 }
 
+.share-dialog {
+  width: min(92vw, 560px);
+}
+
+.share-link-field {
+  width: 100%;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-raised);
+  color: var(--ink);
+  font: inherit;
+}
+
 .online-message {
   margin: 0;
   line-height: 1.55;
