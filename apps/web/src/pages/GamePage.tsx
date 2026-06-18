@@ -131,7 +131,7 @@ export function GamePage() {
 
     if (settings.animationLevel === "off") return;
     setTurnCueActive(true);
-    const timer = window.setTimeout(() => setTurnCueActive(false), 850);
+    const timer = window.setTimeout(() => setTurnCueActive(false), 1_200);
     effectTimers.current.push(timer);
   }, [settings.animationLevel, settings.soundEnabled]);
 

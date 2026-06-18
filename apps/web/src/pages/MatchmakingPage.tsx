@@ -43,7 +43,7 @@ export function MatchmakingPage() {
     });
     socket.on("matchmaking:matched", (event: MatchEvent) => {
       window.localStorage.setItem(`${roomPlayerPrefix}${event.room.code}`, event.playerId);
-      navigate(`/private?code=${event.room.code}`, { replace: true });
+      navigate(`/match?code=${event.room.code}&mode=${mode}`, { replace: true });
     });
 
     return () => {

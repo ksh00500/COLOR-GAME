@@ -103,10 +103,11 @@ const describeError = (error: ServerError | undefined): string => {
   return error.message ?? "요청을 처리하지 못했습니다.";
 };
 
-export function OnlineRoomPage() {
+export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?: boolean }) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const initialCode = searchParams.get("code")?.trim().toUpperCase() ?? "";
+  const matchmakingMode = searchParams.get("mode") === "ranked" ? "ranked" : "casual";
   const { settings } = useSettings();
   const socketRef = useRef<Socket | null>(null);
   const effectTimers = useRef<number[]>([]);
@@ -161,7 +162,7 @@ export function OnlineRoomPage() {
 
     if (settings.animationLevel === "off") return;
     setTurnCueActive(true);
-    const timer = window.setTimeout(() => setTurnCueActive(false), 850);
+    const timer = window.setTimeout(() => setTurnCueActive(false), 1_200);
     effectTimers.current.push(timer);
   }, [settings.animationLevel, settings.soundEnabled]);
 
@@ -197,8 +198,12 @@ export function OnlineRoomPage() {
           if (response.ok && response.room !== undefined) {
             setPlayerId(storedPlayerId);
             applyRoom(response.room);
+            return;
           }
+          setMessage(describeError(response.error));
         });
+      } else if (matchmakingEntry) {
+        setMessage("매칭 정보를 찾지 못했습니다. 다시 매칭을 시작해 주세요.");
       }
     });
     socket.on("disconnect", () => setConnectionStatus("disconnected"));
@@ -213,7 +218,7 @@ export function OnlineRoomPage() {
       socket.disconnect();
       socketRef.current = null;
     };
-  }, [applyRoom, initialCode]);
+  }, [applyRoom, initialCode, matchmakingEntry]);
 
   useEffect(() => {
     if (game?.lastMove === null || game?.lastMove === undefined) return;
@@ -409,6 +414,42 @@ export function OnlineRoomPage() {
     });
   };
 
+  if (matchmakingEntry && (room === null || game === null)) {
+    const entryMessage = message ?? (
+      connectionStatus === "connected"
+        ? "매칭 정보를 동기화하고 있습니다."
+        : connectionStatus === "connecting"
+          ? "게임 서버에 연결하고 있습니다."
+          : "게임 서버와 다시 연결하고 있습니다."
+    );
+
+    return (
+      <main className="online-page app-frame">
+        <AppSidebar onSettings={() => setSettingsOpen(true)} />
+
+        <section className="match-entry-shell" aria-labelledby="match-entry-title">
+          <div className="match-entry-card" role="status" aria-live="polite">
+            <span className="match-entry-pulse" aria-hidden="true" />
+            <p className="eyebrow">{matchmakingMode === "ranked" ? "RANKED MATCH" : "CASUAL MATCH"}</p>
+            <h1 id="match-entry-title">게임을 준비하고 있습니다</h1>
+            <p>{entryMessage}</p>
+            {message !== null && (
+              <button
+                className="secondary-action"
+                type="button"
+                onClick={() => navigate(`/matchmaking?mode=${matchmakingMode}`, { replace: true })}
+              >
+                매칭으로 돌아가기
+              </button>
+            )}
+          </div>
+        </section>
+
+        <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      </main>
+    );
+  }
+
   if (room === null || game === null) {
     return (
       <main className="online-page app-frame">
@@ -501,6 +542,11 @@ export function OnlineRoomPage() {
     : myTurn
       ? "내 차례"
       : `${opponent.nickname} 차례`;
+  const matchLabel = room.mode === "ranked"
+    ? "RANKED MATCH"
+    : room.mode === "casual"
+      ? "CASUAL MATCH"
+      : `PRIVATE ROOM ${room.code}`;
 
   return (
     <main className="game-page app-frame">
@@ -514,7 +560,7 @@ export function OnlineRoomPage() {
             <span>←</span><small>로비</small>
           </button>
           <div className="match-label">
-            <span>PRIVATE ROOM {room.code}</span>
+            <span>{matchLabel}</span>
             <strong>TURN {game.turnNumber}</strong>
           </div>
           <div className="header-actions">

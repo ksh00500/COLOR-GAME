@@ -16,8 +16,8 @@ const paintSpots = [
   { cx: 53, cy: 26, rx: 7.4, ry: 5.8, rotate: -12 },
   { cx: 70, cy: 26, rx: 7.6, ry: 5.7, rotate: 13 },
   { cx: 85, cy: 37, rx: 7.2, ry: 5.4, rotate: 16 },
-  { cx: 78, cy: 54, rx: 7.4, ry: 5.7, rotate: -8 },
-  { cx: 60, cy: 58, rx: 7.4, ry: 5.8, rotate: 7 },
+  { cx: 73, cy: 50, rx: 7.4, ry: 5.7, rotate: -8 },
+  { cx: 58, cy: 53, rx: 7.4, ry: 5.8, rotate: 7 },
   { cx: 42, cy: 55, rx: 7.6, ry: 5.8, rotate: -14 },
   { cx: 31, cy: 46, rx: 7.1, ry: 5.4, rotate: 10 },
 ] as const;

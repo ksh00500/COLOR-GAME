@@ -14,6 +14,7 @@ export function App() {
         <Route path="/" element={<LobbyPage />} />
         <Route path="/game" element={<GamePage />} />
         <Route path="/matchmaking" element={<MatchmakingPage />} />
+        <Route path="/match" element={<OnlineRoomPage matchmakingEntry />} />
         <Route path="/private" element={<OnlineRoomPage />} />
         <Route path="/account" element={<AccountPage />} />
         <Route path="/leaderboard" element={<LeaderboardPage />} />

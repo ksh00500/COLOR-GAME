@@ -957,6 +957,54 @@ p {
   align-content: center;
 }
 
+.match-entry-shell {
+  display: grid;
+  min-width: 0;
+  min-height: 100vh;
+  place-items: center;
+  padding: 2rem;
+}
+
+.match-entry-card {
+  display: grid;
+  justify-items: center;
+  gap: 0.75rem;
+  width: min(100%, 520px);
+  padding: clamp(2rem, 5vw, 3.5rem);
+  border: 1px solid var(--app-line-strong);
+  border-radius: 24px;
+  text-align: center;
+  background: var(--app-panel);
+  box-shadow: var(--app-shadow);
+}
+
+.match-entry-card h1 {
+  margin: 0;
+  color: var(--app-ink);
+  font-size: clamp(1.8rem, 4vw, 3rem);
+  letter-spacing: -0.05em;
+}
+
+.match-entry-card > p:last-of-type {
+  margin: 0;
+  color: var(--app-ink-soft);
+  font-weight: 700;
+}
+
+.match-entry-card .secondary-action {
+  margin-top: 0.75rem;
+}
+
+.match-entry-pulse {
+  width: 54px;
+  height: 54px;
+  border: 2px solid color-mix(in srgb, var(--green-light) 58%, var(--app-line));
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--green-light) 0 18%, transparent 20%);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--green-light) 25%, transparent);
+  animation: match-entry-pulse 1.4s ease-out infinite;
+}
+
 .online-field {
   display: grid;
   gap: 0.45rem;
@@ -1231,6 +1279,7 @@ fieldset legend {
 }
 
 .turn-banner {
+  position: relative;
   display: grid;
   grid-template-columns: auto auto 1fr;
   align-items: center;
@@ -1243,6 +1292,27 @@ fieldset legend {
   border-radius: 12px;
   background: color-mix(in srgb, var(--surface-raised) 86%, transparent);
   box-shadow: 0 7px 20px rgba(50, 32, 18, 0.06);
+  isolation: isolate;
+  overflow: hidden;
+}
+
+.turn-banner > * {
+  position: relative;
+  z-index: 1;
+}
+
+.turn-banner::after {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  top: -80%;
+  left: -35%;
+  width: 34%;
+  height: 260%;
+  opacity: 0;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  transform: rotate(18deg) translateX(-180%);
 }
 
 .turn-indicator {
@@ -1258,11 +1328,19 @@ fieldset legend {
 }
 
 .turn-banner.turn-ready-effect {
-  animation: turn-ready-flash 850ms ease both;
+  animation: turn-ready-flash 1.2s cubic-bezier(.2,.8,.2,1) both;
 }
 
 .turn-banner.turn-ready-effect .turn-indicator {
-  animation: turn-ready-dot 850ms ease both;
+  animation: turn-ready-dot 1.2s cubic-bezier(.2,.8,.2,1) both;
+}
+
+.turn-banner.turn-ready-effect strong {
+  animation: turn-ready-label 1.2s ease both;
+}
+
+.turn-banner.turn-ready-effect::after {
+  animation: turn-ready-sweep 1.2s ease both;
 }
 
 .turn-banner strong {
@@ -2414,28 +2492,55 @@ kbd {
 
 @keyframes turn-ready-flash {
   0% {
-    border-color: color-mix(in srgb, var(--green-light) 78%, white);
-    box-shadow: 0 0 0 0 color-mix(in srgb, var(--green-light) 30%, transparent);
-    transform: translateY(0);
+    border-color: color-mix(in srgb, var(--green-light) 88%, white);
+    background: color-mix(in srgb, var(--green-light) 18%, var(--surface-raised));
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--green-light) 38%, transparent), 0 8px 24px rgba(0,0,0,0.08);
+    transform: translateY(2px) scale(0.985);
   }
-  40% {
-    border-color: color-mix(in srgb, var(--green-light) 70%, var(--line));
-    box-shadow: 0 0 0 7px color-mix(in srgb, var(--green-light) 14%, transparent);
-    transform: translateY(-1px);
+  28% {
+    border-color: color-mix(in srgb, var(--green-light) 82%, white);
+    background: color-mix(in srgb, var(--green-light) 24%, var(--surface-raised));
+    box-shadow: 0 0 0 12px color-mix(in srgb, var(--green-light) 15%, transparent), 0 18px 42px rgba(0,0,0,0.18);
+    transform: translateY(-3px) scale(1.025);
+  }
+  62% {
+    border-color: color-mix(in srgb, var(--green-light) 68%, var(--line));
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--green-light) 9%, transparent), 0 12px 30px rgba(0,0,0,0.12);
+    transform: translateY(-1px) scale(1.01);
   }
   100% {
+    border-color: var(--line);
+    background: color-mix(in srgb, var(--surface-raised) 86%, transparent);
     box-shadow: none;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 }
 
 @keyframes turn-ready-dot {
   0%, 100% { transform: scale(1); }
-  38% {
+  28% {
     background: var(--green-light);
-    box-shadow: 0 0 0 8px color-mix(in srgb, var(--green-light) 18%, transparent);
-    transform: scale(1.35);
+    box-shadow: 0 0 0 12px color-mix(in srgb, var(--green-light) 22%, transparent);
+    transform: scale(1.7);
   }
+}
+
+@keyframes turn-ready-label {
+  0%, 100% { color: inherit; letter-spacing: normal; }
+  28% { color: var(--green-light); letter-spacing: 0.06em; }
+}
+
+@keyframes turn-ready-sweep {
+  0% { opacity: 0; transform: rotate(18deg) translateX(-180%); }
+  18% { opacity: 1; }
+  58% { opacity: 0.8; transform: rotate(18deg) translateX(460%); }
+  100% { opacity: 0; transform: rotate(18deg) translateX(460%); }
+}
+
+@keyframes match-entry-pulse {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--green-light) 28%, transparent); transform: scale(0.94); }
+  55% { box-shadow: 0 0 0 14px color-mix(in srgb, var(--green-light) 0%, transparent); transform: scale(1.04); }
+  100% { box-shadow: 0 0 0 0 transparent; transform: scale(0.94); }
 }
 
 @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
