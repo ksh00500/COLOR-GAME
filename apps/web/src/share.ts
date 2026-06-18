@@ -2,8 +2,9 @@ export const shareUrl = async (input: {
   title: string;
   text: string;
   url: string;
+  copyOnly?: boolean;
 }): Promise<"shared" | "copied"> => {
-  if (typeof navigator.share === "function") {
+  if (input.copyOnly !== true && typeof navigator.share === "function") {
     await navigator.share(input);
     return "shared";
   }

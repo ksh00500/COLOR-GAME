@@ -107,6 +107,10 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
   const matchmakingMode = searchParams.get("mode") === "ranked" ? "ranked" : "casual";
   const { settings } = useSettings();
   const socketRef = useRef<Socket | null>(null);
+  const roomCodeRef = useRef(initialCode);
+  const playerIdRef = useRef<string | null>(
+    initialCode === "" ? null : readRoomPlayer(initialCode),
+  );
   const effectTimers = useRef<number[]>([]);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>("connecting");
   const [profile, setProfile] = useState(readProfile);
@@ -124,6 +128,7 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
   const [isBoardClearing, setIsBoardClearing] = useState(false);
   const [turnCueActive, setTurnCueActive] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [shareNotice, setShareNotice] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [resignOpen, setResignOpen] = useState(false);
@@ -164,6 +169,7 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
   }, [settings.animationLevel, settings.soundEnabled]);
 
   const applyRoom = useCallback((nextRoom: RoomSnapshot) => {
+    roomCodeRef.current = nextRoom.code;
     setRoom((current) => {
       previousBoardRef.current = current?.game?.board ?? null;
       return nextRoom;
@@ -171,6 +177,13 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
     if (nextRoom.game !== null) {
       setMatchStartedAt((current) => (current === 0 ? Date.now() : current));
     }
+  }, []);
+
+  const rememberPlayer = useCallback((code: string, nextPlayerId: string) => {
+    roomCodeRef.current = code;
+    playerIdRef.current = nextPlayerId;
+    setPlayerId(nextPlayerId);
+    saveRoomPlayer(code, nextPlayerId);
   }, []);
 
   useEffect(() => clearEffectTimers, [clearEffectTimers]);
@@ -189,11 +202,13 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
     socket.on("connect", () => {
       setConnectionStatus("connected");
       setMessage(null);
-      const storedPlayerId = initialCode === "" ? null : readRoomPlayer(initialCode);
-      if (storedPlayerId !== null) {
-        socket.emit("game:reconnect", { code: initialCode, playerId: storedPlayerId }, (response: RoomAck) => {
+      const reconnectCode = roomCodeRef.current || initialCode;
+      const reconnectPlayerId = playerIdRef.current
+        ?? (reconnectCode === "" ? null : readRoomPlayer(reconnectCode));
+      if (reconnectCode !== "" && reconnectPlayerId !== null) {
+        socket.emit("game:reconnect", { code: reconnectCode, playerId: reconnectPlayerId }, (response: RoomAck) => {
           if (response.ok && response.room !== undefined) {
-            setPlayerId(storedPlayerId);
+            rememberPlayer(response.room.code, reconnectPlayerId);
             applyRoom(response.room);
             return;
           }
@@ -215,7 +230,13 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
       socket.disconnect();
       socketRef.current = null;
     };
-  }, [applyRoom, initialCode, matchmakingEntry]);
+  }, [applyRoom, initialCode, matchmakingEntry, rememberPlayer]);
+
+  useEffect(() => {
+    if (shareNotice === null) return undefined;
+    const timer = window.setTimeout(() => setShareNotice(null), 2_500);
+    return () => window.clearTimeout(timer);
+  }, [shareNotice]);
 
   useEffect(() => {
     if (game?.lastMove === null || game?.lastMove === undefined) return;
@@ -301,8 +322,7 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
         setMessage(describeError(response.error));
         return;
       }
-      setPlayerId(response.playerId);
-      saveRoomPlayer(response.room.code, response.playerId);
+      rememberPlayer(response.room.code, response.playerId);
       applyRoom(response.room);
       navigate(`/private?code=${response.room.code}`, { replace: true });
     });
@@ -320,8 +340,7 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
         setMessage(describeError(response.error));
         return;
       }
-      setPlayerId(response.playerId);
-      saveRoomPlayer(response.room.code, response.playerId);
+      rememberPlayer(response.room.code, response.playerId);
       applyRoom(response.room);
       navigate(`/private?code=${response.room.code}`, { replace: true });
     });
@@ -421,12 +440,13 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
         title: kind === "invite" ? t("Color Line 초대") : t("Color Line 관전"),
         text: kind === "invite" ? t("초대 링크로 대전에 참가하세요.") : t("진행 중인 대전을 함께 보세요."),
         url: `${window.location.origin}${path}`,
+        copyOnly: game?.status === "playing",
       });
-      setMessage(result === "copied"
+      setShareNotice(result === "copied"
         ? kind === "invite" ? "초대 링크를 복사했습니다." : "관전 링크를 복사했습니다."
         : "공유했습니다.");
     } catch {
-      setMessage("공유를 완료하지 못했습니다.");
+      setShareNotice("공유를 완료하지 못했습니다.");
     }
   };
 
@@ -569,7 +589,8 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
     <main className="game-page app-frame">
       <AppSidebar onSettings={() => setSettingsOpen(true)} />
 
-      {message !== null && <p className="online-toast" role="status">{t(message)}</p>}
+      {message !== null && <p className="online-toast" role="alert">{t(message)}</p>}
+      {shareNotice !== null && <p className="online-toast share-toast" role="status">{t(shareNotice)}</p>}
 
       <section className="game-shell">
         <header className="game-topbar">

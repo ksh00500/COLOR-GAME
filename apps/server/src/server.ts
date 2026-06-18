@@ -20,6 +20,7 @@ import { NullGameHistoryStore, type GameHistoryStore } from "./history-store.js"
 import { ServerMetrics } from "./metrics.js";
 import { attendanceDateFor } from "./attendance.js";
 import { RoomPersistenceCoordinator } from "./room-persistence.js";
+import { DisconnectGracePeriod } from "./disconnect-grace.js";
 import {
   gameMoveSchema,
   gameResignSchema,
@@ -195,6 +196,15 @@ export const createServer = (options: ServerOptions = {}) => {
       );
     });
   };
+
+  let closing = false;
+  const disconnectGrace = new DisconnectGracePeriod(5_000, (playerId) => {
+    const rooms = roomService.markDisconnected(playerId);
+    for (const room of rooms) {
+      persistRoomLater(room, "Failed to persist disconnected room");
+      io.to(room.code).emit("game:state", room);
+    }
+  });
 
   const authenticateToken = async (token: string | null): Promise<AccountSummary | null> => {
     if (token === null || !accountStore.enabled) return null;
@@ -651,6 +661,7 @@ export const createServer = (options: ServerOptions = {}) => {
         return;
       }
 
+      disconnectGrace.cancel(parsed.data.playerId);
       socket.data.playerId = parsed.data.playerId;
       socket.join(result.value.code);
       persistRoomLater(result.value, "Failed to persist reconnected room");
@@ -715,12 +726,8 @@ export const createServer = (options: ServerOptions = {}) => {
     socket.on("disconnect", () => {
       metrics.socketDisconnected();
       removeFromMatchmaking(socket.id);
-      if (typeof socket.data.playerId === "string") {
-        const rooms = roomService.markDisconnected(socket.data.playerId);
-        for (const room of rooms) {
-          persistRoomLater(room, "Failed to persist disconnected room");
-          io.to(room.code).emit("game:state", room);
-        }
+      if (!closing && typeof socket.data.playerId === "string") {
+        disconnectGrace.schedule(socket.data.playerId);
       }
     });
   });
@@ -735,7 +742,9 @@ export const createServer = (options: ServerOptions = {}) => {
   }, 1_000);
 
   app.addHook("onClose", async () => {
+    closing = true;
     clearInterval(turnTimer);
+    disconnectGrace.clear();
     await io.close();
     await roomPersistence.drain();
     await historyStore.close();
