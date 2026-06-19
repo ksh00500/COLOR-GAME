@@ -6,6 +6,28 @@ export type Board = Cell[][];
 export type PlayerId = string;
 export type GameStatus = "waiting" | "countdown" | "playing" | "finished";
 export type GameMode = "ai" | "casual" | "ranked" | "private";
+export type MatchmakingSegment =
+  | "guest"
+  | "blank"
+  | "red"
+  | "orange"
+  | "yellow"
+  | "green"
+  | "blue"
+  | "navy"
+  | "violet";
+
+export const getMatchmakingSegment = (rating: number | null): MatchmakingSegment => {
+  if (rating === null) return "guest";
+  if (rating >= 1600) return "violet";
+  if (rating >= 1500) return "navy";
+  if (rating >= 1400) return "blue";
+  if (rating >= 1300) return "green";
+  if (rating >= 1200) return "yellow";
+  if (rating >= 1125) return "orange";
+  if (rating >= 1050) return "red";
+  return "blank";
+};
 export type GameResultReason =
   | "target-score"
   | "draw"

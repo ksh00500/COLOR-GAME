@@ -3,7 +3,7 @@ import cors from "@fastify/cors";
 import Fastify from "fastify";
 import { Server, type Socket } from "socket.io";
 import { z } from "zod";
-import type { GameMode, Move, RoomSnapshot } from "@color-game/shared-types";
+import { getMatchmakingSegment, type MatchmakingSegment, type Move, type RoomSnapshot } from "@color-game/shared-types";
 import {
   NullAccountStore,
   createAuthToken,
@@ -22,6 +22,12 @@ import { attendanceDateFor } from "./attendance.js";
 import { RoomPersistenceCoordinator } from "./room-persistence.js";
 import { DisconnectGracePeriod } from "./disconnect-grace.js";
 import {
+  NullMatchmakingWaitStore,
+  type MatchmakingMode,
+  type MatchmakingWaitStore,
+  type WaitEstimateBasis,
+} from "./matchmaking-wait-store.js";
+import {
   gameMoveSchema,
   gameResignSchema,
   playerProfileSchema,
@@ -36,18 +42,18 @@ export interface ServerOptions {
   historyStore?: GameHistoryStore;
   accountStore?: AccountStore;
   analyticsStore?: AnalyticsStore;
+  matchmakingWaitStore?: MatchmakingWaitStore;
   authSecret?: string;
   tokenTtlSeconds?: number;
   requireDatabaseHealth?: boolean;
 }
-
-type MatchmakingMode = Extract<GameMode, "casual" | "ranked">;
 
 interface QueuedPlayer {
   socketId: string;
   accountId: string | null;
   profile: PlayerProfile;
   queuedAt: number;
+  segment: MatchmakingSegment;
 }
 
 const toClientError = (error: RoomError) => ({
@@ -136,6 +142,7 @@ export const createServer = (options: ServerOptions = {}) => {
   const historyStore = options.historyStore ?? new NullGameHistoryStore();
   const accountStore = options.accountStore ?? new NullAccountStore();
   const analyticsStore = options.analyticsStore ?? new NullAnalyticsStore();
+  const matchmakingWaitStore = options.matchmakingWaitStore ?? new NullMatchmakingWaitStore();
   const metrics = new ServerMetrics();
   const authSecret = options.authSecret ?? "dev-only-color-game-secret-for-local-development";
   const tokenTtlSeconds = options.tokenTtlSeconds ?? 60 * 60 * 24 * 30;
@@ -240,14 +247,51 @@ export const createServer = (options: ServerOptions = {}) => {
     }
   };
 
-  const estimatedWaitSeconds = (mode: MatchmakingMode): number => {
-    const samples = matchmakingWaitSamples[mode];
-    if (samples.length === 0) {
-      return mode === "casual" ? 20 : 30;
+  const clampWaitSeconds = (waitMs: number): number =>
+    Math.max(5, Math.min(120, Math.round(waitMs / 1_000)));
+
+  const estimatedWait = async (
+    mode: MatchmakingMode,
+    segment: MatchmakingSegment,
+  ): Promise<{
+    estimatedWaitSeconds: number;
+    estimateBasis: WaitEstimateBasis;
+    estimateSegment: MatchmakingSegment;
+    estimateSampleCount: number;
+  }> => {
+    if (matchmakingWaitStore.enabled) {
+      try {
+        const estimate = await matchmakingWaitStore.getEstimate(mode, segment);
+        if (estimate.waitMs !== null) {
+          return {
+            estimatedWaitSeconds: clampWaitSeconds(estimate.waitMs),
+            estimateBasis: estimate.basis,
+            estimateSegment: segment,
+            estimateSampleCount: estimate.sampleCount,
+          };
+        }
+      } catch (error) {
+        app.log.warn({ err: error, mode, segment }, "Failed to load matchmaking wait estimate");
+      }
     }
-    const sorted = [...samples].sort((a, b) => a - b);
-    const median = sorted[Math.floor(sorted.length / 2)] ?? 20;
-    return Math.max(5, Math.min(120, Math.round(median / 1_000)));
+
+    const samples = matchmakingWaitSamples[mode];
+    if (samples.length > 0) {
+      const sorted = [...samples].sort((a, b) => a - b);
+      const median = sorted[Math.floor(sorted.length / 2)] ?? 20_000;
+      return {
+        estimatedWaitSeconds: clampWaitSeconds(median),
+        estimateBasis: "mode",
+        estimateSegment: segment,
+        estimateSampleCount: samples.length,
+      };
+    }
+    return {
+      estimatedWaitSeconds: mode === "casual" ? 20 : 30,
+      estimateBasis: "default",
+      estimateSegment: segment,
+      estimateSampleCount: 0,
+    };
   };
 
   const getSocketAccount = (socket: Socket): AccountSummary | null => {
@@ -284,6 +328,26 @@ export const createServer = (options: ServerOptions = {}) => {
     );
     if (matchmakingWaitSamples[mode].length > 40) {
       matchmakingWaitSamples[mode].splice(0, matchmakingWaitSamples[mode].length - 40);
+    }
+    if (matchmakingWaitStore.enabled) {
+      void matchmakingWaitStore.recordSamples([
+        {
+          mode,
+          segment: first.segment,
+          accountId: first.accountId,
+          waitMs: matchedAt - first.queuedAt,
+          matchedAt: new Date(matchedAt),
+        },
+        {
+          mode,
+          segment: second.segment,
+          accountId: second.accountId,
+          waitMs: matchedAt - second.queuedAt,
+          matchedAt: new Date(matchedAt),
+        },
+      ]).catch((error: unknown) => {
+        app.log.error({ err: error, mode }, "Failed to persist matchmaking wait samples");
+      });
     }
     persistRoomLater(room, "Failed to persist matched room");
     firstSocket.emit("matchmaking:matched", { ok: true, room, playerId: firstPlayer.id });
@@ -670,49 +734,62 @@ export const createServer = (options: ServerOptions = {}) => {
     });
 
     socket.on("matchmaking:join", (payload, callback?: (response: unknown) => void) => {
-      const parsed = matchmakingSchema.safeParse(payload ?? {});
-      if (!parsed.success) {
-        callback?.({ ok: false, error: parsed.error.flatten() });
-        return;
-      }
+      void (async () => {
+        const parsed = matchmakingSchema.safeParse(payload ?? {});
+        if (!parsed.success) {
+          callback?.({ ok: false, error: parsed.error.flatten() });
+          return;
+        }
 
-      const account = getSocketAccount(socket);
-      if (parsed.data.mode === "ranked" && account === null) {
-        callback?.({
-          ok: false,
-          error: {
-            code: "LOGIN_REQUIRED",
-            message: "Ranked matchmaking requires an account.",
-            gameErrorCode: null,
-          },
-        });
-        return;
-      }
+        const account = getSocketAccount(socket);
+        if (parsed.data.mode === "ranked" && account === null) {
+          callback?.({
+            ok: false,
+            error: {
+              code: "LOGIN_REQUIRED",
+              message: "Ranked matchmaking requires an account.",
+              gameErrorCode: null,
+            },
+          });
+          return;
+        }
 
-      removeFromMatchmaking(socket.id);
-      const player = playerProfileSchema.parse(parsed.data.player ?? {});
-      const queued: QueuedPlayer = {
-        socketId: socket.id,
-        accountId: account?.id ?? null,
-        profile: accountProfile(player, socket.id, account),
-        queuedAt: Date.now(),
-      };
+        removeFromMatchmaking(socket.id);
+        const player = playerProfileSchema.parse(parsed.data.player ?? {});
+        const queued: QueuedPlayer = {
+          socketId: socket.id,
+          accountId: account?.id ?? null,
+          profile: accountProfile(player, socket.id, account),
+          queuedAt: Date.now(),
+          segment: getMatchmakingSegment(account?.rating ?? null),
+        };
 
-      const queue = matchmakingQueues[parsed.data.mode];
-      const opponent = queue.shift();
-      metrics.setQueueDepth(parsed.data.mode, queue.length);
-
-      if (opponent === undefined) {
-        queue.push(queued);
+        const queue = matchmakingQueues[parsed.data.mode];
+        let opponent = queue.shift();
         metrics.setQueueDepth(parsed.data.mode, queue.length);
-        const estimate = estimatedWaitSeconds(parsed.data.mode);
-        callback?.({ ok: true, status: "queued", mode: parsed.data.mode, estimatedWaitSeconds: estimate });
-        socket.emit("matchmaking:queued", { mode: parsed.data.mode, estimatedWaitSeconds: estimate });
-        return;
-      }
 
-      callback?.({ ok: true, status: "matched", mode: parsed.data.mode });
-      emitMatch(parsed.data.mode, opponent, queued);
+        if (opponent === undefined) {
+          const estimate = await estimatedWait(parsed.data.mode, queued.segment);
+
+          // Another join may have completed while the database estimate was loading.
+          // Recheck the queue so two concurrent players cannot both be left waiting.
+          opponent = queue.shift();
+          if (opponent === undefined) {
+            queue.push(queued);
+            metrics.setQueueDepth(parsed.data.mode, queue.length);
+            const response = { ok: true, status: "queued", mode: parsed.data.mode, ...estimate };
+            callback?.(response);
+            socket.emit("matchmaking:queued", { mode: parsed.data.mode, ...estimate });
+            return;
+          }
+        }
+
+        callback?.({ ok: true, status: "matched", mode: parsed.data.mode });
+        emitMatch(parsed.data.mode, opponent, queued);
+      })().catch((error: unknown) => {
+        app.log.error({ err: error }, "Failed to join matchmaking queue");
+        callback?.({ ok: false, error: { code: "MATCHMAKING_FAILED" } });
+      });
     });
 
     socket.on("matchmaking:leave", (payloadOrCallback, callback?: (response: unknown) => void) => {
@@ -750,6 +827,7 @@ export const createServer = (options: ServerOptions = {}) => {
     await historyStore.close();
     await accountStore.close();
     await analyticsStore.close();
+    await matchmakingWaitStore.close();
   });
 
   return { app, io, roomService };

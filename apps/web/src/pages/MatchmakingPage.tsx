@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import type { Socket } from "socket.io-client";
-import type { RoomSnapshot } from "@color-game/shared-types";
+import type { MatchmakingSegment, RoomSnapshot } from "@color-game/shared-types";
 import { getAuthToken } from "../api";
 import { AppSidebar } from "../components/AppSidebar";
 import { SettingsPanel } from "../components/SettingsPanel";
@@ -10,16 +10,34 @@ import { useI18n } from "../i18n";
 
 const roomPlayerPrefix = "color-game-room-player:";
 
+const segmentLabels: Record<MatchmakingSegment, string> = {
+  guest: "게스트",
+  blank: "빈 팔레트",
+  red: "레드",
+  orange: "오렌지",
+  yellow: "옐로",
+  green: "그린",
+  blue: "블루",
+  navy: "네이비",
+  violet: "보라",
+};
+
 interface MatchAck {
   ok: boolean;
   status?: "queued" | "matched";
   estimatedWaitSeconds?: number;
+  estimateBasis?: "segment" | "mode" | "default";
+  estimateSegment?: MatchmakingSegment;
+  estimateSampleCount?: number;
   error?: { code: string; message?: string };
 }
 
 interface QueuedEvent {
   mode: "casual" | "ranked";
   estimatedWaitSeconds: number;
+  estimateBasis: "segment" | "mode" | "default";
+  estimateSegment: MatchmakingSegment;
+  estimateSampleCount: number;
 }
 
 interface MatchEvent {
@@ -38,6 +56,9 @@ export function MatchmakingPage() {
   const [queued, setQueued] = useState(false);
   const [queuedAt, setQueuedAt] = useState<number | null>(null);
   const [estimatedWaitSeconds, setEstimatedWaitSeconds] = useState<number | null>(null);
+  const [estimateBasis, setEstimateBasis] = useState<"segment" | "mode" | "default">("default");
+  const [estimateSegment, setEstimateSegment] = useState<MatchmakingSegment>("guest");
+  const [estimateSampleCount, setEstimateSampleCount] = useState(0);
   const [now, setNow] = useState(Date.now());
   const [settingsOpen, setSettingsOpen] = useState(false);
   const token = useMemo(() => getAuthToken(), []);
@@ -52,6 +73,9 @@ export function MatchmakingPage() {
       setQueued(true);
       setQueuedAt((current) => current ?? Date.now());
       setEstimatedWaitSeconds(event.estimatedWaitSeconds);
+      setEstimateBasis(event.estimateBasis);
+      setEstimateSegment(event.estimateSegment);
+      setEstimateSampleCount(event.estimateSampleCount);
       setStatus("상대를 찾는 중입니다.");
     });
     socket.on("matchmaking:matched", (event: MatchEvent) => {
@@ -97,6 +121,9 @@ export function MatchmakingPage() {
           setQueued(true);
           setQueuedAt(Date.now());
           setEstimatedWaitSeconds(response.estimatedWaitSeconds ?? null);
+          setEstimateBasis(response.estimateBasis ?? "default");
+          setEstimateSegment(response.estimateSegment ?? "guest");
+          setEstimateSampleCount(response.estimateSampleCount ?? 0);
           setStatus("상대를 찾는 중입니다.");
         }
       },
@@ -108,6 +135,8 @@ export function MatchmakingPage() {
       setQueued(false);
       setQueuedAt(null);
       setEstimatedWaitSeconds(null);
+      setEstimateBasis("default");
+      setEstimateSampleCount(0);
       setStatus("매칭을 취소했습니다.");
     });
   };
@@ -135,7 +164,13 @@ export function MatchmakingPage() {
             <div className="queue-estimate" role="status">
               <span>{t("현재 대기 {seconds}초", { seconds: Math.max(0, Math.floor((now - queuedAt) / 1_000)) })}</span>
               <strong>{estimatedWaitSeconds === null ? t("예상 시간 계산 중") : t("예상 약 {seconds}초", { seconds: estimatedWaitSeconds })}</strong>
-              <small>{t("최근 실제 매칭 시간을 기준으로 계산한 예상치입니다.")}</small>
+              <small>
+                {estimateBasis === "segment"
+                  ? t("{segment} 최근 {count}건 기준", { segment: t(segmentLabels[estimateSegment]), count: estimateSampleCount })
+                  : estimateBasis === "mode"
+                    ? t("전체 {mode} 최근 {count}건 기준", { mode: mode === "ranked" ? t("경쟁") : t("일반"), count: estimateSampleCount })
+                    : t("표본이 쌓이기 전 기본 예상치입니다.")}
+              </small>
             </div>
           )}
           {queued ? (
