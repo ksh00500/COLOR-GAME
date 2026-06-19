@@ -8,11 +8,13 @@
     "build": "tsup",
     "db:check": "tsx src/db/check.ts",
     "db:migrate": "tsx src/db/migrate.ts",
+    "ai:export-training": "tsx src/db/export-ai-training.ts",
     "start": "node dist/main.js",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@color-game/ai-engine": "workspace:*",
     "@color-game/game-core": "workspace:*",
     "@color-game/shared-types": "workspace:*",
     "@fastify/cors": "11.2.0",

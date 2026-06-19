@@ -1,5 +1,6 @@
 import { getValidMoves, placeTile } from "@color-game/game-core";
 import type { GameState, TileColorId, ValidMove } from "@color-game/shared-types";
+import normalModel from "./normal-model.json";
 
 export type AiDifficulty = "easy" | "normal" | "hard";
 
@@ -26,7 +27,7 @@ const adjacentPotential = (
   }, 0);
 };
 
-const opponentScoringCells = (state: GameState): Set<string> => {
+export const getOpponentScoringCells = (state: GameState): Set<string> => {
   const opponent = state.players.find((player) => player.id !== state.currentPlayerId);
   if (opponent === undefined) return new Set();
 
@@ -52,6 +53,46 @@ const opponentScoringCells = (state: GameState): Set<string> => {
   return cells;
 };
 
+export const AI_FEATURE_NAMES = [
+  "immediateScore",
+  "blocksScoringCell",
+  "adjacentPotential",
+  "centerPreference",
+  "sameColorCount",
+] as const;
+
+export const extractAiMoveFeatures = (
+  state: GameState,
+  move: ValidMove,
+  threatenedCells = getOpponentScoringCells(state),
+): number[] => {
+  if (state.currentPlayerId === null) return [0, 0, 0, 0, 0];
+  const evaluationTime = state.turnTimer?.startedAt ?? Date.now();
+  const result = placeTile(state, {
+    ...move,
+    playerId: state.currentPlayerId,
+    createdAt: evaluationTime,
+  });
+  const center = (state.config.boardSize - 1) / 2;
+  const centerDistance = Math.abs(move.row - center) + Math.abs(move.col - center);
+  const sameColorCount = state.board.flat().filter((cell) => cell === move.color).length;
+
+  return [
+    result.ok ? result.move.earnedScore : 0,
+    threatenedCells.has(`${move.row}:${move.col}`) ? 1 : 0,
+    adjacentPotential(state, move, move.color),
+    state.config.boardSize - centerDistance,
+    sameColorCount,
+  ];
+};
+
+const modelScore = (features: number[]): number =>
+  normalModel.bias + normalModel.weights.reduce((score, weight, index) => {
+    const mean = normalModel.means[index] ?? 0;
+    const scale = normalModel.scales[index] ?? 1;
+    return score + weight * (((features[index] ?? 0) - mean) / scale);
+  }, 0);
+
 export const chooseAiMove = (
   state: GameState,
   difficulty: AiDifficulty = "normal",
@@ -64,7 +105,28 @@ export const chooseAiMove = (
     return moves[Math.floor(random() * moves.length)] ?? moves[0] ?? null;
   }
 
-  const threatenedCells = opponentScoringCells(state);
+  if (difficulty === "normal") {
+    const threatenedCells = getOpponentScoringCells(state);
+    const candidates = moves.map((move) => ({
+      move,
+      features: extractAiMoveFeatures(state, move, threatenedCells),
+    }));
+    const bestImmediate = Math.max(...candidates.map((candidate) => candidate.features[0] ?? 0));
+    const tactical = bestImmediate > 0
+      ? candidates.filter((candidate) => candidate.features[0] === bestImmediate)
+      : candidates.some((candidate) => candidate.features[1] === 1)
+        ? candidates.filter((candidate) => candidate.features[1] === 1)
+        : candidates;
+    const scored = tactical.map((candidate) => ({
+      move: candidate.move,
+      score: modelScore(candidate.features),
+    }));
+    const bestScore = Math.max(...scored.map((candidate) => candidate.score));
+    const bestMoves = scored.filter((candidate) => Math.abs(candidate.score - bestScore) < 1e-9);
+    return bestMoves[Math.floor(random() * bestMoves.length)]?.move ?? bestMoves[0]?.move ?? null;
+  }
+
+  const threatenedCells = getOpponentScoringCells(state);
   const evaluationTime = state.turnTimer?.startedAt ?? Date.now();
   const scored = moves.map((move) => {
     const result = placeTile(state, {

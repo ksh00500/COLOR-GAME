@@ -13,7 +13,7 @@ const modes = [
     id: "ai",
     index: "01",
     title: "AI 대전",
-    description: "Easy 모드만 먼저 열어두었습니다.",
+    description: "Easy와 학습형 Normal 모드를 플레이할 수 있습니다.",
     state: "PLAYABLE",
     accent: "burgundy",
   },
@@ -52,7 +52,7 @@ export function LobbyPage() {
   const visitorCounts = useVisitorAnalytics();
 
   const startGame = () => {
-    navigate(`/game?difficulty=easy&first=${firstPlayer}`);
+    navigate(`/game?difficulty=${difficulty}&first=${firstPlayer}`);
   };
 
   const openMode = (modeId: (typeof modes)[number]["id"]) => {
@@ -99,7 +99,7 @@ export function LobbyPage() {
           <div className="quick-config" aria-label={t("AI 대전 설정")}>
             <span>AI</span>
             {(["easy", "normal", "hard"] as const).map((level) => {
-              const locked = level !== "easy";
+              const locked = level === "hard";
               return (
                 <button
                   key={level}

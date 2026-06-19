@@ -20,6 +20,9 @@ importers:
 
   apps/server:
     dependencies:
+      '@color-game/ai-engine':
+        specifier: workspace:*
+        version: link:../../packages/ai-engine
       '@color-game/game-core':
         specifier: workspace:*
         version: link:../../packages/game-core
