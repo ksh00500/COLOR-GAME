@@ -60,7 +60,8 @@ const resolveFirstPlayer = (preference: string | null): string => {
   return HUMAN_ID;
 };
 
-const resolveDifficulty = (_value: string | null): AiDifficulty => "easy";
+const resolveDifficulty = (value: string | null): AiDifficulty =>
+  value === "normal" ? "normal" : "easy";
 
 const createMatch = (difficulty: AiDifficulty, firstPreference: string | null): GameState => {
   const now = Date.now();
