@@ -7,4 +7,5 @@ coverage/
 !.env.example
 *.log
 *.tsbuildinfo
+packages/ai-engine/training/training-data.json
 .DS_Store

@@ -1,11 +1,35 @@
 {
   "version": 1,
-  "trainedAt": "bootstrap",
-  "trainingGames": 0,
-  "trainingPositions": 0,
-  "featureNames": ["immediateScore", "blocksScoringCell", "adjacentPotential", "centerPreference", "sameColorCount"],
-  "means": [0, 0, 0, 0, 0],
-  "scales": [1, 1, 1, 1, 1],
-  "weights": [3, 2, 0.5, 0.15, 0.1],
+  "trainedAt": "2026-06-19T16:42:25.287740+00:00",
+  "trainingGames": 22,
+  "trainingPositions": 626,
+  "featureNames": [
+    "immediateScore",
+    "blocksScoringCell",
+    "adjacentPotential",
+    "centerPreference",
+    "sameColorCount"
+  ],
+  "means": [
+    0.017169389050339046,
+    0.037779336606874436,
+    0.511006446871764,
+    2.614590640344724,
+    2.2139158900357416
+  ],
+  "scales": [
+    0.1846910857123363,
+    0.19066215757831684,
+    0.7138329753124861,
+    1.0125832026235053,
+    1.9643079230274176
+  ],
+  "weights": [
+    0.325960758238583,
+    0.42100633488572214,
+    -0.27426328059060584,
+    0.23086010478299457,
+    0.08153336905650099
+  ],
   "bias": 0
 }

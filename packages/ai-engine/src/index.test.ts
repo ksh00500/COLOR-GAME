@@ -34,4 +34,13 @@ describe("chooseAiMove", () => {
     if (move === null) return;
     expect(state.board[move.row]?.[move.col]).toBeNull();
   });
+
+  it("uses the trained Normal policy to prefer the center on an empty board", () => {
+    const state = createInitialGame(
+      { ...DEFAULT_GAME_CONFIG, turnTimeLimitSeconds: null },
+      { firstPlayerId: "player2" },
+    );
+
+    expect(chooseAiMove(state, "normal", () => 0)).toMatchObject({ row: 2, col: 2 });
+  });
 });
