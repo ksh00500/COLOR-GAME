@@ -95,17 +95,40 @@ const modelScore = (features: number[]): number =>
     return score + weight * (((features[index] ?? 0) - mean) / scale);
   }, 0);
 
-const dense = (input: number[], weights: number[][], bias: number[], relu = false): number[] =>
-  weights.map((row, output) => {
-    const value = (bias[output] ?? 0) + row.reduce(
-      (sum, weight, index) => sum + weight * (input[index] ?? 0), 0,
-    );
-    return relu ? Math.max(0, value) : value;
-  });
+const decodeFloat32 = (encoded: string): Float32Array => {
+  const binary = atob(encoded);
+  const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
+  return new Float32Array(bytes.buffer);
+};
+
+let cachedNormalAlphaState: Record<string, Float32Array> | null = null;
+const normalAlphaState = (): Record<string, Float32Array> => {
+  if (cachedNormalAlphaState !== null) return cachedNormalAlphaState;
+  cachedNormalAlphaState = Object.fromEntries(
+    Object.entries(normalAlphaModel.state as Record<string, string>)
+      .map(([name, encoded]) => [name, decodeFloat32(encoded)]),
+  );
+  return cachedNormalAlphaState;
+};
+
+const denseFloat32 = (
+  input: ArrayLike<number>,
+  weights: Float32Array,
+  bias: Float32Array,
+  outputs: number,
+  relu = false,
+): number[] => Array.from({ length: outputs }, (_, output) => {
+  let value = bias[output] ?? 0;
+  const offset = output * input.length;
+  for (let index = 0; index < input.length; index += 1) {
+    value += (weights[offset + index] ?? 0) * (input[index] ?? 0);
+  }
+  return relu ? Math.max(0, value) : value;
+});
 
 const normalAlphaPolicy = (state: GameState): number[] | null => {
   if (!isNormalAiAvailable) return null;
-  const parameters = normalAlphaModel.state as Record<string, number[] | number[][]>;
+  const parameters = normalAlphaState();
   const currentIndex = state.players.findIndex((player) => player.id === state.currentPlayerId);
   if (currentIndex < 0) return null;
   const board = state.board;
@@ -116,9 +139,24 @@ const normalAlphaPolicy = (state: GameState): number[] | null => {
   for (let index = 0; index < 25; index += 1) input.push(currentIndex);
   for (let index = 0; index < 25; index += 1) input.push(state.players[currentIndex]!.score / state.config.targetScore);
   for (let index = 0; index < 25; index += 1) input.push(state.players[1 - currentIndex]!.score / state.config.targetScore);
-  const hidden1 = dense(input, parameters["trunk.1.weight"] as number[][], parameters["trunk.1.bias"] as number[], true);
-  const hidden2 = dense(hidden1, parameters["trunk.3.weight"] as number[][], parameters["trunk.3.bias"] as number[], true);
-  return dense(hidden2, parameters["policy.weight"] as number[][], parameters["policy.bias"] as number[]);
+  const hidden1 = denseFloat32(input, parameters["trunk.1.weight"]!, parameters["trunk.1.bias"]!, 128, true);
+  const hidden2 = denseFloat32(hidden1, parameters["trunk.3.weight"]!, parameters["trunk.3.bias"]!, 128, true);
+  return denseFloat32(hidden2, parameters["policy.weight"]!, parameters["policy.bias"]!, 75);
+};
+
+const opponentReplyRisk = (state: GameState, move: ValidMove): number => {
+  const evaluationTime = state.turnTimer?.startedAt ?? Date.now();
+  const result = placeTile(state, { ...move, playerId: state.currentPlayerId!, createdAt: evaluationTime });
+  if (!result.ok || result.state.status === "finished" || result.state.currentPlayerId === null) return -1;
+  const opponentId = result.state.currentPlayerId;
+  return getValidMoves(result.state).reduce((risk, reply) => {
+    const replyResult = placeTile(result.state, {
+      ...reply,
+      playerId: opponentId,
+      createdAt: result.state.turnTimer?.startedAt ?? evaluationTime,
+    });
+    return Math.max(risk, replyResult.ok ? replyResult.move.earnedScore : 0);
+  }, 0);
 };
 
 export const chooseAiMove = (
@@ -152,11 +190,25 @@ export const chooseAiMove = (
 
   const learnedPolicy = normalAlphaPolicy(state);
   if (difficulty === "normal" && learnedPolicy !== null) {
-    const scored = moves.map((move) => ({
+    const threatenedCells = getOpponentScoringCells(state);
+    const candidates = moves.map((move) => ({
       move,
+      features: extractAiMoveFeatures(state, move, threatenedCells),
       score: learnedPolicy[(move.row * state.config.boardSize + move.col) * state.config.colors.length
         + state.config.colors.indexOf(move.color)] ?? Number.NEGATIVE_INFINITY,
     }));
+    const bestImmediate = Math.max(...candidates.map((candidate) => candidate.features[0] ?? 0));
+    const tactical = bestImmediate > 0
+      ? candidates.filter((candidate) => candidate.features[0] === bestImmediate)
+      : candidates.some((candidate) => candidate.features[1] === 1)
+        ? candidates.filter((candidate) => candidate.features[1] === 1)
+        : candidates;
+    const withRisk = tactical.map((candidate) => ({
+      ...candidate,
+      risk: opponentReplyRisk(state, candidate.move),
+    }));
+    const minimumRisk = Math.min(...withRisk.map((candidate) => candidate.risk));
+    const scored = withRisk.filter((candidate) => candidate.risk === minimumRisk);
     const bestScore = Math.max(...scored.map((candidate) => candidate.score));
     const bestMoves = scored.filter((candidate) => candidate.score === bestScore);
     return bestMoves[Math.floor(random() * bestMoves.length)]?.move ?? bestMoves[0]?.move ?? null;

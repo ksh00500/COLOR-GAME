@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import base64
 import json
 from pathlib import Path
 import random
@@ -8,8 +9,8 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
-from game import State, heuristic_action
-from mcts import search
+from game import State, easy_model_action, safe_lookahead_actions, tactical_actions
+from mcts import policy_value, search
 from model import PolicyValueNet
 
 PRESETS = {
@@ -55,19 +56,20 @@ def train_epoch(model, optimizer, replay, batch_size, device, rng):
     return sum(losses) / max(1, len(losses))
 
 
-def evaluate(model, games, simulations, device, rng):
+def evaluate(model, games, simulations, device, rng, easy_model_path):
     model.eval(); wins = draws = 0
     for game_index in range(games):
         model_player = game_index % 2
-        state = State.initial(game_index % 2)
+        state = State.initial(0)
         for _ in range(250):
             if state.terminal:
                 break
             if state.current == model_player:
-                policy = search(model, state, simulations, device, rng)
-                action = int(np.argmax(policy))
+                _, policy, _ = policy_value(model, state, device)
+                allowed = safe_lookahead_actions(state, tactical_actions(state))
+                action = max(allowed, key=lambda candidate: float(policy[candidate]))
             else:
-                action = heuristic_action(state, rng)
+                action = easy_model_action(state, easy_model_path, rng)
             state = state.play(action)
         if state.winner is None: draws += 1
         elif state.winner == model_player: wins += 1
@@ -75,9 +77,16 @@ def evaluate(model, games, simulations, device, rng):
 
 
 def export_model(model, path: Path, metadata):
-    state = {name: tensor.detach().cpu().tolist() for name, tensor in model.state_dict().items()}
+    arrays = {
+        name: tensor.detach().cpu().numpy().astype(np.float32)
+        for name, tensor in model.state_dict().items()
+        if name.startswith("trunk.") or name.startswith("policy.")
+    }
+    state = {name: base64.b64encode(array.tobytes()).decode("ascii") for name, array in arrays.items()}
+    shapes = {name: list(array.shape) for name, array in arrays.items()}
     path.write_text(json.dumps({"version": 1, "available": True, "architecture": "mlp-policy-value-v1",
-                                "hidden": model.hidden, "metadata": metadata, "state": state}, separators=(",", ":")), encoding="utf-8")
+                                "hidden": model.hidden, "metadata": metadata, "shapes": shapes,
+                                "state": state}, separators=(",", ":")), encoding="utf-8")
 
 
 def human_examples(path: Path, target_count: int, rng):
@@ -99,6 +108,7 @@ def main():
     parser.add_argument("--preset", choices=PRESETS, default="standard")
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--human-data", type=Path, required=True)
+    parser.add_argument("--easy-model", type=Path, required=True)
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--seed", type=int, default=20260620)
     args = parser.parse_args()
@@ -118,15 +128,26 @@ def main():
         replay = checkpoint["replay"]; completed_games = checkpoint["completed_games"]
     print(json.dumps({"device": str(device), "preset": args.preset, **config, "resumedGames": completed_games}))
 
+    if completed_games == 0:
+        warmup, _, available_human_positions = human_examples(args.human_data, 626, rng)
+        for warmup_epoch in range(2):
+            loss = train_epoch(model, optimizer, warmup, config["batch"], device, rng)
+            print(json.dumps({"humanWarmupEpoch": warmup_epoch + 1, "positions": available_human_positions,
+                              "loss": round(loss, 5)}))
+
     model.eval()
     for game_number in range(completed_games, config["games"]):
         replay.extend(self_play(model, config["simulations"], device, rng))
         replay = replay[-100_000:]
         completed_games = game_number + 1
         if completed_games % 10 == 0 or completed_games == config["games"]:
+            interim_humans, _, _ = human_examples(args.human_data, max(1, round(len(replay) * 3 / 7)), rng)
+            interim_loss = train_epoch(model, optimizer, replay + interim_humans, config["batch"], device, rng)
+            model.eval()
             torch.save({"model": model.state_dict(), "optimizer": optimizer.state_dict(),
                         "replay": replay, "completed_games": completed_games}, checkpoint_path)
-            print(json.dumps({"selfPlayGames": completed_games, "positions": len(replay)}))
+            print(json.dumps({"selfPlayGames": completed_games, "positions": len(replay),
+                              "interimLoss": round(interim_loss, 5)}))
 
     human_target = max(1, round(len(replay) * 3 / 7))
     humans, human_games, available_human_positions = human_examples(args.human_data, human_target, rng)
@@ -135,7 +156,9 @@ def main():
         loss = train_epoch(model, optimizer, combined, config["batch"], device, rng)
         print(json.dumps({"epoch": epoch + 1, "loss": round(loss, 5)}))
 
-    wins, draws, losses = evaluate(model, config["evaluation_games"], config["simulations"], device, rng)
+    wins, draws, losses = evaluate(
+        model, config["evaluation_games"], config["simulations"], device, rng, args.easy_model,
+    )
     decisive = wins + losses
     win_rate = wins / decisive if decisive else 0.0
     eligible = config["evaluation_games"] >= 20 and win_rate >= 0.55

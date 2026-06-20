@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createInitialGame, DEFAULT_GAME_CONFIG } from "@color-game/game-core";
 import type { GameState } from "@color-game/shared-types";
-import { chooseAiMove } from "./index";
+import { chooseAiMove, isNormalAiAvailable } from "./index";
 
 const aiState = (): GameState => ({
   ...createInitialGame(
@@ -42,5 +42,13 @@ describe("chooseAiMove", () => {
     );
 
     expect(chooseAiMove(state, "easy", () => 0)).toMatchObject({ row: 2, col: 2 });
+  });
+
+  it("loads the promoted AlphaZero-lite model for Normal moves", () => {
+    expect(isNormalAiAvailable).toBe(true);
+    const state = aiState();
+    const move = chooseAiMove(state, "normal", () => 0);
+    expect(move).not.toBeNull();
+    if (move !== null) expect(state.board[move.row]?.[move.col]).toBeNull();
   });
 });

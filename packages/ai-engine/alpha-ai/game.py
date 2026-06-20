@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import json
+from pathlib import Path
 import numpy as np
 
 BOARD_SIZE = 5
@@ -77,6 +79,12 @@ class State:
 
 
 def heuristic_action(state: State, rng: np.random.Generator) -> int:
+    opponent = State(state.board, state.scores, 1 - state.current, state.winner)
+    threatened_cells = set()
+    for opponent_action in opponent.legal_actions():
+        reply = opponent.play(int(opponent_action))
+        if reply.scores[opponent.current] > opponent.scores[opponent.current]:
+            threatened_cells.add(int(opponent_action) // COLOR_COUNT)
     best: list[int] = []
     best_score = -1e9
     for action in state.legal_actions():
@@ -92,9 +100,85 @@ def heuristic_action(state: State, rng: np.random.Generator) -> int:
                 if 0 <= rr < BOARD_SIZE and 0 <= cc < BOARD_SIZE and state.board[rr, cc] == color:
                     adjacent += 1
         center_distance = abs(row - 2) + abs(col - 2)
-        score = earned * 1000 + adjacent * 18 - center_distance
+        block = 1 if cell in threatened_cells else 0
+        score = earned * 1000 + block * 120 + adjacent * 18 - center_distance
         if score > best_score:
             best_score, best = score, [int(action)]
         elif score == best_score:
             best.append(int(action))
     return int(rng.choice(best))
+
+
+def easy_model_action(state: State, model_path: Path, rng: np.random.Generator) -> int:
+    model = json.loads(model_path.read_text(encoding="utf-8"))
+    opponent = State(state.board, state.scores, 1 - state.current, state.winner)
+    threatened_cells = set()
+    for opponent_action in opponent.legal_actions():
+        reply = opponent.play(int(opponent_action))
+        if reply.scores[opponent.current] > opponent.scores[opponent.current]:
+            threatened_cells.add(int(opponent_action) // COLOR_COUNT)
+    candidates = []
+    for action in state.legal_actions():
+        action = int(action)
+        next_state = state.play(action)
+        earned = next_state.scores[state.current] - state.scores[state.current]
+        cell, color_index = divmod(action, COLOR_COUNT)
+        row, col = divmod(cell, BOARD_SIZE)
+        color = color_index + 1
+        adjacent = 0
+        for dr, dc in DIRECTIONS:
+            for sign in (-1, 1):
+                rr, cc = row + dr * sign, col + dc * sign
+                if 0 <= rr < BOARD_SIZE and 0 <= cc < BOARD_SIZE and state.board[rr, cc] == color:
+                    adjacent += 1
+        features = [earned, 1 if cell in threatened_cells else 0, adjacent,
+                    BOARD_SIZE - (abs(row - 2) + abs(col - 2)), int(np.sum(state.board == color))]
+        score = model["bias"] + sum(
+            model["weights"][i] * ((features[i] - model["means"][i]) / model["scales"][i])
+            for i in range(len(features))
+        )
+        candidates.append((action, features, score))
+    best_immediate = max(item[1][0] for item in candidates)
+    if best_immediate > 0:
+        candidates = [item for item in candidates if item[1][0] == best_immediate]
+    elif any(item[1][1] == 1 for item in candidates):
+        candidates = [item for item in candidates if item[1][1] == 1]
+    best_score = max(item[2] for item in candidates)
+    return int(rng.choice([item[0] for item in candidates if abs(item[2] - best_score) < 1e-9]))
+
+
+def tactical_actions(state: State) -> list[int]:
+    opponent = State(state.board, state.scores, 1 - state.current, state.winner)
+    threatened_cells = set()
+    for opponent_action in opponent.legal_actions():
+        reply = opponent.play(int(opponent_action))
+        if reply.scores[opponent.current] > opponent.scores[opponent.current]:
+            threatened_cells.add(int(opponent_action) // COLOR_COUNT)
+    candidates = []
+    for action in state.legal_actions():
+        action = int(action)
+        next_state = state.play(action)
+        earned = next_state.scores[state.current] - state.scores[state.current]
+        candidates.append((action, earned, action // COLOR_COUNT in threatened_cells))
+    best_earned = max(item[1] for item in candidates)
+    if best_earned > 0:
+        return [item[0] for item in candidates if item[1] == best_earned]
+    blocks = [item[0] for item in candidates if item[2]]
+    return blocks or [item[0] for item in candidates]
+
+
+def safe_lookahead_actions(state: State, candidates: list[int]) -> list[int]:
+    risks = []
+    for action in candidates:
+        next_state = state.play(action)
+        if next_state.terminal:
+            risks.append((action, -1))
+            continue
+        opponent = next_state.current
+        best_reply = 0
+        for reply_action in next_state.legal_actions():
+            reply = next_state.play(int(reply_action))
+            best_reply = max(best_reply, reply.scores[opponent] - next_state.scores[opponent])
+        risks.append((action, best_reply))
+    minimum = min(item[1] for item in risks)
+    return [item[0] for item in risks if item[1] == minimum]
