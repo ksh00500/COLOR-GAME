@@ -2,6 +2,11 @@ import { useEffect, useId, useState } from "react";
 import { useI18n } from "../i18n";
 
 const tutorialKey = "color-line-tutorial-complete-v3";
+const tutorialOpenEvent = "color-line:open-tutorial";
+
+export const openTutorial = () => {
+  window.dispatchEvent(new Event(tutorialOpenEvent));
+};
 
 const tutorialSteps = [
   {
@@ -80,6 +85,15 @@ export function TutorialPanel() {
     window.addEventListener("keydown", closeOnEscape);
     return () => window.removeEventListener("keydown", closeOnEscape);
   }, [open]);
+
+  useEffect(() => {
+    const reopen = () => {
+      setStepIndex(0);
+      setOpen(true);
+    };
+    window.addEventListener(tutorialOpenEvent, reopen);
+    return () => window.removeEventListener(tutorialOpenEvent, reopen);
+  }, []);
 
   if (!open) return null;
 

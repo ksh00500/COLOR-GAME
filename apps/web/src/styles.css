@@ -1918,6 +1918,10 @@ kbd {
   line-height: 1.5;
 }
 
+.settings-tutorial-action {
+  width: 100%;
+}
+
 .setting-stack {
   gap: 0;
 }

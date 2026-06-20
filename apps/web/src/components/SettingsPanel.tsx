@@ -1,6 +1,7 @@
 import { useEffect, useId } from "react";
 import { useI18n } from "../i18n";
 import { useSettings, type AnimationLevel, type AppLanguage, type ThemePreference } from "../settings";
+import { openTutorial } from "./TutorialPanel";
 
 interface SettingsPanelProps {
   open: boolean;
@@ -181,6 +182,23 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
               {t("빠름")}
             </button>
           </div>
+        </div>
+
+        <div className="setting-group">
+          <div className="setting-label">
+            <strong>{t("튜토리얼")}</strong>
+            <span>{t("게임 방법과 점수 규칙을 처음부터 다시 확인합니다.")}</span>
+          </div>
+          <button
+            className="secondary-action settings-tutorial-action"
+            type="button"
+            onClick={() => {
+              onClose();
+              openTutorial();
+            }}
+          >
+            {t("튜토리얼 다시 보기")}
+          </button>
         </div>
       </section>
     </div>
