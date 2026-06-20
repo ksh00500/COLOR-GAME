@@ -179,8 +179,9 @@ export const chooseAiMove = (
       score:
         (candidate.features[0] ?? 0) * 1_000 +
         (candidate.features[1] ?? 0) * 80 +
-        (candidate.features[2] ?? 0) * 4 +
-        (candidate.features[3] ?? 0),
+        (candidate.features[2] ?? 0) +
+        (candidate.features[3] ?? 0) -
+        opponentReplyRisk(state, candidate.move) * 240,
     }));
     const bestScore = Math.max(...scored.map((candidate) => candidate.score));
     const bestMoves = scored.filter((candidate) => candidate.score === bestScore);

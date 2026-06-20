@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createInitialGame, DEFAULT_GAME_CONFIG } from "@color-game/game-core";
+import { createInitialGame, DEFAULT_GAME_CONFIG, getValidMoves, placeTile } from "@color-game/game-core";
 import type { GameState } from "@color-game/shared-types";
 import { chooseAiMove, isHardAiAvailable } from "./index";
 
@@ -42,6 +42,37 @@ describe("chooseAiMove", () => {
     );
 
     expect(chooseAiMove(state, "easy", () => 0)).toMatchObject({ row: 2, col: 2 });
+  });
+
+  it("does not create an immediate scoring move for the opponent when a safe move exists", () => {
+    const state: GameState = {
+      ...createInitialGame(
+        { ...DEFAULT_GAME_CONFIG, turnTimeLimitSeconds: null },
+        { firstPlayerId: "player2" },
+      ),
+      board: [
+        ["colorA", null, null, null, null],
+        [null, null, null, null, null],
+        [null, null, null, null, null],
+        [null, null, null, null, null],
+        [null, null, null, null, null],
+      ],
+    };
+    const move = chooseAiMove(state, "easy", () => 0);
+    expect(move).not.toBeNull();
+    if (move === null || state.currentPlayerId === null) return;
+    const placed = placeTile(state, { ...move, playerId: state.currentPlayerId, createdAt: 0 });
+    expect(placed.ok).toBe(true);
+    if (!placed.ok || placed.state.currentPlayerId === null) return;
+    const scoringReplies = getValidMoves(placed.state).filter((reply) => {
+      const result = placeTile(placed.state, {
+        ...reply,
+        playerId: placed.state.currentPlayerId!,
+        createdAt: 0,
+      });
+      return result.ok && result.move.earnedScore > 0;
+    });
+    expect(scoringReplies).toHaveLength(0);
   });
 
   it("uses the 626-move trained model for Normal moves", () => {
