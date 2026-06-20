@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import type { AiDifficulty } from "@color-game/ai-engine";
+import { isNormalAiAvailable, type AiDifficulty } from "@color-game/ai-engine";
 import { AppSidebar } from "../components/AppSidebar";
 import { SettingsPanel } from "../components/SettingsPanel";
 import { useVisitorAnalytics } from "../visitorAnalytics";
@@ -99,7 +99,7 @@ export function LobbyPage() {
           <div className="quick-config" aria-label={t("AI 대전 설정")}>
             <span>AI</span>
             {(["easy", "normal", "hard"] as const).map((level) => {
-              const locked = level === "hard";
+              const locked = level === "hard" || (level === "normal" && !isNormalAiAvailable);
               return (
                 <button
                   key={level}

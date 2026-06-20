@@ -6,6 +6,11 @@ coverage/
 .env.*
 !.env.example
 *.log
+__pycache__/
+*.pyc
 *.tsbuildinfo
 packages/ai-engine/training/training-data.json
+packages/ai-engine/training/alpha-training-data.json
+.venv-alpha-ai/
+packages/ai-engine/alpha-ai/artifacts/
 .DS_Store

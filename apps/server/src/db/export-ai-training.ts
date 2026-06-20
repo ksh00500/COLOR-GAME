@@ -32,6 +32,20 @@ const pool = new Pool({
   ssl: process.env.DATABASE_SSL === "true" ? { rejectUnauthorized: false } : undefined,
 });
 
+const alphaEncodedState = (state: GameState): number[][][] => {
+  const currentIndex = state.players.findIndex((player) => player.id === state.currentPlayerId);
+  const plane = (value: number) => Array.from(
+    { length: state.config.boardSize },
+    () => Array.from({ length: state.config.boardSize }, () => value),
+  );
+  return [
+    ...state.config.colors.map((color) => state.board.map((row) => row.map((cell) => cell === color ? 1 : 0))),
+    plane(currentIndex),
+    plane(state.players[currentIndex]?.score ?? 0).map((row) => row.map((score) => score / state.config.targetScore)),
+    plane(state.players[1 - currentIndex]?.score ?? 0).map((row) => row.map((score) => score / state.config.targetScore)),
+  ];
+};
+
 try {
   const games = await pool.query<GameRow>(
     `select id, state from games where mode <> 'ai' order by started_at asc`,
@@ -52,6 +66,9 @@ try {
     turnNumber: number;
     candidates: Array<{ move: ValidMove; features: number[] }>;
     chosenIndex: number;
+    encodedState: number[][][];
+    chosenAction: number;
+    value: number;
   }> = [];
   let gameCount = 0;
 
@@ -84,7 +101,18 @@ try {
       const chosenIndex = candidates.findIndex(({ move }) =>
         move.row === actual.row_index && move.col === actual.col_index && move.color === actual.color);
       if (chosenIndex < 0) break;
-      positions.push({ gameId: game.id, turnNumber: actual.turn_number, candidates, chosenIndex });
+      const chosenAction = (actual.row_index * state.config.boardSize + actual.col_index)
+        * state.config.colors.length + state.config.colors.indexOf(actual.color);
+      const value = game.state.winnerId === null ? 0 : game.state.winnerId === actual.player_id ? 1 : -1;
+      positions.push({
+        gameId: game.id,
+        turnNumber: actual.turn_number,
+        candidates,
+        chosenIndex,
+        encodedState: alphaEncodedState(state),
+        chosenAction,
+        value,
+      });
       used = true;
       const result = placeTile(state, {
         playerId: actual.player_id,

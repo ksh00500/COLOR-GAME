@@ -18,8 +18,8 @@ const aiState = (): GameState => ({
 });
 
 describe("chooseAiMove", () => {
-  it("takes an immediate scoring move", () => {
-    expect(chooseAiMove(aiState(), "normal", () => 0)).toEqual({
+  it("uses the former trained Normal policy as Easy and takes an immediate scoring move", () => {
+    expect(chooseAiMove(aiState(), "easy", () => 0)).toEqual({
       row: 0,
       col: 2,
       color: "colorA",
@@ -41,6 +41,6 @@ describe("chooseAiMove", () => {
       { firstPlayerId: "player2" },
     );
 
-    expect(chooseAiMove(state, "normal", () => 0)).toMatchObject({ row: 2, col: 2 });
+    expect(chooseAiMove(state, "easy", () => 0)).toMatchObject({ row: 2, col: 2 });
   });
 });
