@@ -3,9 +3,9 @@ import { hasTranslation } from "./i18n";
 
 describe("localization catalog", () => {
   it.each([
-    "Color Line 초대",
-    "Color Line 관전",
-    "Color Line 리플레이",
+    "Tango 초대",
+    "Tango 관전",
+    "Tango 리플레이",
     "초대 링크로 대전에 참가하세요.",
     "진행 중인 대전을 함께 보세요.",
     "현재 수의 공유 링크를 복사했습니다.",

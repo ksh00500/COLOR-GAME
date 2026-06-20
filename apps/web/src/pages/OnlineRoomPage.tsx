@@ -468,7 +468,7 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
 
     try {
       const result = await shareUrl({
-        title: kind === "invite" ? t("Color Line 초대") : t("Color Line 관전"),
+        title: kind === "invite" ? t("Tango 초대") : t("Tango 관전"),
         text: kind === "invite" ? t("초대 링크로 대전에 참가하세요.") : t("진행 중인 대전을 함께 보세요."),
         url,
       });
@@ -484,7 +484,7 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
     if (shareDialog === null) return;
     try {
       await shareUrl({
-        title: shareDialog.kind === "invite" ? t("Color Line 초대") : t("Color Line 관전"),
+        title: shareDialog.kind === "invite" ? t("Tango 초대") : t("Tango 관전"),
         text: shareDialog.kind === "invite" ? t("초대 링크로 대전에 참가하세요.") : t("진행 중인 대전을 함께 보세요."),
         url: shareDialog.url,
         copyOnly: true,

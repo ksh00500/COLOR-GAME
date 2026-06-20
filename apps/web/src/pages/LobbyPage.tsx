@@ -84,7 +84,7 @@ export function LobbyPage() {
         </div>
 
         <div className="home-copy">
-          <p className="eyebrow">COLOR LINE STRATEGY</p>
+          <p className="eyebrow">TANGO · 땅땅땅</p>
           <h1>{t("색을 이어 점수를 완성하세요")}</h1>
           <p>{t("5×5 보드에서 같은 색 3개 이상을 만들면 점수를 얻습니다.")}</p>
 

@@ -99,7 +99,7 @@ export function ReplayPage() {
     const url = `${window.location.origin}/replay/${encodeURIComponent(replay.gameId)}?move=${step}`;
     try {
       const result = await shareUrl({
-        title: t("Color Line 리플레이"),
+        title: t("Tango 리플레이"),
         text: t("{step}번째 수를 확인해 보세요.", { step }),
         url,
       });

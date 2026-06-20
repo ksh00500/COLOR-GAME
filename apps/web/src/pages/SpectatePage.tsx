@@ -49,7 +49,7 @@ export function SpectatePage() {
   const shareSpectate = async () => {
     const url = `${window.location.origin}/spectate/${encodeURIComponent(code.toUpperCase())}`;
     try {
-      const result = await shareUrl({ title: t("Color Line 관전"), text: t("진행 중인 대전을 함께 보세요."), url });
+      const result = await shareUrl({ title: t("Tango 관전"), text: t("진행 중인 대전을 함께 보세요."), url });
       setMessage(result === "copied" ? "관전 링크를 복사했습니다." : "공유했습니다.");
     } catch {
       setMessage("공유를 완료하지 못했습니다.");

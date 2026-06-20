@@ -1,6 +1,6 @@
 export function BrandMark({ compact = false }: { compact?: boolean }) {
   return (
-    <div className="brand-mark" aria-label="Color Line Strategy">
+    <div className="brand-mark" aria-label="Tango 탕고">
       <span className="brand-symbol" aria-hidden="true">
         <i />
         <i />
@@ -8,8 +8,8 @@ export function BrandMark({ compact = false }: { compact?: boolean }) {
       </span>
       {!compact && (
         <span className="brand-copy">
-          <strong>COLOR LINE</strong>
-          <small>STRATEGY</small>
+          <strong>TANGO</strong>
+          <small>땅땅땅</small>
         </span>
       )}
     </div>
