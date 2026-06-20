@@ -2194,8 +2194,15 @@ kbd {
 }
 
 .tutorial-heading {
-  display: grid;
-  gap: 0.2rem;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.tutorial-panel:focus-visible {
+  outline: 3px solid var(--green-light);
+  outline-offset: 3px;
 }
 
 .tutorial-panel h2 {
@@ -3066,7 +3073,8 @@ kbd {
 }
 
 .home-primary,
-.home-secondary {
+.home-secondary,
+.home-tutorial {
   min-height: 58px;
   border-radius: 10px;
   font-size: 1.24rem;
@@ -3086,6 +3094,17 @@ kbd {
   color: var(--app-ink);
   background: var(--app-panel);
   box-shadow: 0 5px 0 color-mix(in srgb, var(--walnut-dark) 18%, transparent);
+}
+
+.home-tutorial {
+  min-height: 46px;
+  border: 1px dashed var(--app-line-strong);
+  border-radius: 10px;
+  color: var(--app-ink-soft);
+  background: color-mix(in srgb, var(--app-panel) 72%, transparent);
+  font-size: 1rem;
+  font-weight: 900;
+  cursor: pointer;
 }
 
 .quick-config {
@@ -3696,7 +3715,8 @@ kbd {
   }
 
   .home-primary,
-  .home-secondary {
+  .home-secondary,
+  .home-tutorial {
     min-height: 48px;
     font-size: 1.05rem;
   }

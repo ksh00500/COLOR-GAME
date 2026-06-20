@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { isHardAiAvailable, type AiDifficulty } from "@color-game/ai-engine";
 import { AppSidebar } from "../components/AppSidebar";
 import { SettingsPanel } from "../components/SettingsPanel";
+import { openTutorial } from "../components/TutorialPanel";
 import { useVisitorAnalytics } from "../visitorAnalytics";
 import { useI18n } from "../i18n";
 
@@ -89,10 +90,13 @@ export function LobbyPage() {
 
           <div className="home-actions">
             <button className="home-primary" type="button" onClick={startGame}>
-              {t("시작하세요")}
+              {t("AI 대전을 시작하세요")}
             </button>
             <button className="home-secondary" type="button" onClick={() => navigate("/matchmaking?mode=casual")}>
               {t("온라인 매칭")}
+            </button>
+            <button className="home-tutorial" type="button" onClick={openTutorial}>
+              {t("튜토리얼 보기")}
             </button>
           </div>
 

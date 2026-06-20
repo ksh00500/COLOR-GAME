@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useI18n } from "../i18n";
 
 const tutorialKey = "color-line-tutorial-complete-v3";
@@ -66,6 +66,8 @@ const markCompleted = () => {
 
 export function TutorialPanel() {
   const titleId = useId();
+  const noteId = useId();
+  const dialogRef = useRef<HTMLElement>(null);
   const { t } = useI18n();
   const [open, setOpen] = useState(() => !hasCompletedTutorial());
   const [stepIndex, setStepIndex] = useState(0);
@@ -87,6 +89,10 @@ export function TutorialPanel() {
   }, [open]);
 
   useEffect(() => {
+    if (open) dialogRef.current?.focus();
+  }, [open]);
+
+  useEffect(() => {
     const reopen = () => {
       setStepIndex(0);
       setOpen(true);
@@ -99,10 +105,23 @@ export function TutorialPanel() {
 
   return (
     <div className="modal-backdrop tutorial-backdrop" role="presentation">
-      <section className="tutorial-panel" role="dialog" aria-modal="true" aria-labelledby={titleId}>
+      <section
+        ref={dialogRef}
+        className="tutorial-panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        aria-describedby={noteId}
+        tabIndex={-1}
+      >
         <div className="tutorial-heading">
-          <p className="eyebrow">FIRST GUIDE</p>
-          <h2 id={titleId}>{t("처음 한 판을 위한 빠른 안내")}</h2>
+          <div>
+            <p className="eyebrow">FIRST GUIDE</p>
+            <h2 id={titleId}>{t("처음 한 판을 위한 빠른 안내")}</h2>
+          </div>
+          <button className="icon-button" type="button" onClick={close} aria-label={t("튜토리얼 닫기")}>
+            ×
+          </button>
         </div>
         <div className="tutorial-stage">
           <div className={`tutorial-game-preview ${step.preview}`} aria-hidden="true">
@@ -163,7 +182,7 @@ export function TutorialPanel() {
             {isLastStep ? t("시작하기") : t("다음")} <span aria-hidden="true">↗</span>
           </button>
         </div>
-        <p className="tutorial-note">{t("나중에는 게임 화면의 규칙 버튼에서 핵심 규칙을 다시 볼 수 있습니다.")}</p>
+        <p id={noteId} className="tutorial-note">{t("나중에는 게임 화면의 규칙 버튼에서 핵심 규칙을 다시 볼 수 있습니다.")}</p>
       </section>
     </div>
   );
