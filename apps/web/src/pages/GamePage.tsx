@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { chooseAiMove, isNormalAiAvailable, type AiDifficulty } from "@color-game/ai-engine";
+import { chooseAiMove, isHardAiAvailable, type AiDifficulty } from "@color-game/ai-engine";
 import {
   DEFAULT_GAME_CONFIG,
   createInitialGame,
@@ -61,7 +61,7 @@ const resolveFirstPlayer = (preference: string | null): string => {
 };
 
 const resolveDifficulty = (value: string | null): AiDifficulty =>
-  value === "normal" && isNormalAiAvailable ? "normal" : "easy";
+  value === "hard" && isHardAiAvailable ? "hard" : value === "normal" ? "normal" : "easy";
 
 const createMatch = (difficulty: AiDifficulty, firstPreference: string | null): GameState => {
   const now = Date.now();

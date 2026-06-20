@@ -1,10 +1,10 @@
 import { getValidMoves, placeTile } from "@color-game/game-core";
 import type { GameState, TileColorId, ValidMove } from "@color-game/shared-types";
 import normalModel from "./normal-model.json";
-import normalAlphaModel from "./normal-alpha-model.json";
+import hardAlphaModel from "./hard-alpha-model.json";
 
 export type AiDifficulty = "easy" | "normal" | "hard";
-export const isNormalAiAvailable = normalAlphaModel.available === true;
+export const isHardAiAvailable = hardAlphaModel.available === true;
 
 const adjacentPotential = (
   state: GameState,
@@ -101,14 +101,14 @@ const decodeFloat32 = (encoded: string): Float32Array => {
   return new Float32Array(bytes.buffer);
 };
 
-let cachedNormalAlphaState: Record<string, Float32Array> | null = null;
-const normalAlphaState = (): Record<string, Float32Array> => {
-  if (cachedNormalAlphaState !== null) return cachedNormalAlphaState;
-  cachedNormalAlphaState = Object.fromEntries(
-    Object.entries(normalAlphaModel.state as Record<string, string>)
+let cachedHardAlphaState: Record<string, Float32Array> | null = null;
+const hardAlphaState = (): Record<string, Float32Array> => {
+  if (cachedHardAlphaState !== null) return cachedHardAlphaState;
+  cachedHardAlphaState = Object.fromEntries(
+    Object.entries(hardAlphaModel.state as Record<string, string>)
       .map(([name, encoded]) => [name, decodeFloat32(encoded)]),
   );
-  return cachedNormalAlphaState;
+  return cachedHardAlphaState;
 };
 
 const denseFloat32 = (
@@ -126,9 +126,9 @@ const denseFloat32 = (
   return relu ? Math.max(0, value) : value;
 });
 
-const normalAlphaPolicy = (state: GameState): number[] | null => {
-  if (!isNormalAiAvailable) return null;
-  const parameters = normalAlphaState();
+const hardAlphaPolicy = (state: GameState): number[] | null => {
+  if (!isHardAiAvailable) return null;
+  const parameters = hardAlphaState();
   const currentIndex = state.players.findIndex((player) => player.id === state.currentPlayerId);
   if (currentIndex < 0) return null;
   const board = state.board;
@@ -167,12 +167,27 @@ export const chooseAiMove = (
   const moves = getValidMoves(state);
   if (moves.length === 0 || state.currentPlayerId === null) return null;
 
-  if (difficulty === "easy" || (difficulty === "normal" && !isNormalAiAvailable)) {
-    const threatenedCells = getOpponentScoringCells(state);
-    const candidates = moves.map((move) => ({
-      move,
-      features: extractAiMoveFeatures(state, move, threatenedCells),
+  const threatenedCells = getOpponentScoringCells(state);
+  const candidates = moves.map((move) => ({
+    move,
+    features: extractAiMoveFeatures(state, move, threatenedCells),
+  }));
+
+  if (difficulty === "easy") {
+    const scored = candidates.map((candidate) => ({
+      move: candidate.move,
+      score:
+        (candidate.features[0] ?? 0) * 1_000 +
+        (candidate.features[1] ?? 0) * 80 +
+        (candidate.features[2] ?? 0) * 4 +
+        (candidate.features[3] ?? 0),
     }));
+    const bestScore = Math.max(...scored.map((candidate) => candidate.score));
+    const bestMoves = scored.filter((candidate) => candidate.score === bestScore);
+    return bestMoves[Math.floor(random() * bestMoves.length)]?.move ?? bestMoves[0]?.move ?? null;
+  }
+
+  if (difficulty === "normal" || !isHardAiAvailable) {
     const bestImmediate = Math.max(...candidates.map((candidate) => candidate.features[0] ?? 0));
     const tactical = bestImmediate > 0
       ? candidates.filter((candidate) => candidate.features[0] === bestImmediate)
@@ -188,21 +203,19 @@ export const chooseAiMove = (
     return bestMoves[Math.floor(random() * bestMoves.length)]?.move ?? bestMoves[0]?.move ?? null;
   }
 
-  const learnedPolicy = normalAlphaPolicy(state);
-  if (difficulty === "normal" && learnedPolicy !== null) {
-    const threatenedCells = getOpponentScoringCells(state);
-    const candidates = moves.map((move) => ({
-      move,
-      features: extractAiMoveFeatures(state, move, threatenedCells),
-      score: learnedPolicy[(move.row * state.config.boardSize + move.col) * state.config.colors.length
-        + state.config.colors.indexOf(move.color)] ?? Number.NEGATIVE_INFINITY,
+  const learnedPolicy = hardAlphaPolicy(state);
+  if (learnedPolicy !== null) {
+    const policyCandidates = candidates.map((candidate) => ({
+      ...candidate,
+      score: learnedPolicy[(candidate.move.row * state.config.boardSize + candidate.move.col) * state.config.colors.length
+        + state.config.colors.indexOf(candidate.move.color)] ?? Number.NEGATIVE_INFINITY,
     }));
-    const bestImmediate = Math.max(...candidates.map((candidate) => candidate.features[0] ?? 0));
+    const bestImmediate = Math.max(...policyCandidates.map((candidate) => candidate.features[0] ?? 0));
     const tactical = bestImmediate > 0
-      ? candidates.filter((candidate) => candidate.features[0] === bestImmediate)
-      : candidates.some((candidate) => candidate.features[1] === 1)
-        ? candidates.filter((candidate) => candidate.features[1] === 1)
-        : candidates;
+      ? policyCandidates.filter((candidate) => candidate.features[0] === bestImmediate)
+      : policyCandidates.some((candidate) => candidate.features[1] === 1)
+        ? policyCandidates.filter((candidate) => candidate.features[1] === 1)
+        : policyCandidates;
     const withRisk = tactical.map((candidate) => ({
       ...candidate,
       risk: opponentReplyRisk(state, candidate.move),
@@ -213,33 +226,5 @@ export const chooseAiMove = (
     const bestMoves = scored.filter((candidate) => candidate.score === bestScore);
     return bestMoves[Math.floor(random() * bestMoves.length)]?.move ?? bestMoves[0]?.move ?? null;
   }
-
-  const threatenedCells = getOpponentScoringCells(state);
-  const evaluationTime = state.turnTimer?.startedAt ?? Date.now();
-  const scored = moves.map((move) => {
-    const result = placeTile(state, {
-      ...move,
-      playerId: state.currentPlayerId!,
-      createdAt: evaluationTime,
-    });
-    const immediate = result.ok ? result.move.earnedScore : 0;
-    const block = threatenedCells.has(`${move.row}:${move.col}`) ? 1 : 0;
-    const potential = adjacentPotential(state, move, move.color);
-    const centerDistance =
-      Math.abs(move.row - (state.config.boardSize - 1) / 2) +
-      Math.abs(move.col - (state.config.boardSize - 1) / 2);
-
-    return {
-      move,
-      score:
-        immediate * 1_000 +
-        block * 120 +
-        potential * (difficulty === "hard" ? 18 : 8) -
-        centerDistance,
-    };
-  });
-
-  const bestScore = Math.max(...scored.map((candidate) => candidate.score));
-  const bestMoves = scored.filter((candidate) => candidate.score === bestScore);
-  return bestMoves[Math.floor(random() * bestMoves.length)]?.move ?? bestMoves[0]?.move ?? null;
+  return candidates[0]?.move ?? null;
 };

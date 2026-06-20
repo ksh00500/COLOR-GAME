@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { isNormalAiAvailable, type AiDifficulty } from "@color-game/ai-engine";
+import { isHardAiAvailable, type AiDifficulty } from "@color-game/ai-engine";
 import { AppSidebar } from "../components/AppSidebar";
 import { SettingsPanel } from "../components/SettingsPanel";
 import { useVisitorAnalytics } from "../visitorAnalytics";
@@ -13,7 +13,7 @@ const modes = [
     id: "ai",
     index: "01",
     title: "AI 대전",
-    description: "Easy와 학습형 Normal 모드를 플레이할 수 있습니다.",
+    description: "알고리즘 Easy, 학습형 Normal과 Hard를 플레이할 수 있습니다.",
     state: "PLAYABLE",
     accent: "burgundy",
   },
@@ -99,7 +99,7 @@ export function LobbyPage() {
           <div className="quick-config" aria-label={t("AI 대전 설정")}>
             <span>AI</span>
             {(["easy", "normal", "hard"] as const).map((level) => {
-              const locked = level === "hard" || (level === "normal" && !isNormalAiAvailable);
+              const locked = level === "hard" && !isHardAiAvailable;
               return (
                 <button
                   key={level}

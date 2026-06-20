@@ -9,7 +9,7 @@ $report = Get-Content $reportPath | ConvertFrom-Json
 if (-not $report.eligibleForPromotion) {
   throw "승격 거부: 최소 20판 및 기존 AI 상대 승률 55% 기준을 통과하지 못했습니다."
 }
-$target = Join-Path $root "packages\ai-engine\src\normal-alpha-model.json"
+$target = Join-Path $root "packages\ai-engine\src\hard-alpha-model.json"
 Copy-Item -LiteralPath $candidate -Destination $target -Force
 Push-Location $root
 try {
@@ -20,4 +20,4 @@ try {
   pnpm build
   if ($LASTEXITCODE -ne 0) { throw "프로덕션 빌드가 실패했습니다." }
 } finally { Pop-Location }
-Write-Host "Normal 모델을 소스에 반영했습니다. 아직 Git 커밋이나 EC2 배포는 하지 않았습니다."
+Write-Host "Hard 모델을 소스에 반영했습니다. 아직 Git 커밋이나 EC2 배포는 하지 않았습니다."

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createInitialGame, DEFAULT_GAME_CONFIG } from "@color-game/game-core";
 import type { GameState } from "@color-game/shared-types";
-import { chooseAiMove, isNormalAiAvailable } from "./index";
+import { chooseAiMove, isHardAiAvailable } from "./index";
 
 const aiState = (): GameState => ({
   ...createInitialGame(
@@ -18,7 +18,7 @@ const aiState = (): GameState => ({
 });
 
 describe("chooseAiMove", () => {
-  it("uses the former trained Normal policy as Easy and takes an immediate scoring move", () => {
+  it("uses the algorithmic Easy policy and takes an immediate scoring move", () => {
     expect(chooseAiMove(aiState(), "easy", () => 0)).toEqual({
       row: 0,
       col: 2,
@@ -35,7 +35,7 @@ describe("chooseAiMove", () => {
     expect(state.board[move.row]?.[move.col]).toBeNull();
   });
 
-  it("uses the trained Normal policy to prefer the center on an empty board", () => {
+  it("uses a simple center preference for algorithmic Easy", () => {
     const state = createInitialGame(
       { ...DEFAULT_GAME_CONFIG, turnTimeLimitSeconds: null },
       { firstPlayerId: "player2" },
@@ -44,10 +44,17 @@ describe("chooseAiMove", () => {
     expect(chooseAiMove(state, "easy", () => 0)).toMatchObject({ row: 2, col: 2 });
   });
 
-  it("loads the promoted AlphaZero-lite model for Normal moves", () => {
-    expect(isNormalAiAvailable).toBe(true);
+  it("uses the 626-move trained model for Normal moves", () => {
     const state = aiState();
     const move = chooseAiMove(state, "normal", () => 0);
+    expect(move).not.toBeNull();
+    if (move !== null) expect(state.board[move.row]?.[move.col]).toBeNull();
+  });
+
+  it("loads the promoted AlphaZero-lite model for Hard moves", () => {
+    expect(isHardAiAvailable).toBe(true);
+    const state = aiState();
+    const move = chooseAiMove(state, "hard", () => 0);
     expect(move).not.toBeNull();
     if (move !== null) expect(state.board[move.row]?.[move.col]).toBeNull();
   });
