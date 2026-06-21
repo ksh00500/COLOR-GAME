@@ -77,7 +77,10 @@ export function GameBoard({
         ref={boardRef}
         role="grid"
         aria-label={t("5×5 게임 보드")}
-        style={{ gridTemplateColumns: `repeat(${size}, 1fr)` }}
+        style={{
+          gridTemplateColumns: `repeat(${size}, minmax(0, 1fr))`,
+          gridTemplateRows: `repeat(${size}, minmax(0, 1fr))`,
+        }}
       >
         {board.flatMap((row, rowIndex) =>
           row.map((cell, colIndex) => {
