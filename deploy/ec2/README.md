@@ -41,6 +41,8 @@ sudo systemctl reload nginx
 
 HTTPS 설정은 `colortile.kro.kr`과 `tangogame.kro.kr`의 Certbot 인증서를 사용하며 HTTP와 HTTPS를 모두 제공합니다.
 
+인증서 갱신 뒤 Nginx가 새 인증서를 즉시 읽도록 `reload-nginx-after-cert-renewal.sh`를 `/etc/letsencrypt/renewal-hooks/deploy/`에 실행 가능하게 설치합니다.
+
 ## Required Environment
 
 `/etc/color-game/server.env`:
