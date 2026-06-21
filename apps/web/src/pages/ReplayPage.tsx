@@ -46,7 +46,7 @@ export function ReplayPage() {
             : 0;
           setReplay(nextReplay);
           setStepState(initial);
-          setCurrentScoringResolved(true);
+          setCurrentScoringResolved(initial === 0);
           setIsPlaying(requestedParam === null && nextReplay.moves.length > 0);
           setMessage("");
           return;
