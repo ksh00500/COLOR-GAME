@@ -141,6 +141,7 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
   const [visualBoard, setVisualBoard] = useState<Board | null>(null);
   const [scoringCells, setScoringCells] = useState<Set<string>>(new Set());
   const [lastPlaced, setLastPlaced] = useState<Position | null>(null);
+  const [opponentLastPlaced, setOpponentLastPlaced] = useState<Position | null>(null);
   const [invalidCell, setInvalidCell] = useState<Position | null>(null);
   const [scoreNotice, setScoreNotice] = useState<{ playerId: string; score: number } | null>(null);
   const [focusedIndex, setFocusedIndex] = useState(12);
@@ -264,7 +265,13 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
   }, [shareNotice]);
 
   useEffect(() => {
-    if (game?.lastMove === null || game?.lastMove === undefined) return;
+    if (game?.lastMove === null || game?.lastMove === undefined) {
+      setOpponentLastPlaced(null);
+      return;
+    }
+    if (playerId !== null && game.lastMove.playerId !== playerId) {
+      setOpponentLastPlaced({ row: game.lastMove.row, col: game.lastMove.col });
+    }
     const moveKey = `${game.lastMove.turnNumber}:${game.lastMove.playerId}:${game.lastMove.row}:${game.lastMove.col}`;
     if (animatedMoveKey.current === moveKey) return;
     animatedMoveKey.current = moveKey;
@@ -671,6 +678,7 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
               focusedIndex={focusedIndex}
               scoringCells={scoringCells}
               lastPlaced={lastPlaced}
+              opponentLastPlaced={opponentLastPlaced}
               invalidCell={invalidCell}
               onFocusedIndexChange={setFocusedIndex}
               onPlace={placeTileOnline}

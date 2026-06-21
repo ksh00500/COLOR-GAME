@@ -39,7 +39,7 @@ sudo nginx -t
 sudo systemctl reload nginx
 ```
 
-HTTPS 설정은 `colortile.kro.kr`의 기존 Certbot 인증서를 사용하며 HTTP와 HTTPS를 모두 제공합니다.
+HTTPS 설정은 `colortile.kro.kr`과 `tangogame.kro.kr`의 Certbot 인증서를 사용하며 HTTP와 HTTPS를 모두 제공합니다.
 
 ## Required Environment
 
@@ -49,7 +49,7 @@ HTTPS 설정은 `colortile.kro.kr`의 기존 Certbot 인증서를 사용하며 H
 NODE_ENV=production
 HOST=127.0.0.1
 PORT=8080
-CORS_ORIGIN=http://colortile.kro.kr,http://3.26.178.31,https://colortile.kro.kr
+CORS_ORIGIN=http://colortile.kro.kr,http://3.26.178.31,https://colortile.kro.kr,http://tangogame.kro.kr,https://tangogame.kro.kr
 DATABASE_URL=postgresql://user:password@your-rds-endpoint:5432/color_game
 DATABASE_SSL=true
 DATABASE_REQUIRED=true
@@ -63,7 +63,7 @@ AUTH_SECRET=at-least-32-random-characters
 pnpm --filter @color-game/web build
 ```
 
-프론트는 `VITE_API_URL`, `VITE_SOCKET_URL`이 비어 있으면 현재 접속한 origin을 그대로 사용합니다. 같은 빌드로 `http://colortile.kro.kr/`와 `http://3.26.178.31/` 모두 동작합니다. API 서버를 별도 도메인으로 분리할 때만 두 env 값을 지정하세요.
+프론트는 `VITE_API_URL`, `VITE_SOCKET_URL`이 비어 있으면 현재 접속한 origin을 그대로 사용합니다. 같은 빌드로 `http://colortile.kro.kr/`, `http://tangogame.kro.kr/`, `https://tangogame.kro.kr/`, `http://3.26.178.31/`에서 동작합니다. API 서버를 별도 도메인으로 분리할 때만 두 env 값을 지정하세요.
 
 ## Database Commands
 

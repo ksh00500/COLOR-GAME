@@ -1707,6 +1707,32 @@ fieldset legend {
   animation: tile-place 220ms cubic-bezier(.2,.8,.2,1) both;
 }
 
+.board-cell.opponent-last::before {
+  position: absolute;
+  z-index: 3;
+  top: 6px;
+  right: 6px;
+  width: 9px;
+  height: 9px;
+  border: 2px solid rgba(45, 23, 12, 0.72);
+  border-radius: 50%;
+  background: #fff4c8;
+  box-shadow: 0 0 0 2px rgba(255, 244, 200, 0.38), 0 2px 7px rgba(0, 0, 0, 0.32);
+  content: "";
+  pointer-events: none;
+}
+
+.board-cell.opponent-last::after {
+  position: absolute;
+  z-index: 2;
+  inset: 3px;
+  border: 3px solid rgba(255, 244, 200, 0.94);
+  border-radius: calc(clamp(8px, 1.3vw, 13px) - 2px);
+  box-shadow: 0 0 0 2px rgba(112, 72, 36, 0.78), 0 0 17px rgba(255, 226, 151, 0.5);
+  content: "";
+  pointer-events: none;
+}
+
 .board-cell.scoring .tile-face {
   outline: 3px solid rgba(255, 245, 213, 0.88);
   outline-offset: -5px;
@@ -1790,23 +1816,29 @@ fieldset legend {
   color: var(--ink-soft);
   background: var(--surface-muted);
   cursor: pointer;
-  transition: border-color var(--duration) ease, background var(--duration) ease, color var(--duration) ease;
+  opacity: 0.42;
+  filter: saturate(0.5);
+  transition: opacity var(--duration) ease, filter var(--duration) ease, border-color var(--duration) ease, background var(--duration) ease, color var(--duration) ease, box-shadow var(--duration) ease;
 }
 
 .color-option:disabled {
-  opacity: 0.45;
+  opacity: 0.3;
 }
 
 .color-option.active {
+  opacity: 1;
+  filter: none;
   border-color: var(--line-strong);
+  outline: 3px solid var(--line-strong);
+  outline-offset: 1px;
   color: var(--ink);
   background: var(--surface-raised);
-  box-shadow: 0 3px 10px rgba(44, 27, 15, 0.11);
+  box-shadow: 0 4px 14px rgba(44, 27, 15, 0.2);
 }
 
-.color-option.colorA.active { border-color: color-mix(in srgb, var(--burgundy) 70%, var(--line)); }
-.color-option.colorB.active { border-color: color-mix(in srgb, var(--navy) 70%, var(--line)); }
-.color-option.colorC.active { border-color: color-mix(in srgb, var(--green) 70%, var(--line)); }
+.color-option.colorA.active { border-color: var(--burgundy); outline-color: color-mix(in srgb, var(--burgundy) 82%, white); }
+.color-option.colorB.active { border-color: var(--navy); outline-color: color-mix(in srgb, var(--navy) 82%, white); }
+.color-option.colorC.active { border-color: var(--green); outline-color: color-mix(in srgb, var(--green) 82%, white); }
 
 .color-swatch {
   display: grid;

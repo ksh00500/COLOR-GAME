@@ -1,7 +1,21 @@
 server {
   listen 80;
   listen [::]:80;
-  server_name colortile.kro.kr 3.26.178.31;
+  server_name colortile.kro.kr tangogame.kro.kr 3.26.178.31;
+
+  include /etc/nginx/conf.d/color-game-locations.inc;
+}
+
+server {
+  listen 443 ssl;
+  listen [::]:443 ssl;
+  server_name tangogame.kro.kr;
+
+  ssl_certificate /etc/letsencrypt/live/tangogame.kro.kr/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/tangogame.kro.kr/privkey.pem;
+  ssl_protocols TLSv1.2 TLSv1.3;
+  ssl_session_cache shared:ColorGameTLS:10m;
+  ssl_session_timeout 1d;
 
   include /etc/nginx/conf.d/color-game-locations.inc;
 }

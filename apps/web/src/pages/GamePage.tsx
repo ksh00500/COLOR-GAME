@@ -99,6 +99,7 @@ export function GamePage() {
   const [visualBoard, setVisualBoard] = useState<Board | null>(null);
   const [scoringCells, setScoringCells] = useState<Set<string>>(new Set());
   const [lastPlaced, setLastPlaced] = useState<Position | null>(null);
+  const [opponentLastPlaced, setOpponentLastPlaced] = useState<Position | null>(null);
   const [invalidCell, setInvalidCell] = useState<Position | null>(null);
   const [scoreNotice, setScoreNotice] = useState<{ playerId: string; score: number } | null>(null);
   const [focusedIndex, setFocusedIndex] = useState(12);
@@ -171,6 +172,7 @@ export function GamePage() {
       }
 
       setLastPlaced(position);
+      if (playerId === AI_ID) setOpponentLastPlaced(position);
       const shouldCueOpponentTurn =
         playerId !== HUMAN_ID &&
         result.state.status === "playing" &&
@@ -271,6 +273,7 @@ export function GamePage() {
     setVisualBoard(null);
     setScoringCells(new Set());
     setLastPlaced(null);
+    setOpponentLastPlaced(null);
     setInvalidCell(null);
     setScoreNotice(null);
     setIsAnimating(false);
@@ -323,6 +326,7 @@ export function GamePage() {
               focusedIndex={focusedIndex}
               scoringCells={scoringCells}
               lastPlaced={lastPlaced}
+              opponentLastPlaced={opponentLastPlaced}
               invalidCell={invalidCell}
               onFocusedIndexChange={setFocusedIndex}
               onPlace={(position) => applyMove(HUMAN_ID, position, selectedColors[HUMAN_ID] ?? "colorA")}

@@ -9,7 +9,6 @@ export function BrandMark({ compact = false }: { compact?: boolean }) {
       {!compact && (
         <span className="brand-copy">
           <strong>TANGO</strong>
-          <small>땅땅땅</small>
         </span>
       )}
     </div>

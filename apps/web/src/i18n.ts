@@ -119,6 +119,7 @@ const messages: Record<string, Message> = {
   "상대의 수를 기다리는 중입니다.": { en: "Waiting for the opponent's move.", ja: "相手の手を待っています。", es: "Esperando la jugada del rival.", "pt-BR": "Aguardando a jogada do adversário." },
   "상대 수를 기다리는 중입니다.": { en: "Waiting for the opponent.", ja: "相手の手を待っています。", es: "Esperando al rival.", "pt-BR": "Aguardando o adversário." },
   "상대 차례": { en: "Opponent's turn", ja: "相手の番", es: "Turno del rival", "pt-BR": "Vez do adversário" },
+  "상대가 마지막으로 둔 칸": { en: "opponent's last move", ja: "相手の最後の手", es: "última jugada del rival", "pt-BR": "última jogada do adversário" },
   "색상을 고르고 빈칸에 놓으세요.": { en: "Choose a color and place it on an empty cell.", ja: "色を選んで空きマスに置いてください。", es: "Elige un color y colócalo en una casilla vacía.", "pt-BR": "Escolha uma cor e coloque-a em uma casa vazia." },
   "게스트 플레이어": { en: "Guest player", ja: "ゲストプレイヤー", es: "Jugador invitado", "pt-BR": "Jogador convidado" },
   "게임을 포기하시겠습니까?": { en: "Resign this match?", ja: "この対戦を投了しますか？", es: "¿Rendirse en esta partida?", "pt-BR": "Desistir desta partida?" },
