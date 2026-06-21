@@ -65,42 +65,51 @@ export function LeaderboardPage() {
     <main className="online-page app-frame">
       <AppSidebar onSettings={() => setSettingsOpen(true)} />
 
-      <section className="online-shell account-shell app-content-shell" aria-labelledby="leaderboard-title">
-        <div className="online-copy">
-          <p className="eyebrow">RANKED LADDER</p>
-          <h1 id="leaderboard-title">{t("팔레트 티어와 순위를 확인하세요.")}</h1>
-          <p>{t("경쟁 게임 결과로 팔레트가 채워집니다. 보라 팔레트를 완성한 상위 50명은 무지개 팔레트를 얻습니다.")}</p>
+      <section className="leaderboard-shell app-content-shell" aria-labelledby="leaderboard-title">
+        <div className="leaderboard-overview">
+          <div className="online-copy">
+            <p className="eyebrow">RANKED LADDER</p>
+            <h1 id="leaderboard-title">{t("팔레트 티어와 순위를 확인하세요.")}</h1>
+            <p>{t("경쟁 게임 결과로 팔레트가 채워집니다. 보라 팔레트를 완성한 상위 50명은 무지개 팔레트를 얻습니다.")}</p>
+          </div>
+
+          <section className="tier-guide-card" aria-label={t("팔레트 티어 구성")}>
+            <div className="tier-guide-heading">
+              <p className="eyebrow">PALETTE TIERS</p>
+              <strong>{t("티어 순서")}</strong>
+            </div>
+            <div className="tier-guide-list">
+              {tierGuide.map((tier, index) => (
+                <article className="tier-guide-item" key={tier.label}>
+                  <span className="tier-guide-index">{index + 1}</span>
+                  <span className="tier-guide-icon-wrap" aria-hidden="true">
+                    <PaletteTierIcon filledCount={tier.filledCount} isRainbow={tier.isRainbow ?? false} />
+                  </span>
+                  <div className="tier-guide-copy">
+                    <strong>{t(tier.label)}</strong>
+                    <span className="tier-requirement">
+                      {tier.requirementKind === "below"
+                        ? t("레이팅 {rating} 미만", { rating: formatNumber(tier.minRating) })
+                        : tier.requirementKind === "top"
+                          ? t("레이팅 {rating}+ · 상위 {count}명", { rating: formatNumber(tier.minRating), count: rainbowRankLimit })
+                          : t("레이팅 {rating}+", { rating: formatNumber(tier.minRating) })}
+                    </span>
+                    <small>{t(tier.description)}</small>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
         </div>
 
-        <section className="tier-guide-card" aria-label={t("팔레트 티어 구성")}>
-          <div className="tier-guide-heading">
-            <p className="eyebrow">PALETTE TIERS</p>
-            <strong>{t("티어 순서")}</strong>
-          </div>
-          <div className="tier-guide-list">
-            {tierGuide.map((tier, index) => (
-              <article className="tier-guide-item" key={tier.label}>
-                <span className="tier-guide-index">{index + 1}</span>
-                <span className="tier-guide-icon-wrap" aria-hidden="true">
-                  <PaletteTierIcon filledCount={tier.filledCount} isRainbow={tier.isRainbow ?? false} />
-                </span>
-                <div className="tier-guide-copy">
-                  <strong>{t(tier.label)}</strong>
-                  <span className="tier-requirement">
-                    {tier.requirementKind === "below"
-                      ? t("레이팅 {rating} 미만", { rating: formatNumber(tier.minRating) })
-                      : tier.requirementKind === "top"
-                        ? t("레이팅 {rating}+ · 상위 {count}명", { rating: formatNumber(tier.minRating), count: rainbowRankLimit })
-                        : t("레이팅 {rating}+", { rating: formatNumber(tier.minRating) })}
-                  </span>
-                  <small>{t(tier.description)}</small>
-                </div>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <div className="online-card leaderboard-card">
+        <section className="online-card leaderboard-card" aria-label={t("전체 순위")}>
+          <header className="leaderboard-list-heading">
+            <div>
+              <p className="eyebrow">RANKING</p>
+              <h2>{t("전체 순위")}</h2>
+            </div>
+            <strong>{formatNumber(players.length)}</strong>
+          </header>
           {message !== null && <p className="online-message">{t(message)}</p>}
           {players.map((player, index) => {
             const rankedGames = player.rankedWins + player.rankedLosses + player.rankedDraws;
@@ -115,7 +124,7 @@ export function LeaderboardPage() {
               </article>
             );
           })}
-        </div>
+        </section>
       </section>
       <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </main>

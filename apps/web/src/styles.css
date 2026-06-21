@@ -909,6 +909,154 @@ p {
   word-break: keep-all;
 }
 
+.leaderboard-shell {
+  display: grid;
+  grid-template-columns: minmax(540px, 1.12fr) minmax(390px, 0.88fr);
+  align-items: start;
+  gap: clamp(1rem, 2vw, 1.6rem);
+  width: min(calc(100% - 3rem), 1420px);
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: clamp(1.5rem, 3vh, 2.5rem) 0;
+  align-content: start;
+}
+
+.leaderboard-overview {
+  display: grid;
+  align-self: start;
+  gap: 1.1rem;
+}
+
+.leaderboard-shell .online-copy h1 {
+  max-width: 680px;
+  margin: 0.45rem 0 0.75rem;
+  font-size: clamp(2.35rem, 4vw, 4.35rem);
+  line-height: 1.02;
+}
+
+.leaderboard-shell .online-copy p:last-child {
+  max-width: 700px;
+  margin: 0;
+  font-size: 0.86rem;
+  line-height: 1.65;
+}
+
+.leaderboard-shell .tier-guide-card {
+  gap: 0.65rem;
+  padding: 0.8rem;
+  border-radius: 16px;
+}
+
+.leaderboard-shell .tier-guide-list {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.45rem;
+}
+
+.leaderboard-shell .tier-guide-item {
+  grid-template-rows: 45px auto;
+  gap: 0.12rem;
+  min-height: 106px;
+  padding: 0.48rem 0.4rem 0.45rem;
+  border-radius: 11px;
+}
+
+.leaderboard-shell .tier-guide-index {
+  top: 0.42rem;
+  left: 0.42rem;
+  width: 1.4rem;
+  height: 1.4rem;
+  font-size: 0.6rem;
+}
+
+.leaderboard-shell .tier-guide-icon-wrap {
+  height: 45px;
+  padding-left: 1rem;
+}
+
+.leaderboard-shell .tier-guide-icon-wrap .palette-tier-icon {
+  width: 68px;
+  height: 48px;
+}
+
+.leaderboard-shell .tier-guide-copy {
+  gap: 0.08rem;
+}
+
+.leaderboard-shell .tier-guide-copy strong {
+  font-size: 0.74rem;
+}
+
+.leaderboard-shell .tier-requirement,
+.leaderboard-shell .tier-guide-copy small {
+  font-size: 0.49rem;
+  line-height: 1.25;
+}
+
+.leaderboard-card {
+  align-content: start;
+  gap: 0.45rem;
+  padding: 0.85rem;
+}
+
+.leaderboard-list-heading {
+  position: sticky;
+  z-index: 2;
+  top: 0;
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: -0.2rem -0.2rem 0.25rem;
+  padding: 0.45rem 0.45rem 0.75rem;
+  border-bottom: 1px solid var(--app-line);
+  background: color-mix(in srgb, var(--app-panel) 94%, transparent);
+}
+
+.leaderboard-list-heading .eyebrow,
+.leaderboard-list-heading h2 {
+  margin: 0;
+}
+
+.leaderboard-list-heading h2 {
+  margin-top: 0.15rem;
+  font-size: 1.25rem;
+}
+
+.leaderboard-list-heading > strong {
+  color: var(--green-light);
+  font-size: 1.2rem;
+}
+
+.leaderboard-shell .leaderboard-row {
+  grid-template-columns: 2rem auto minmax(0, 1fr) auto;
+  gap: 0.15rem 0.45rem;
+  padding: 0.52rem 0.6rem;
+  border-radius: 10px;
+}
+
+.leaderboard-shell .leaderboard-rank {
+  width: 1.75rem;
+  height: 1.75rem;
+  font-size: 0.72rem;
+}
+
+.leaderboard-shell .rank-badge.compact {
+  padding: 0.15rem 0.3rem;
+}
+
+.leaderboard-shell .rank-badge.compact .rank-palette {
+  width: 52px;
+  height: 38px;
+}
+
+.leaderboard-shell .leaderboard-row > strong {
+  font-size: 0.92rem;
+}
+
+.leaderboard-shell .leaderboard-row small {
+  font-size: 0.55rem;
+}
+
 .match-history p,
 .leaderboard-row {
   display: grid;
@@ -4002,6 +4150,114 @@ kbd {
   cursor: default;
 }
 
+@media (min-width: 981px) {
+  .game-page .replay-shell {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    width: min(1180px, calc(100% - 2rem));
+    height: 100vh;
+    min-height: 0;
+    align-content: stretch;
+    padding: clamp(0.7rem, 1.6vh, 1.1rem) 0;
+    overflow: hidden;
+  }
+
+  .game-page .replay-header {
+    align-items: center;
+    margin-bottom: clamp(0.55rem, 1.2vh, 0.9rem);
+  }
+
+  .game-page .replay-header h1 {
+    font-size: clamp(1.55rem, 2.2vw, 2.25rem);
+  }
+
+  .game-page .replay-header > div:first-child > p:last-child {
+    margin: 0;
+    font-size: 0.78rem;
+  }
+
+  .game-page .replay-header-actions .primary-action,
+  .game-page .replay-header-actions .secondary-action {
+    min-height: 44px;
+    padding-inline: 0.9rem;
+  }
+
+  .game-page .replay-layout {
+    grid-template-columns: minmax(160px, 210px) minmax(380px, 560px) minmax(160px, 210px);
+    min-height: 0;
+    align-items: start;
+    justify-content: center;
+    gap: clamp(0.65rem, 1.2vw, 1rem);
+  }
+
+  .game-page .replay-board-column {
+    width: min(100%, calc(100vh - 390px), 560px);
+    min-width: 380px;
+    justify-self: center;
+    gap: 0.6rem;
+  }
+
+  .game-page .replay-controls {
+    gap: 0.5rem;
+    padding: 0.7rem;
+    border-radius: 0.8rem;
+  }
+
+  .game-page .replay-play-toggle,
+  .game-page .replay-speed button {
+    min-height: 34px;
+  }
+
+  .game-page .replay-play-toggle {
+    min-width: 118px;
+    padding: 0.4rem 0.65rem;
+  }
+
+  .game-page .replay-speed button {
+    min-width: 40px;
+    padding: 0.3rem 0.45rem;
+  }
+
+  .game-page .replay-buttons button {
+    padding: 0.48rem 0.62rem;
+  }
+
+  .game-page .replay-layout > .player-card {
+    min-height: min(48vh, 430px);
+    height: min(48vh, 430px);
+    padding: 0.75rem;
+  }
+
+  .game-page .replay-layout > .player-card .player-card-status {
+    padding-bottom: 0.55rem;
+  }
+
+  .game-page .replay-layout > .player-card .player-avatar {
+    width: 76px;
+    height: 76px;
+    margin: 1rem 0 0.75rem;
+  }
+
+  .game-page .replay-layout > .player-card .player-avatar span {
+    width: 44px;
+    height: 44px;
+    font-size: 0.95rem;
+  }
+
+  .game-page .replay-layout > .player-card .player-identity strong {
+    font-size: 1rem;
+  }
+
+  .game-page .replay-layout > .player-card .score-ring {
+    width: 70px;
+    height: 70px;
+  }
+
+  .game-page .replay-layout > .player-card .score-ring strong {
+    font-size: 1.35rem;
+  }
+}
+
 .floating-replay-link {
   position: fixed;
   right: 1rem;
@@ -4036,6 +4292,11 @@ kbd {
 }
 
 @media (max-width: 980px) {
+  .leaderboard-shell {
+    grid-template-columns: 1fr;
+    width: min(calc(100% - 2rem), 760px);
+  }
+
   .replay-layout {
     grid-template-columns: 1fr;
   }
@@ -4053,6 +4314,10 @@ kbd {
 
   .language-grid {
     grid-template-columns: 1fr;
+  }
+
+  .leaderboard-shell .tier-guide-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .replay-playback-row {

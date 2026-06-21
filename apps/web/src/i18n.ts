@@ -174,6 +174,7 @@ const messages: Record<string, Message> = {
   "팔레트 티어와 순위를 확인하세요.": { en: "Check palette tiers and rankings", ja: "パレットティアと順位を確認しよう", es: "Consulta los niveles y la clasificación", "pt-BR": "Confira os níveis e o ranking" },
   "경쟁 게임 결과로 팔레트가 채워집니다. 보라 팔레트를 완성한 상위 50명은 무지개 팔레트를 얻습니다.": { en: "Ranked results fill your palette. The top 50 Violet players earn the Rainbow palette.", ja: "ランク戦の結果でパレットが埋まります。バイオレット完成後の上位50名はレインボーを獲得します。", es: "Los resultados competitivos llenan tu paleta. Los 50 mejores Violet obtienen Rainbow.", "pt-BR": "Resultados competitivos preenchem sua paleta. Os 50 melhores Violet recebem a Rainbow." },
   "티어 순서": { en: "Tier order", ja: "ティア順", es: "Orden de niveles", "pt-BR": "Ordem dos níveis" },
+  "전체 순위": { en: "Full ranking", ja: "総合ランキング", es: "Clasificación completa", "pt-BR": "Ranking completo" },
   "빈 팔레트": { en: "Blank", ja: "空のパレット", es: "Vacía", "pt-BR": "Vazia" },
   "레드": { en: "Red", ja: "レッド", es: "Rojo", "pt-BR": "Vermelho" },
   "오렌지": { en: "Orange", ja: "オレンジ", es: "Naranja", "pt-BR": "Laranja" },
