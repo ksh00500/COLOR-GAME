@@ -174,17 +174,25 @@ export const chooseAiMove = (
   }));
 
   if (difficulty === "easy") {
+    const bestImmediate = Math.max(...candidates.map((candidate) => candidate.features[0] ?? 0));
+    if (bestImmediate > 0) {
+      const scoringMoves = candidates.filter((candidate) => candidate.features[0] === bestImmediate);
+      return scoringMoves[Math.floor(random() * scoringMoves.length)]?.move ?? scoringMoves[0]?.move ?? null;
+    }
+
+    // Easy usually notices a one-move reply, but occasionally plays only by
+    // nearby colors and board position so it remains beatable for beginners.
+    const tacticallyAware = random() < 0.82;
     const scored = candidates.map((candidate) => ({
       move: candidate.move,
       score:
-        (candidate.features[0] ?? 0) * 1_000 +
-        (candidate.features[1] ?? 0) * 80 +
+        (candidate.features[1] ?? 0) * (tacticallyAware ? 48 : 6) +
         (candidate.features[2] ?? 0) +
-        (candidate.features[3] ?? 0) -
-        opponentReplyRisk(state, candidate.move) * 240,
+        (candidate.features[3] ?? 0) * 0.7 -
+        (tacticallyAware ? opponentReplyRisk(state, candidate.move) * 110 : 0),
     }));
     const bestScore = Math.max(...scored.map((candidate) => candidate.score));
-    const bestMoves = scored.filter((candidate) => candidate.score === bestScore);
+    const bestMoves = scored.filter((candidate) => Math.abs(candidate.score - bestScore) < 1e-9);
     return bestMoves[Math.floor(random() * bestMoves.length)]?.move ?? bestMoves[0]?.move ?? null;
   }
 

@@ -75,6 +75,21 @@ describe("chooseAiMove", () => {
     expect(scoringReplies).toHaveLength(0);
   });
 
+  it("occasionally uses the shallower Easy policy while keeping the move valid", () => {
+    const state = aiState();
+    state.board = [
+      ["colorA", null, null, null, null],
+      [null, "colorB", null, null, null],
+      [null, null, null, null, null],
+      [null, null, null, null, null],
+      [null, null, null, null, null],
+    ];
+
+    const move = chooseAiMove(state, "easy", () => 0.99);
+    expect(move).not.toBeNull();
+    if (move !== null) expect(state.board[move.row]?.[move.col]).toBeNull();
+  });
+
   it("uses the 626-move trained model for Normal moves", () => {
     const state = aiState();
     const move = chooseAiMove(state, "normal", () => 0);
