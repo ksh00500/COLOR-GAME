@@ -217,7 +217,27 @@ export const createServer = (options: ServerOptions = {}) => {
     if (token === null || !accountStore.enabled) return null;
     const payload = verifyAuthToken(token, authSecret);
     if (payload === null) return null;
-    return accountStore.getAccount(payload.accountId);
+    return accountStore.getAccountForSession(payload.accountId, payload.sessionId);
+  };
+
+  const disconnectAccountSockets = (accountId: string): void => {
+    for (const socket of io.sockets.sockets.values()) {
+      const account = getSocketAccount(socket);
+      if (account?.id === accountId) {
+        socket.emit("auth:session-replaced", {
+          code: "SESSION_REPLACED",
+          message: "This account signed in somewhere else.",
+        });
+        socket.disconnect(true);
+      }
+    }
+  };
+
+  const issueAuthToken = async (account: AccountSummary): Promise<string | null> => {
+    const sessionId = await accountStore.rotateSession(account.id);
+    if (sessionId === null) return null;
+    disconnectAccountSockets(account.id);
+    return createAuthToken(account.id, sessionId, authSecret, tokenTtlSeconds);
   };
 
   const accountProfile = (
@@ -360,6 +380,10 @@ export const createServer = (options: ServerOptions = {}) => {
       const auth = socket.handshake.auth as { token?: unknown };
       const token = typeof auth.token === "string" ? auth.token : null;
       const account = await authenticateToken(token);
+      if (token !== null && accountStore.enabled && account === null) {
+        next(new Error("UNAUTHORIZED"));
+        return;
+      }
       if (account !== null) {
         socket.data.account = account;
       }
@@ -436,7 +460,10 @@ export const createServer = (options: ServerOptions = {}) => {
 
     try {
       const account = await accountStore.register(parsed.data);
-      const token = createAuthToken(account.id, authSecret, tokenTtlSeconds);
+      const token = await issueAuthToken(account);
+      if (token === null) {
+        return reply.code(500).send({ code: "SESSION_CREATE_FAILED", message: "Could not create a sign-in session." });
+      }
       return { token, account: publicAccount(account) };
     } catch (error) {
       app.log.warn({ err: error }, "Registration failed");
@@ -459,7 +486,10 @@ export const createServer = (options: ServerOptions = {}) => {
       return reply.code(401).send({ code: "INVALID_CREDENTIALS", message: "Email or password is invalid." });
     }
 
-    const token = createAuthToken(account.id, authSecret, tokenTtlSeconds);
+    const token = await issueAuthToken(account);
+    if (token === null) {
+      return reply.code(500).send({ code: "SESSION_CREATE_FAILED", message: "Could not create a sign-in session." });
+    }
     return { token, account: publicAccount(account) };
   });
 

@@ -76,6 +76,9 @@ export const clearAuthToken = (): void => {
 const parseResponse = async <T>(response: Response): Promise<T> => {
   const data = await response.json().catch(() => ({})) as T & { code?: string; message?: string };
   if (!response.ok) {
+    if (response.status === 401 && data.code === "UNAUTHORIZED") {
+      clearAuthToken();
+    }
     throw new ApiError(data.code ?? "REQUEST_FAILED", data.message ?? "Request failed.");
   }
   return data;

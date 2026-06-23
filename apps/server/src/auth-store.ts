@@ -49,6 +49,7 @@ export interface MatchHistoryItem {
 
 export interface AuthTokenPayload {
   accountId: string;
+  sessionId: string;
   exp: number;
 }
 
@@ -63,6 +64,8 @@ export interface AccountStore {
   }): Promise<AccountSummary>;
   authenticate(email: string, password: string): Promise<AccountSummary | null>;
   getAccount(accountId: string): Promise<AccountSummary | null>;
+  getAccountForSession(accountId: string, sessionId: string): Promise<AccountSummary | null>;
+  rotateSession(accountId: string): Promise<string | null>;
   getPublicProfile(accountId: string): Promise<PublicProfile | null>;
   getLeaderboard(limit: number): Promise<PublicProfile[]>;
   getMatchHistory(accountId: string, limit: number): Promise<MatchHistoryItem[]>;
@@ -86,6 +89,14 @@ export class NullAccountStore implements AccountStore {
   }
 
   async getAccount(): Promise<AccountSummary | null> {
+    return null;
+  }
+
+  async getAccountForSession(): Promise<AccountSummary | null> {
+    return null;
+  }
+
+  async rotateSession(): Promise<string | null> {
     return null;
   }
 
@@ -129,6 +140,7 @@ interface AccountRow {
   attendance_streak: number;
   longest_attendance_streak: number;
   last_attendance_date: string | null;
+  active_session_id: string | null;
   created_at: Date;
 }
 
@@ -278,6 +290,30 @@ export class PostgresAccountStore implements AccountStore {
     );
     const row = result.rows[0];
     return row === undefined ? null : toAccountSummary(row);
+  }
+
+  async getAccountForSession(accountId: string, sessionId: string): Promise<AccountSummary | null> {
+    const result = await this.pool.query<AccountRow>(
+      "select * from accounts where id = $1 and active_session_id = $2",
+      [accountId, sessionId],
+    );
+    const row = result.rows[0];
+    return row === undefined ? null : toAccountSummary(row);
+  }
+
+  async rotateSession(accountId: string): Promise<string | null> {
+    const sessionId = randomUUID();
+    const result = await this.pool.query<AccountRow>(
+      `
+        update accounts set
+          active_session_id = $2,
+          updated_at = now()
+        where id = $1
+        returning *
+      `,
+      [accountId, sessionId],
+    );
+    return result.rows[0] === undefined ? null : sessionId;
   }
 
   async getPublicProfile(accountId: string): Promise<PublicProfile | null> {
@@ -537,6 +573,7 @@ const sign = (value: string, secret: string): string =>
 
 export const createAuthToken = (
   accountId: string,
+  sessionId: string,
   secret: string,
   ttlSeconds: number,
 ): string => {
@@ -544,6 +581,7 @@ export const createAuthToken = (
   const payload = encodeBase64Url(
     JSON.stringify({
       sub: accountId,
+      sid: sessionId,
       exp: Math.floor(Date.now() / 1_000) + ttlSeconds,
     }),
   );
@@ -574,11 +612,16 @@ export const verifyAuthToken = (
   try {
     const parsed = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as {
       sub?: unknown;
+      sid?: unknown;
       exp?: unknown;
     };
-    if (typeof parsed.sub !== "string" || typeof parsed.exp !== "number") return null;
+    if (
+      typeof parsed.sub !== "string" ||
+      typeof parsed.sid !== "string" ||
+      typeof parsed.exp !== "number"
+    ) return null;
     if (parsed.exp <= Math.floor(Date.now() / 1_000)) return null;
-    return { accountId: parsed.sub, exp: parsed.exp };
+    return { accountId: parsed.sub, sessionId: parsed.sid, exp: parsed.exp };
   } catch {
     return null;
   }

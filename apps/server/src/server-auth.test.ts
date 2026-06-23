@@ -12,7 +12,10 @@ import type { RoomSnapshot } from "@color-game/shared-types";
 class MemoryAccountStore implements AccountStore {
   readonly enabled = true;
 
-  private readonly accounts = new Map<string, AccountSummary & { password: string }>();
+  private readonly accounts = new Map<string, AccountSummary & {
+    activeSessionId: string | null;
+    password: string;
+  }>();
 
   async close(): Promise<void> {
     return undefined;
@@ -43,6 +46,7 @@ class MemoryAccountStore implements AccountStore {
       longestAttendanceStreak: 0,
       lastAttendanceDate: null,
       createdAt: new Date(0).toISOString(),
+      activeSessionId: null,
       password: input.password,
     };
     this.accounts.set(account.id, account);
@@ -58,6 +62,20 @@ class MemoryAccountStore implements AccountStore {
 
   async getAccount(accountId: string): Promise<AccountSummary | null> {
     return this.accounts.get(accountId) ?? null;
+  }
+
+  async getAccountForSession(accountId: string, sessionId: string): Promise<AccountSummary | null> {
+    const account = this.accounts.get(accountId);
+    if (account === undefined || account.activeSessionId !== sessionId) return null;
+    return account;
+  }
+
+  async rotateSession(accountId: string): Promise<string | null> {
+    const account = this.accounts.get(accountId);
+    if (account === undefined) return null;
+    const activeSessionId = `session-${accountId}-${Date.now()}-${Math.random()}`;
+    this.accounts.set(accountId, { ...account, activeSessionId });
+    return activeSessionId;
   }
 
   async getPublicProfile(accountId: string): Promise<PublicProfile | null> {
@@ -203,6 +221,63 @@ describe("auth routes", () => {
     });
     expect(leaderboard.statusCode).toBe(200);
     expect(leaderboard.json<{ players: PublicProfile[] }>().players).toHaveLength(1);
+  });
+
+  it("keeps only the newest login session valid for an account", async () => {
+    const accountStore = new MemoryAccountStore();
+    const { app } = createServer({
+      accountStore,
+      authSecret: "test-auth-secret-with-more-than-32-characters",
+    });
+    apps.push(app);
+
+    await app.inject({
+      method: "POST",
+      url: "/auth/register",
+      payload: {
+        email: "same@example.com",
+        password: "password123",
+        displayName: "Same Player",
+        avatarId: "orbit",
+      },
+    });
+
+    const firstLogin = await app.inject({
+      method: "POST",
+      url: "/auth/login",
+      payload: {
+        email: "same@example.com",
+        password: "password123",
+      },
+    });
+    expect(firstLogin.statusCode).toBe(200);
+    const firstToken = firstLogin.json<{ token: string }>().token;
+
+    const secondLogin = await app.inject({
+      method: "POST",
+      url: "/auth/login",
+      payload: {
+        email: "same@example.com",
+        password: "password123",
+      },
+    });
+    expect(secondLogin.statusCode).toBe(200);
+    const secondToken = secondLogin.json<{ token: string }>().token;
+    expect(secondToken).not.toBe(firstToken);
+
+    const oldSession = await app.inject({
+      method: "GET",
+      url: "/auth/me",
+      headers: { authorization: `Bearer ${firstToken}` },
+    });
+    expect(oldSession.statusCode).toBe(401);
+
+    const currentSession = await app.inject({
+      method: "GET",
+      url: "/auth/me",
+      headers: { authorization: `Bearer ${secondToken}` },
+    });
+    expect(currentSession.statusCode).toBe(200);
   });
 
   it("records anonymous visitor heartbeats and exposes visitor counts", async () => {
