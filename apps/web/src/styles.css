@@ -4636,3 +4636,45 @@ kbd {
   max-height: calc(100vh - 2rem);
   overflow-y: auto;
 }
+
+.tutorial-example-list {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0.85rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tutorial-example-list li {
+  position: relative;
+  padding: 0.65rem 0.75rem 0.65rem 2rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  color: var(--ink-soft);
+  background: color-mix(in srgb, var(--surface-raised) 72%, transparent);
+  font-size: 0.76rem;
+  font-weight: 760;
+  line-height: 1.55;
+  word-break: keep-all;
+}
+
+.tutorial-example-list li::before {
+  content: "→";
+  position: absolute;
+  left: 0.75rem;
+  top: 0.62rem;
+  color: var(--burgundy);
+  font-weight: 950;
+}
+
+.tutorial-score-table.compact {
+  margin-top: 0.75rem;
+}
+
+.tutorial-preview-score strong {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  text-align: center;
+  font-size: clamp(1.15rem, 2.4vw, 1.65rem);
+  line-height: 1.05;
+}

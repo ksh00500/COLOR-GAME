@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { useI18n } from "../i18n";
 
-const tutorialKey = "color-line-tutorial-complete-v3";
+const tutorialKey = "color-line-tutorial-complete-v4";
 const tutorialOpenEvent = "color-line:open-tutorial";
 
 export const openTutorial = () => {
@@ -10,29 +10,53 @@ export const openTutorial = () => {
 
 const tutorialSteps = [
   {
-    title: "핵심 규칙 먼저 보기",
-    body: "세 색상은 공용이며, 연결을 완성한 플레이어가 점수를 얻습니다. 한 수가 여러 방향을 완성하면 점수도 함께 합산됩니다.",
-    preview: "rules",
+    title: "세 색상은 모두 공용입니다",
+    body: "이 게임에는 내 색과 상대 색이 따로 없습니다. 빨강, 파랑, 초록은 양쪽 플레이어가 모두 사용할 수 있어요.",
+    preview: "shared",
+    points: ["상대가 둔 색도 내가 이어서 점수를 낼 수 있습니다.", "색을 고르는 순간부터 상대의 흐름까지 같이 보세요."],
+    score: "0/7",
   },
   {
-    title: "빈칸에 색을 놓기",
-    body: "내 차례에는 세 가지 공용 색상 중 하나를 고르고 5×5 보드의 빈칸에 둡니다.",
-    preview: "place",
+    title: "점수는 마지막 한 수가 가져갑니다",
+    body: "이미 놓인 타일이 누구 것이었는지는 중요하지 않습니다. 연결을 완성하는 마지막 한 수를 둔 플레이어가 점수를 얻습니다.",
+    preview: "lastMove",
+    points: ["상대가 빨강 2개를 만들어도, 내가 빨강을 하나 더 놓아 3개를 만들면 내가 1점입니다."],
+    score: "1/7",
   },
   {
-    title: "3개 이상 연결하기",
-    body: "가로, 세로, 대각선으로 같은 색 3개 이상을 완성하면 점수를 얻고 해당 타일이 제거됩니다.",
-    preview: "score",
+    title: "가로, 세로, 대각선을 연결하세요",
+    body: "같은 색을 가로, 세로, 대각선 중 한 방향으로 3개 이상 연결하면 점수가 납니다.",
+    preview: "directions",
+    points: ["3개 연결은 1점, 4개 연결은 2점, 5개 연결은 4점입니다."],
+    score: "3=1 · 4=2 · 5=4",
   },
   {
-    title: "상대 수 이어받기",
-    body: "상대가 남긴 패턴도 내 수로 완성할 수 있습니다. 상대 턴이 끝나면 알림 효과가 내 차례를 알려줍니다.",
-    preview: "turn",
+    title: "한 수로 여러 방향을 동시에 만들 수 있습니다",
+    body: "방금 둔 타일 하나가 가로와 세로, 또는 대각선까지 동시에 완성하면 각 방향의 점수를 모두 받습니다.",
+    preview: "multi",
+    points: ["예를 들어 가로 3개와 세로 3개를 한 번에 만들면 1점 + 1점 = 2점입니다."],
+    score: "+2",
   },
   {
-    title: "목표 점수 먼저 달성",
-    body: "7점을 먼저 만들면 승리합니다. 득점 없이 보드가 꽉 차면 마지막에 둔 색 타일만 사라지고 대전은 계속됩니다.",
+    title: "득점에 사용된 타일은 사라집니다",
+    body: "점수에 사용된 타일은 보드에서 제거됩니다. 위에 있던 타일이 떨어지는 중력이나 자동 연쇄 콤보는 없습니다.",
+    preview: "remove",
+    points: ["사라진 빈칸은 다음 턴부터 다시 사용할 수 있습니다."],
+    score: "CLEAR",
+  },
+  {
+    title: "보드가 꽉 차면 마지막 색이 정리됩니다",
+    body: "아무도 점수를 내지 못한 채 보드가 꽉 차면, 마지막에 둔 색과 같은 타일만 사라집니다.",
+    preview: "full",
+    points: ["마지막으로 파랑을 뒀다면 보드 위의 파랑 타일들이 제거되고 게임이 계속됩니다."],
+    score: "FULL",
+  },
+  {
+    title: "먼저 7점을 만들면 승리합니다",
+    body: "상대가 만든 흐름을 읽고 마지막 한 수를 가져가세요. 먼저 7점에 도달하는 플레이어가 승리합니다.",
     preview: "win",
+    points: ["상대의 색까지 내 전략이 되는 순간, Tango가 시작됩니다."],
+    score: "7/7",
   },
 ] as const;
 
@@ -40,16 +64,43 @@ type TutorialPreview = (typeof tutorialSteps)[number]["preview"];
 
 const tutorialCellClass = (index: number, preview: TutorialPreview) => {
   const classes = ["tutorial-preview-cell"];
-  const redLine = [6, 7, 8];
-  const blueLine = [12, 17];
+  const addColor = (color: "red-tile" | "blue-tile" | "green-tile", cells: number[]) => {
+    if (cells.includes(index)) classes.push(color);
+  };
 
-  if (redLine.includes(index)) classes.push("red-tile");
-  if (blueLine.includes(index)) classes.push("blue-tile");
-  if (preview === "place" && index === 8) classes.push("placing");
-  if (preview === "score" && redLine.includes(index)) classes.push("scoring");
-  if (preview === "turn" && index === 18) classes.push("green-tile", "placing");
-  if (preview === "win" && [6, 7, 8, 12, 17, 18].includes(index)) classes.push("clearing");
-  if (preview === "rules" && [6, 7, 8, 12, 17, 22].includes(index)) classes.push(index < 9 ? "red-tile" : "blue-tile");
+  if (preview === "shared") {
+    addColor("red-tile", [6, 7]);
+    addColor("blue-tile", [12]);
+    addColor("green-tile", [18]);
+  }
+  if (preview === "lastMove") {
+    addColor("red-tile", [6, 7, 8]);
+    if (index === 8) classes.push("placing", "scoring");
+  }
+  if (preview === "directions") {
+    addColor("red-tile", [5, 10, 15]);
+    addColor("blue-tile", [11, 12, 13, 14]);
+    addColor("green-tile", [4, 8, 16, 20]);
+    if ([10, 12, 16].includes(index)) classes.push("scoring");
+  }
+  if (preview === "multi") {
+    addColor("red-tile", [2, 7, 10, 11, 12, 13, 14, 17, 22]);
+    if (index === 12) classes.push("placing", "scoring");
+  }
+  if (preview === "remove") {
+    addColor("red-tile", [6, 7, 8]);
+    if ([6, 7, 8].includes(index)) classes.push("scoring", "clearing");
+  }
+  if (preview === "full") {
+    addColor("red-tile", [0, 3, 5, 8, 11, 14, 16, 19, 22]);
+    addColor("blue-tile", [1, 4, 6, 9, 12, 17, 20, 23]);
+    addColor("green-tile", [2, 7, 10, 13, 15, 18, 21, 24]);
+    if ([1, 4, 6, 9, 12, 17, 20, 23].includes(index)) classes.push("clearing");
+  }
+  if (preview === "win") {
+    addColor("green-tile", [6, 7, 8, 13, 18]);
+    if ([6, 7, 8].includes(index)) classes.push("scoring");
+  }
 
   return classes.join(" ");
 };
@@ -133,7 +184,7 @@ export function TutorialPanel() {
           <div className={`tutorial-game-preview ${step.preview}`} aria-hidden="true">
             <div className="tutorial-preview-topbar">
               <span>AI MATCH</span>
-              <strong>TURN {step.preview === "win" ? "8" : stepIndex + 1}</strong>
+              <strong>{t("예시")} {stepIndex + 1}</strong>
             </div>
             <div className="tutorial-preview-body">
               <div className="tutorial-preview-board">
@@ -142,13 +193,13 @@ export function TutorialPanel() {
                 ))}
               </div>
               <div className="tutorial-preview-side">
-                <span className="tutorial-preview-status">{step.preview === "turn" ? t("내 차례") : t("플레이 중")}</span>
+                <span className="tutorial-preview-status">{step.preview === "win" ? t("승리 조건") : t("예시 상황")}</span>
                 <span className="tutorial-preview-choice">
                   <i />
-                  <b>{t("색 선택")}</b>
+                  <b>{step.preview === "shared" ? t("공용 색상") : t("마지막 한 수")}</b>
                 </span>
                 <span className="tutorial-preview-score">
-                  <strong>{step.preview === "win" ? "7" : step.preview === "score" ? "1" : "0"}</strong>/7
+                  <strong>{step.score}</strong>
                 </span>
               </div>
             </div>
@@ -157,17 +208,18 @@ export function TutorialPanel() {
             <span className="tutorial-count">{String(stepIndex + 1).padStart(2, "0")}</span>
             <strong>{t(step.title)}</strong>
             <p>{t(step.body)}</p>
-            <ol className="tutorial-rule-summary">
-              <li><span>01</span><b>{t("공용 색상")}</b><small>{t("세 색상은 양쪽 모두 자유롭게 사용합니다.")}</small></li>
-              <li><span>02</span><b>{t("마지막 한 수")}</b><small>{t("연결을 완성한 플레이어가 점수를 얻습니다.")}</small></li>
-              <li><span>03</span><b>{t("방향별 합산")}</b><small>{t("한 타일로 가로와 세로를 만들면 두 점수를 모두 받습니다.")}</small></li>
-              <li><span>04</span><b>{t("보드 포화")}</b><small>{t("득점 없이 보드가 꽉 차면 마지막에 둔 색 타일만 사라집니다.")}</small></li>
-            </ol>
-            <div className="tutorial-score-table" aria-label={t("연결 점수")}>
-              <span><i>3</i><b>{t("{points}점", { points: 1 })}</b></span>
-              <span><i>4</i><b>{t("{points}점", { points: 2 })}</b></span>
-              <span><i>5</i><b>{t("{points}점", { points: 4 })}</b></span>
-            </div>
+            <ul className="tutorial-example-list">
+              {step.points.map((point) => (
+                <li key={point}>{t(point)}</li>
+              ))}
+            </ul>
+            {step.preview === "directions" && (
+              <div className="tutorial-score-table compact" aria-label={t("연결 점수")}>
+                <span><i>3</i><b>{t("{points}점", { points: 1 })}</b></span>
+                <span><i>4</i><b>{t("{points}점", { points: 2 })}</b></span>
+                <span><i>5</i><b>{t("{points}점", { points: 4 })}</b></span>
+              </div>
+            )}
           </div>
         </div>
         <div className="tutorial-dots" aria-label={t("튜토리얼 진행도")}>
