@@ -4728,3 +4728,90 @@ kbd {
     gap: 0.35rem;
   }
 }
+
+.patch-notes-page {
+  width: min(calc(100% - 3rem), 1060px);
+}
+
+.patch-release-list {
+  display: grid;
+  gap: 0.85rem;
+  width: min(100%, 820px);
+}
+
+.patch-release-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.35rem 1rem;
+  align-items: center;
+  padding: 1.05rem 1.15rem;
+  border: 1px solid var(--app-line);
+  border-radius: 16px;
+  color: var(--app-ink);
+  background:
+    radial-gradient(circle at 0% 0%, color-mix(in srgb, var(--burgundy) 11%, transparent), transparent 14rem),
+    var(--app-panel);
+  box-shadow: 0 12px 28px rgba(0,0,0,0.14);
+  text-align: left;
+  cursor: pointer;
+  transition: transform var(--duration) ease, border-color var(--duration) ease, background var(--duration) ease;
+}
+
+.patch-release-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--app-line-strong);
+  background: var(--app-panel-strong);
+}
+
+.patch-release-version {
+  color: var(--burgundy-light);
+  font-size: 0.82rem;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+}
+
+.patch-release-date {
+  color: var(--app-ink-soft);
+  font-size: 0.72rem;
+  font-weight: 850;
+}
+
+.patch-release-card strong {
+  grid-column: 1 / -1;
+  font-size: clamp(1.35rem, 2.8vw, 2rem);
+  font-weight: 950;
+  letter-spacing: -0.045em;
+}
+
+.patch-release-card small {
+  grid-column: 1 / -1;
+  max-width: 660px;
+  color: var(--app-ink-soft);
+  font-size: 0.84rem;
+  font-weight: 760;
+  line-height: 1.55;
+  word-break: keep-all;
+}
+
+.patch-release-card i {
+  justify-self: start;
+  margin-top: 0.35rem;
+  color: var(--green-light);
+  font-size: 0.76rem;
+  font-style: normal;
+  font-weight: 950;
+}
+
+.patch-notes-summary {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.patch-notes-summary strong {
+  color: var(--ink);
+  font-size: 1rem;
+}
+
+.patch-notes-summary span {
+  color: var(--ink-soft);
+}

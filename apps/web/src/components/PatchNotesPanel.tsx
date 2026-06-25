@@ -1,35 +1,68 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { useI18n } from "../i18n";
 
-const patchNotesKey = "tango-patch-notes-seen-2026-06-25";
+const latestPatchVersion = "20260625-V1.1.1";
+const patchNotesKey = `tango-patch-notes-seen-${latestPatchVersion}`;
 const patchNotesOpenEvent = "tango:open-patch-notes";
 
-export const openPatchNotes = () => {
-  window.dispatchEvent(new Event(patchNotesOpenEvent));
+export const openPatchNotes = (version = latestPatchVersion) => {
+  window.dispatchEvent(new CustomEvent(patchNotesOpenEvent, { detail: { version } }));
 };
 
-const patchNotes = [
+export interface PatchNoteEntry {
+  tag: string;
+  title: string;
+  body: string;
+}
+
+export interface PatchNoteRelease {
+  version: string;
+  title: string;
+  date: string;
+  summary: string;
+  entries: PatchNoteEntry[];
+}
+
+export const patchNoteReleases: PatchNoteRelease[] = [
   {
-    tag: "GUIDE",
-    title: "튜토리얼 개편",
-    body: "규칙 요약과 점수 구조를 먼저 보여주고, 첫 게임에서는 클릭하면 사라지는 코치마크로 핵심 조작을 안내합니다.",
+    version: latestPatchVersion,
+    title: "온보딩과 AI 난이도 정리",
+    date: "2026-06-25",
+    summary: "튜토리얼을 실제 규칙 이해 중심으로 다시 쓰고, AI 난이도와 로그인 접근성을 정리한 패치입니다.",
+    entries: [
+      {
+        tag: "GUIDE",
+        title: "튜토리얼 7단계 개편",
+        body: "공용 색상, 마지막 한 수 득점, 방향별 점수, 동시 득점, 타일 제거, 보드 포화, 승리 조건을 보드 예시와 함께 순서대로 설명하도록 바꿨습니다.",
+      },
+      {
+        tag: "GUIDE",
+        title: "보드 포화 예시 보강",
+        body: "보드가 꽉 찼을 때 마지막 색이 제거되는 규칙을 이해하기 쉽도록 제거 직전과 제거 후 상태를 나란히 보여줍니다.",
+      },
+      {
+        tag: "AI",
+        title: "AI 난이도 재정리",
+        body: "Easy는 더 쉽게 낮추고, 기존 Hard 학습 모델을 Normal로 이동했습니다. Hard는 다음 고난도 모델 준비 전까지 잠금 상태입니다.",
+      },
+      {
+        tag: "ACCOUNT",
+        title: "메인 로그인 카드 추가",
+        body: "메인 화면에서 로그인과 계정 진입이 더 잘 보이도록 계정 카드를 추가했습니다. 경쟁전, 리더보드, 출석 기록 안내도 함께 표시합니다.",
+      },
+      {
+        tag: "SYSTEM",
+        title: "동시 로그인 방지",
+        body: "같은 계정은 마지막 로그인만 유지되며, 이전 탭과 기기의 세션은 자동으로 만료됩니다.",
+      },
+    ],
   },
-  {
-    tag: "AI",
-    title: "AI 난이도 재정리",
-    body: "Easy는 더 편하게 이길 수 있도록 낮추고, 기존 Hard 학습 모델은 Normal로 이동했습니다. Hard는 다음 모델까지 잠금 상태입니다.",
-  },
-  {
-    tag: "ACCOUNT",
-    title: "로그인 접근성 개선",
-    body: "메인 화면에서 로그인과 계정 진입이 더 잘 보이도록 계정 카드를 추가했습니다.",
-  },
-  {
-    tag: "SYSTEM",
-    title: "동시 로그인 방지",
-    body: "같은 계정은 마지막 로그인만 유지되며, 이전 탭과 기기의 세션은 자동으로 만료됩니다.",
-  },
-] as const;
+];
+
+export const latestPatchNote = patchNoteReleases[0]!;
+
+export const findPatchNoteRelease = (version: string): PatchNoteRelease =>
+  patchNoteReleases.find((release) => release.version === version) ?? latestPatchNote;
 
 const hasSeenPatchNotes = () => {
   try {
@@ -52,6 +85,7 @@ export function PatchNotesPanel() {
   const dialogRef = useRef<HTMLElement>(null);
   const { t } = useI18n();
   const [open, setOpen] = useState(() => !hasSeenPatchNotes());
+  const [release, setRelease] = useState<PatchNoteRelease>(latestPatchNote);
 
   const close = () => {
     markSeenPatchNotes();
@@ -59,7 +93,13 @@ export function PatchNotesPanel() {
   };
 
   useEffect(() => {
-    const reopen = () => setOpen(true);
+    const reopen = (event: Event) => {
+      const version = event instanceof CustomEvent && typeof event.detail?.version === "string"
+        ? event.detail.version
+        : latestPatchVersion;
+      setRelease(findPatchNoteRelease(version));
+      setOpen(true);
+    };
     window.addEventListener(patchNotesOpenEvent, reopen);
     return () => window.removeEventListener(patchNotesOpenEvent, reopen);
   }, []);
@@ -90,13 +130,16 @@ export function PatchNotesPanel() {
         <div className="panel-heading">
           <div>
             <p className="eyebrow">PATCH NOTES</p>
-            <h2 id={titleId}>{t("새로운 변경사항")}</h2>
+            <h2 id={titleId}>{release.version}</h2>
           </div>
           <button className="icon-button" type="button" onClick={close} aria-label={t("패치노트 닫기")}>×</button>
         </div>
-        <p className="patch-notes-summary">{t("이번 패치에서는 안내 흐름, AI 난이도, 로그인 접근성을 정리했습니다.")}</p>
+        <p className="patch-notes-summary">
+          <strong>{t(release.title)}</strong>
+          <span>{t(release.summary)}</span>
+        </p>
         <ol className="patch-note-list">
-          {patchNotes.map((note, index) => (
+          {release.entries.map((note, index) => (
             <li key={note.title}>
               <span>{String(index + 1).padStart(2, "0")}</span>
               <div>

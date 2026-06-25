@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import type { AiDifficulty } from "@color-game/ai-engine";
 import { getAuthToken } from "../api";
 import { AppSidebar } from "../components/AppSidebar";
-import { openPatchNotes } from "../components/PatchNotesPanel";
 import { SettingsPanel } from "../components/SettingsPanel";
 import { openTutorial } from "../components/TutorialPanel";
 import { useVisitorAnalytics } from "../visitorAnalytics";
@@ -101,7 +100,7 @@ export function LobbyPage() {
             <button className="home-tutorial" type="button" onClick={openTutorial}>
               {t("튜토리얼 보기")}
             </button>
-            <button className="home-tutorial" type="button" onClick={openPatchNotes}>
+            <button className="home-tutorial" type="button" onClick={() => navigate("/patch-notes")}>
               {t("패치노트")}
             </button>
           </div>
