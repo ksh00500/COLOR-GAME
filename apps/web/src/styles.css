@@ -4815,3 +4815,30 @@ kbd {
 .patch-notes-summary span {
   color: var(--ink-soft);
 }
+
+/* Fix patch-notes title clipping and full-board tutorial contrast */
+.patch-notes-page {
+  justify-self: start;
+  width: min(calc(100% - 4rem), 1060px);
+  padding-inline-start: clamp(1rem, 2vw, 1.75rem);
+}
+
+.patch-notes-page .online-copy h1 {
+  max-width: 100%;
+  padding-inline-start: 0.08em;
+  overflow: visible;
+  font-size: clamp(3.1rem, 4.8vw, 4.8rem);
+  letter-spacing: -0.045em;
+}
+
+.patch-notes-page .online-copy {
+  overflow: visible;
+}
+
+.tutorial-game-preview.full .tutorial-preview-board.before-full .tutorial-preview-cell:not(.red-tile):not(.green-tile):not(.blue-tile) {
+  outline: 2px dashed color-mix(in srgb, var(--blue) 62%, white);
+  outline-offset: -4px;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,0.08), rgba(0,0,0,0.1)),
+    color-mix(in srgb, var(--walnut-dark) 56%, var(--blue));
+}

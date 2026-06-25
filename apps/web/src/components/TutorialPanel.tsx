@@ -95,12 +95,25 @@ const tutorialCellClass = (index: number, preview: TutorialPreview) => {
     addColor("red-tile", [0, 3, 5, 8, 11, 14, 16, 19, 22]);
     addColor("blue-tile", [1, 4, 6, 9, 12, 17, 20, 23]);
     addColor("green-tile", [2, 7, 10, 13, 15, 18, 21, 24]);
-    if ([1, 4, 6, 9, 12, 17, 20, 23].includes(index)) classes.push("clearing");
   }
   if (preview === "win") {
     addColor("green-tile", [6, 7, 8, 13, 18]);
     if ([6, 7, 8].includes(index)) classes.push("scoring");
   }
+
+  return classes.join(" ");
+};
+
+const tutorialFullBeforeCellClass = (index: number) => {
+  const classes = ["tutorial-preview-cell"];
+  const emptyCell = 12;
+  const redCells = [0, 3, 5, 8, 11, 14, 16, 19, 22];
+  const greenCells = [2, 7, 10, 13, 15, 18, 21, 24];
+
+  if (index === emptyCell) return classes.join(" ");
+  if (redCells.includes(index)) classes.push("red-tile");
+  else if (greenCells.includes(index)) classes.push("green-tile");
+  else classes.push("blue-tile");
 
   return classes.join(" ");
 };
@@ -202,9 +215,9 @@ export function TutorialPanel() {
                 <div className="tutorial-preview-compare">
                   <div>
                     <span>{t("가득 찬 직전")}</span>
-                    <div className="tutorial-preview-board mini">
+                    <div className="tutorial-preview-board mini before-full">
                       {Array.from({ length: 25 }, (_, index) => (
-                        <i key={index} className={tutorialCellClass(index, step.preview)} />
+                        <i key={index} className={tutorialFullBeforeCellClass(index)} />
                       ))}
                     </div>
                   </div>
