@@ -4330,3 +4330,309 @@ kbd {
     width: 100%;
   }
 }
+
+/* Patch notes, account CTA, tutorial summary, and first-game coach marks */
+.home-account-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.9rem;
+  width: min(100%, 500px);
+  margin: 0.2rem 0 0.85rem;
+  padding: 0.85rem;
+  border: 1px solid color-mix(in srgb, var(--green-light) 42%, var(--app-line));
+  border-radius: 14px;
+  background:
+    radial-gradient(circle at 10% 0%, color-mix(in srgb, var(--green-light) 12%, transparent), transparent 10rem),
+    var(--app-panel);
+  box-shadow: 0 10px 26px rgba(0,0,0,0.14);
+}
+
+.home-account-card small {
+  display: block;
+  color: var(--green-light);
+  font-size: 0.62rem;
+  font-weight: 950;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.home-account-card strong {
+  display: block;
+  margin-top: 0.16rem;
+  color: var(--app-ink);
+  font-size: 0.98rem;
+  font-weight: 950;
+  word-break: keep-all;
+}
+
+.home-account-card p {
+  margin: 0.22rem 0 0;
+  color: var(--app-ink-soft);
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1.45;
+  word-break: keep-all;
+}
+
+.home-account-card button {
+  min-height: 44px;
+  padding: 0 0.85rem;
+  border: 0;
+  border-radius: 10px;
+  color: var(--app-inverted);
+  background: var(--burgundy);
+  font-size: 0.82rem;
+  font-weight: 950;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.patch-notes-backdrop {
+  background:
+    radial-gradient(circle at 62% 22%, color-mix(in srgb, var(--burgundy) 20%, transparent), transparent 24rem),
+    rgba(24, 19, 15, 0.62);
+}
+
+.patch-notes-panel {
+  width: min(100%, 660px);
+  max-height: calc(100vh - 2rem);
+  padding: 1.35rem;
+  overflow-y: auto;
+  border: 1px solid var(--line-strong);
+  border-radius: 22px;
+  background: var(--surface-raised);
+  box-shadow: 0 30px 88px rgba(16, 10, 6, 0.38), inset 0 0 0 3px color-mix(in srgb, var(--surface-muted) 48%, transparent);
+  animation: panel-in 220ms ease both;
+}
+
+.patch-notes-summary {
+  margin: 1rem 0;
+  color: var(--ink-soft);
+  font-size: 0.84rem;
+  font-weight: 750;
+  line-height: 1.7;
+  word-break: keep-all;
+}
+
+.patch-note-list {
+  display: grid;
+  gap: 0.65rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.patch-note-list li {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 0.75rem;
+  padding: 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--surface) 80%, transparent), var(--surface-raised));
+}
+
+.patch-note-list li > span {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  color: var(--burgundy);
+  background: var(--surface-muted);
+  font-size: 0.7rem;
+  font-weight: 950;
+}
+
+.patch-note-list small {
+  color: var(--burgundy);
+  font-size: 0.58rem;
+  font-weight: 950;
+  letter-spacing: 0.14em;
+}
+
+.patch-note-list strong {
+  display: block;
+  margin-top: 0.12rem;
+  font-size: 0.98rem;
+}
+
+.patch-note-list p {
+  margin: 0.22rem 0 0;
+  color: var(--ink-soft);
+  font-size: 0.76rem;
+  font-weight: 720;
+  line-height: 1.55;
+  word-break: keep-all;
+}
+
+.patch-notes-confirm {
+  width: 100%;
+  margin-top: 1rem;
+}
+
+.tutorial-rule-summary {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tutorial-rule-summary li {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  gap: 0.25rem 0.55rem;
+  align-items: center;
+  padding: 0.55rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface-raised) 70%, transparent);
+}
+
+.tutorial-rule-summary span {
+  grid-row: span 2;
+  color: var(--burgundy);
+  font-size: 0.62rem;
+  font-weight: 950;
+}
+
+.tutorial-rule-summary b {
+  color: var(--ink);
+  font-size: 0.78rem;
+}
+
+.tutorial-rule-summary small {
+  color: var(--ink-soft);
+  font-size: 0.68rem;
+  line-height: 1.45;
+  word-break: keep-all;
+}
+
+.tutorial-score-table {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.4rem;
+  margin-top: 0.65rem;
+}
+
+.tutorial-score-table span {
+  display: flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-raised);
+}
+
+.tutorial-score-table i {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: 9px;
+  color: white;
+  background: var(--burgundy);
+  font-style: normal;
+  font-weight: 950;
+}
+
+.tutorial-score-table b {
+  font-size: 0.75rem;
+}
+
+.game-shell {
+  position: relative;
+}
+
+.coach-mark-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 12;
+  pointer-events: none;
+}
+
+.coach-mark {
+  position: absolute;
+  display: grid;
+  gap: 0.18rem;
+  max-width: 230px;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid color-mix(in srgb, var(--green-light) 48%, var(--app-line));
+  border-radius: 14px;
+  color: var(--app-ink);
+  background: color-mix(in srgb, var(--app-panel-strong) 92%, transparent);
+  box-shadow: 0 16px 36px rgba(0,0,0,0.26), 0 0 0 5px color-mix(in srgb, var(--green-light) 9%, transparent);
+  text-align: left;
+  pointer-events: auto;
+  cursor: pointer;
+  animation: coach-pop 280ms ease both, coach-pulse 1.8s ease-in-out infinite;
+}
+
+.coach-mark strong {
+  font-size: 0.82rem;
+  font-weight: 950;
+}
+
+.coach-mark span {
+  color: var(--app-ink-soft);
+  font-size: 0.7rem;
+  font-weight: 800;
+  line-height: 1.45;
+  word-break: keep-all;
+}
+
+.coach-rules {
+  top: 4.4rem;
+  right: 1.6rem;
+}
+
+.coach-board {
+  left: clamp(1rem, 25vw, 28rem);
+  top: 24%;
+}
+
+.coach-colors {
+  right: clamp(1rem, 7vw, 8rem);
+  bottom: 20%;
+}
+
+@keyframes coach-pop {
+  from { opacity: 0; transform: translateY(8px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes coach-pulse {
+  0%, 100% { box-shadow: 0 16px 36px rgba(0,0,0,0.26), 0 0 0 5px color-mix(in srgb, var(--green-light) 8%, transparent); }
+  50% { box-shadow: 0 16px 36px rgba(0,0,0,0.26), 0 0 0 9px color-mix(in srgb, var(--green-light) 15%, transparent); }
+}
+
+@media (max-width: 980px) {
+  .home-account-card {
+    grid-template-columns: 1fr;
+  }
+
+  .coach-mark {
+    max-width: 190px;
+  }
+
+  .coach-board {
+    left: 1rem;
+    top: 22%;
+  }
+
+  .coach-colors {
+    right: 1rem;
+    bottom: 12%;
+  }
+}
+
+.tutorial-panel {
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+}

@@ -22,16 +22,19 @@ import { useI18n } from "../i18n";
 
 const HUMAN_ID = "player1";
 const AI_ID = "player2";
+const coachMarkKey = "tango-ai-coach-marks-complete-v1";
+const initialCoachMarks = ["rules", "board", "colors"] as const;
+type CoachMarkId = (typeof initialCoachMarks)[number];
 
 const aiNames: Record<AiDifficulty, string> = {
-  easy: "Apprentice",
-  normal: "Tactician",
+  easy: "Rookie",
+  normal: "Mastermind",
   hard: "Mastermind",
 };
 
 const aiDescriptors: Record<AiDifficulty, string> = {
-  easy: "AI · 기초 전술",
-  normal: "AI · 균형 전술",
+  easy: "AI · 쉬운 전술",
+  normal: "AI · 학습 모델",
   hard: "AI · 심화 전술",
 };
 
@@ -61,7 +64,7 @@ const resolveFirstPlayer = (preference: string | null): string => {
 };
 
 const resolveDifficulty = (value: string | null): AiDifficulty =>
-  value === "hard" && isHardAiAvailable ? "hard" : value === "normal" ? "normal" : "easy";
+  value === "hard" && isHardAiAvailable ? "hard" : value === "normal" || value === "hard" ? "normal" : "easy";
 
 const createMatch = (difficulty: AiDifficulty, firstPreference: string | null): GameState => {
   const now = Date.now();
@@ -110,6 +113,13 @@ export function GamePage() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [resignOpen, setResignOpen] = useState(false);
+  const [coachMarks, setCoachMarks] = useState<CoachMarkId[]>(() => {
+    try {
+      return window.localStorage.getItem(coachMarkKey) === "true" ? [] : [...initialCoachMarks];
+    } catch {
+      return [];
+    }
+  });
   const [now, setNow] = useState(Date.now());
   const [matchStartedAt, setMatchStartedAt] = useState(Date.now());
   const effectTimers = useRef<number[]>([]);
@@ -284,6 +294,20 @@ export function GamePage() {
     setNow(startedAt);
   };
 
+  const dismissCoachMark = (id: CoachMarkId) => {
+    setCoachMarks((current) => {
+      const next = current.filter((mark) => mark !== id);
+      if (next.length === 0) {
+        try {
+          window.localStorage.setItem(coachMarkKey, "true");
+        } catch {
+          // Coach marks are only a first-run convenience.
+        }
+      }
+      return next;
+    });
+  };
+
   const turnLabel = game.status === "finished"
     ? t("대전 종료")
     : humanTurn
@@ -310,6 +334,29 @@ export function GamePage() {
             <button className="icon-button labeled" type="button" onClick={() => setSettingsOpen(true)}><span>◌</span><small>{t("설정")}</small></button>
           </div>
         </header>
+
+        {coachMarks.length > 0 && (
+          <div className="coach-mark-layer" aria-label={t("첫 게임 안내")}>
+            {coachMarks.includes("rules") && (
+              <button className="coach-mark coach-rules" type="button" onClick={() => dismissCoachMark("rules")}>
+                <strong>{t("규칙은 여기")}</strong>
+                <span>{t("점수표와 보드 포화 규칙을 언제든 다시 볼 수 있어요.")}</span>
+              </button>
+            )}
+            {coachMarks.includes("board") && (
+              <button className="coach-mark coach-board" type="button" onClick={() => dismissCoachMark("board")}>
+                <strong>{t("빈칸을 클릭")}</strong>
+                <span>{t("고른 색을 5×5 보드의 빈칸에 놓습니다.")}</span>
+              </button>
+            )}
+            {coachMarks.includes("colors") && (
+              <button className="coach-mark coach-colors" type="button" onClick={() => dismissCoachMark("colors")}>
+                <strong>{t("색 선택")}</strong>
+                <span>{t("세 색은 둘 다 사용할 수 있고 숫자키 1·2·3도 됩니다.")}</span>
+              </button>
+            )}
+          </div>
+        )}
 
         <section className="game-layout">
           <div className="board-stage">

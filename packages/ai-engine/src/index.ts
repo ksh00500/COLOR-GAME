@@ -1,10 +1,10 @@
 import { getValidMoves, placeTile } from "@color-game/game-core";
 import type { GameState, TileColorId, ValidMove } from "@color-game/shared-types";
-import normalModel from "./normal-model.json";
 import hardAlphaModel from "./hard-alpha-model.json";
 
 export type AiDifficulty = "easy" | "normal" | "hard";
-export const isHardAiAvailable = hardAlphaModel.available === true;
+const isPromotedAiAvailable = hardAlphaModel.available === true;
+export const isHardAiAvailable = false;
 
 const adjacentPotential = (
   state: GameState,
@@ -88,13 +88,6 @@ export const extractAiMoveFeatures = (
   ];
 };
 
-const modelScore = (features: number[]): number =>
-  normalModel.bias + normalModel.weights.reduce((score, weight, index) => {
-    const mean = normalModel.means[index] ?? 0;
-    const scale = normalModel.scales[index] ?? 1;
-    return score + weight * (((features[index] ?? 0) - mean) / scale);
-  }, 0);
-
 const decodeFloat32 = (encoded: string): Float32Array => {
   const binary = atob(encoded);
   const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
@@ -127,7 +120,7 @@ const denseFloat32 = (
 });
 
 const hardAlphaPolicy = (state: GameState): number[] | null => {
-  if (!isHardAiAvailable) return null;
+  if (!isPromotedAiAvailable) return null;
   const parameters = hardAlphaState();
   const currentIndex = state.players.findIndex((player) => player.id === state.currentPlayerId);
   if (currentIndex < 0) return null;
@@ -175,37 +168,21 @@ export const chooseAiMove = (
 
   if (difficulty === "easy") {
     const bestImmediate = Math.max(...candidates.map((candidate) => candidate.features[0] ?? 0));
-    if (bestImmediate > 0) {
+    if (bestImmediate > 0 && random() < 0.65) {
       const scoringMoves = candidates.filter((candidate) => candidate.features[0] === bestImmediate);
       return scoringMoves[Math.floor(random() * scoringMoves.length)]?.move ?? scoringMoves[0]?.move ?? null;
     }
 
-    // Easy usually notices a one-move reply, but occasionally plays only by
-    // nearby colors and board position so it remains beatable for beginners.
-    const tacticallyAware = random() < 0.82;
+    // Easy is intentionally beatable: it has a light center preference, only
+    // sometimes blocks threats, and often ignores one-move reply risk.
+    const noticesThreat = random() < 0.25;
     const scored = candidates.map((candidate) => ({
       move: candidate.move,
       score:
-        (candidate.features[1] ?? 0) * (tacticallyAware ? 48 : 6) +
-        (candidate.features[2] ?? 0) +
-        (candidate.features[3] ?? 0) * 0.7 -
-        (tacticallyAware ? opponentReplyRisk(state, candidate.move) * 110 : 0),
-    }));
-    const bestScore = Math.max(...scored.map((candidate) => candidate.score));
-    const bestMoves = scored.filter((candidate) => Math.abs(candidate.score - bestScore) < 1e-9);
-    return bestMoves[Math.floor(random() * bestMoves.length)]?.move ?? bestMoves[0]?.move ?? null;
-  }
-
-  if (difficulty === "normal" || !isHardAiAvailable) {
-    const bestImmediate = Math.max(...candidates.map((candidate) => candidate.features[0] ?? 0));
-    const tactical = bestImmediate > 0
-      ? candidates.filter((candidate) => candidate.features[0] === bestImmediate)
-      : candidates.some((candidate) => candidate.features[1] === 1)
-        ? candidates.filter((candidate) => candidate.features[1] === 1)
-        : candidates;
-    const scored = tactical.map((candidate) => ({
-      move: candidate.move,
-      score: modelScore(candidate.features),
+        (candidate.features[1] ?? 0) * (noticesThreat ? 18 : 0) +
+        (candidate.features[2] ?? 0) * 0.18 +
+        (candidate.features[3] ?? 0) * 0.42 +
+        random() * 1.6,
     }));
     const bestScore = Math.max(...scored.map((candidate) => candidate.score));
     const bestMoves = scored.filter((candidate) => Math.abs(candidate.score - bestScore) < 1e-9);
@@ -235,5 +212,11 @@ export const chooseAiMove = (
     const bestMoves = scored.filter((candidate) => candidate.score === bestScore);
     return bestMoves[Math.floor(random() * bestMoves.length)]?.move ?? bestMoves[0]?.move ?? null;
   }
-  return candidates[0]?.move ?? null;
+  const bestImmediate = Math.max(...candidates.map((candidate) => candidate.features[0] ?? 0));
+  const tactical = bestImmediate > 0
+    ? candidates.filter((candidate) => candidate.features[0] === bestImmediate)
+    : candidates.some((candidate) => candidate.features[1] === 1)
+      ? candidates.filter((candidate) => candidate.features[1] === 1)
+      : candidates;
+  return tactical[Math.floor(random() * tactical.length)]?.move ?? tactical[0]?.move ?? null;
 };

@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { isHardAiAvailable, type AiDifficulty } from "@color-game/ai-engine";
+import type { AiDifficulty } from "@color-game/ai-engine";
+import { getAuthToken } from "../api";
 import { AppSidebar } from "../components/AppSidebar";
+import { openPatchNotes } from "../components/PatchNotesPanel";
 import { SettingsPanel } from "../components/SettingsPanel";
 import { openTutorial } from "../components/TutorialPanel";
 import { useVisitorAnalytics } from "../visitorAnalytics";
@@ -14,7 +16,7 @@ const modes = [
     id: "ai",
     index: "01",
     title: "AI 대전",
-    description: "알고리즘 Easy, 학습형 Normal과 Hard를 플레이할 수 있습니다.",
+    description: "쉬운 Easy와 학습 모델 Normal을 플레이할 수 있습니다.",
     state: "PLAYABLE",
     accent: "burgundy",
   },
@@ -51,6 +53,7 @@ export function LobbyPage() {
   const [firstPlayer, setFirstPlayer] = useState<FirstPlayer>("human");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const visitorCounts = useVisitorAnalytics();
+  const signedIn = getAuthToken() !== null;
 
   const startGame = () => {
     navigate(`/game?difficulty=${difficulty}&first=${firstPlayer}`);
@@ -98,12 +101,26 @@ export function LobbyPage() {
             <button className="home-tutorial" type="button" onClick={openTutorial}>
               {t("튜토리얼 보기")}
             </button>
+            <button className="home-tutorial" type="button" onClick={openPatchNotes}>
+              {t("패치노트")}
+            </button>
           </div>
+
+          <section className="home-account-card" aria-label={t("계정")}>
+            <div>
+              <small>{signedIn ? t("계정 연결됨") : t("로그인하면 더 좋아요")}</small>
+              <strong>{signedIn ? t("전적과 출석을 확인하세요") : t("로그인하고 랭크 기록을 저장하세요")}</strong>
+              <p>{t("경쟁전, 리더보드, 출석 보상은 계정과 함께 기록됩니다.")}</p>
+            </div>
+            <button type="button" onClick={() => navigate("/account")}>
+              {signedIn ? t("계정 보기") : t("로그인")} <span aria-hidden="true">↗</span>
+            </button>
+          </section>
 
           <div className="quick-config" aria-label={t("AI 대전 설정")}>
             <span>AI</span>
             {(["easy", "normal", "hard"] as const).map((level) => {
-              const locked = level === "hard" && !isHardAiAvailable;
+              const locked = level === "hard";
               return (
                 <button
                   key={level}

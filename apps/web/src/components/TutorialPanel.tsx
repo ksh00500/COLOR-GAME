@@ -10,6 +10,11 @@ export const openTutorial = () => {
 
 const tutorialSteps = [
   {
+    title: "핵심 규칙 먼저 보기",
+    body: "세 색상은 공용이며, 연결을 완성한 플레이어가 점수를 얻습니다. 한 수가 여러 방향을 완성하면 점수도 함께 합산됩니다.",
+    preview: "rules",
+  },
+  {
     title: "빈칸에 색을 놓기",
     body: "내 차례에는 세 가지 공용 색상 중 하나를 고르고 5×5 보드의 빈칸에 둡니다.",
     preview: "place",
@@ -44,6 +49,7 @@ const tutorialCellClass = (index: number, preview: TutorialPreview) => {
   if (preview === "score" && redLine.includes(index)) classes.push("scoring");
   if (preview === "turn" && index === 18) classes.push("green-tile", "placing");
   if (preview === "win" && [6, 7, 8, 12, 17, 18].includes(index)) classes.push("clearing");
+  if (preview === "rules" && [6, 7, 8, 12, 17, 22].includes(index)) classes.push(index < 9 ? "red-tile" : "blue-tile");
 
   return classes.join(" ");
 };
@@ -151,6 +157,17 @@ export function TutorialPanel() {
             <span className="tutorial-count">{String(stepIndex + 1).padStart(2, "0")}</span>
             <strong>{t(step.title)}</strong>
             <p>{t(step.body)}</p>
+            <ol className="tutorial-rule-summary">
+              <li><span>01</span><b>{t("공용 색상")}</b><small>{t("세 색상은 양쪽 모두 자유롭게 사용합니다.")}</small></li>
+              <li><span>02</span><b>{t("마지막 한 수")}</b><small>{t("연결을 완성한 플레이어가 점수를 얻습니다.")}</small></li>
+              <li><span>03</span><b>{t("방향별 합산")}</b><small>{t("한 타일로 가로와 세로를 만들면 두 점수를 모두 받습니다.")}</small></li>
+              <li><span>04</span><b>{t("보드 포화")}</b><small>{t("득점 없이 보드가 꽉 차면 마지막에 둔 색 타일만 사라집니다.")}</small></li>
+            </ol>
+            <div className="tutorial-score-table" aria-label={t("연결 점수")}>
+              <span><i>3</i><b>{t("{points}점", { points: 1 })}</b></span>
+              <span><i>4</i><b>{t("{points}점", { points: 2 })}</b></span>
+              <span><i>5</i><b>{t("{points}점", { points: 4 })}</b></span>
+            </div>
           </div>
         </div>
         <div className="tutorial-dots" aria-label={t("튜토리얼 진행도")}>

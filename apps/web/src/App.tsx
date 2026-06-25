@@ -7,6 +7,7 @@ import { MatchmakingPage } from "./pages/MatchmakingPage";
 import { OnlineRoomPage } from "./pages/OnlineRoomPage";
 import { ReplayPage } from "./pages/ReplayPage";
 import { SpectatePage } from "./pages/SpectatePage";
+import { PatchNotesPanel } from "./components/PatchNotesPanel";
 import { TutorialPanel } from "./components/TutorialPanel";
 
 export function App() {
@@ -25,6 +26,7 @@ export function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <TutorialPanel />
+      <PatchNotesPanel />
     </>
   );
 }

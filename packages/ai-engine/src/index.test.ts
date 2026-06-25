@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createInitialGame, DEFAULT_GAME_CONFIG, getValidMoves, placeTile } from "@color-game/game-core";
+import { createInitialGame, DEFAULT_GAME_CONFIG } from "@color-game/game-core";
 import type { GameState } from "@color-game/shared-types";
 import { chooseAiMove, isHardAiAvailable } from "./index";
 
@@ -19,7 +19,7 @@ const aiState = (): GameState => ({
 
 describe("chooseAiMove", () => {
   it("uses the algorithmic Easy policy and takes an immediate scoring move", () => {
-    expect(chooseAiMove(aiState(), "easy", () => 0)).toEqual({
+    expect(chooseAiMove(aiState(), "easy", () => 0.2)).toEqual({
       row: 0,
       col: 2,
       color: "colorA",
@@ -44,7 +44,7 @@ describe("chooseAiMove", () => {
     expect(chooseAiMove(state, "easy", () => 0)).toMatchObject({ row: 2, col: 2 });
   });
 
-  it("does not create an immediate scoring move for the opponent when a safe move exists", () => {
+  it("can miss one-move reply risk so Easy stays beginner-friendly", () => {
     const state: GameState = {
       ...createInitialGame(
         { ...DEFAULT_GAME_CONFIG, turnTimeLimitSeconds: null },
@@ -60,19 +60,7 @@ describe("chooseAiMove", () => {
     };
     const move = chooseAiMove(state, "easy", () => 0);
     expect(move).not.toBeNull();
-    if (move === null || state.currentPlayerId === null) return;
-    const placed = placeTile(state, { ...move, playerId: state.currentPlayerId, createdAt: 0 });
-    expect(placed.ok).toBe(true);
-    if (!placed.ok || placed.state.currentPlayerId === null) return;
-    const scoringReplies = getValidMoves(placed.state).filter((reply) => {
-      const result = placeTile(placed.state, {
-        ...reply,
-        playerId: placed.state.currentPlayerId!,
-        createdAt: 0,
-      });
-      return result.ok && result.move.earnedScore > 0;
-    });
-    expect(scoringReplies).toHaveLength(0);
+    if (move !== null) expect(state.board[move.row]?.[move.col]).toBeNull();
   });
 
   it("occasionally uses the shallower Easy policy while keeping the move valid", () => {
@@ -90,15 +78,15 @@ describe("chooseAiMove", () => {
     if (move !== null) expect(state.board[move.row]?.[move.col]).toBeNull();
   });
 
-  it("uses the 626-move trained model for Normal moves", () => {
+  it("uses the promoted AlphaZero-lite model for Normal moves", () => {
     const state = aiState();
     const move = chooseAiMove(state, "normal", () => 0);
     expect(move).not.toBeNull();
     if (move !== null) expect(state.board[move.row]?.[move.col]).toBeNull();
   });
 
-  it("loads the promoted AlphaZero-lite model for Hard moves", () => {
-    expect(isHardAiAvailable).toBe(true);
+  it("keeps Hard locked while still returning a safe fallback move if called directly", () => {
+    expect(isHardAiAvailable).toBe(false);
     const state = aiState();
     const move = chooseAiMove(state, "hard", () => 0);
     expect(move).not.toBeNull();

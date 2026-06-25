@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useI18n } from "../i18n";
 import { BrandMark } from "./BrandMark";
+import { openPatchNotes } from "./PatchNotesPanel";
 
 interface AppSidebarProps {
   onSettings: () => void;
@@ -22,6 +23,7 @@ export function AppSidebar({ onSettings }: AppSidebarProps) {
         <button type="button" onClick={() => navigate("/private")}>{t("사설방")}</button>
         <button type="button" onClick={() => navigate("/leaderboard")}>{t("리더보드")}</button>
         <button type="button" onClick={() => navigate("/account")}>{t("계정")}</button>
+        <button type="button" onClick={openPatchNotes}>{t("패치노트")}</button>
       </nav>
       <div className="sidebar-bottom">
         <button type="button" onClick={onSettings}>{t("설정")}</button>
