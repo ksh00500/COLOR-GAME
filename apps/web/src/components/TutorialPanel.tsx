@@ -105,6 +105,17 @@ const tutorialCellClass = (index: number, preview: TutorialPreview) => {
   return classes.join(" ");
 };
 
+const tutorialFullAfterCellClass = (index: number) => {
+  const classes = ["tutorial-preview-cell"];
+  const addColor = (color: "red-tile" | "green-tile", cells: number[]) => {
+    if (cells.includes(index)) classes.push(color);
+  };
+  addColor("red-tile", [0, 3, 5, 8, 11, 14, 16, 19, 22]);
+  addColor("green-tile", [2, 7, 10, 13, 15, 18, 21, 24]);
+  if ([1, 4, 6, 9, 12, 17, 20, 23].includes(index)) classes.push("full-cleared");
+  return classes.join(" ");
+};
+
 const hasCompletedTutorial = () => {
   try {
     return window.localStorage.getItem(tutorialKey) === "true";
@@ -187,11 +198,32 @@ export function TutorialPanel() {
               <strong>{t("예시")} {stepIndex + 1}</strong>
             </div>
             <div className="tutorial-preview-body">
-              <div className="tutorial-preview-board">
-                {Array.from({ length: 25 }, (_, index) => (
-                  <i key={index} className={tutorialCellClass(index, step.preview)} />
-                ))}
-              </div>
+              {step.preview === "full" ? (
+                <div className="tutorial-preview-compare">
+                  <div>
+                    <span>{t("가득 찬 직전")}</span>
+                    <div className="tutorial-preview-board mini">
+                      {Array.from({ length: 25 }, (_, index) => (
+                        <i key={index} className={tutorialCellClass(index, step.preview)} />
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <span>{t("마지막 색 제거 후")}</span>
+                    <div className="tutorial-preview-board mini">
+                      {Array.from({ length: 25 }, (_, index) => (
+                        <i key={index} className={tutorialFullAfterCellClass(index)} />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="tutorial-preview-board">
+                  {Array.from({ length: 25 }, (_, index) => (
+                    <i key={index} className={tutorialCellClass(index, step.preview)} />
+                  ))}
+                </div>
+              )}
               <div className="tutorial-preview-side">
                 <span className="tutorial-preview-status">{step.preview === "win" ? t("승리 조건") : t("예시 상황")}</span>
                 <span className="tutorial-preview-choice">

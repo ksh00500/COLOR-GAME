@@ -271,6 +271,8 @@ const messages: Record<string, Message> = {
   "예시": { en: "Example", ja: "例", es: "Ejemplo", "pt-BR": "Exemplo" },
   "예시 상황": { en: "Example situation", ja: "例の状況", es: "Situación de ejemplo", "pt-BR": "Situação de exemplo" },
   "승리 조건": { en: "Win condition", ja: "勝利条件", es: "Condición de victoria", "pt-BR": "Condição de vitória" },
+  "가득 찬 직전": { en: "Before full clear", ja: "満杯直前", es: "Antes de limpiar", "pt-BR": "Antes da limpeza" },
+  "마지막 색 제거 후": { en: "After last color clears", ja: "最後の色を除去後", es: "Tras quitar el último color", "pt-BR": "Após remover a última cor" },
   "튜토리얼 진행도": { en: "Tutorial progress", ja: "チュートリアル進捗", es: "Progreso del tutorial", "pt-BR": "Progresso do tutorial" },
   "튜토리얼": { en: "Tutorial", ja: "チュートリアル", es: "Tutorial", "pt-BR": "Tutorial" },
   "튜토리얼 다시 보기": { en: "Replay tutorial", ja: "チュートリアルをもう一度見る", es: "Volver a ver el tutorial", "pt-BR": "Rever tutorial" },
