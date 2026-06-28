@@ -8,6 +8,8 @@ import {
   placeTile,
   resignGame,
 } from "@color-game/game-core";
+import { nativeBackEvent } from "../nativeApp";
+import { notifyInvalidMove, notifyTilePlaced } from "../nativeFeedback";
 import type { Board, GamePlayer, GameState, Position, TileColorId } from "@color-game/shared-types";
 import { AppSidebar } from "../components/AppSidebar";
 import { ColorPicker } from "../components/ColorPicker";
@@ -131,6 +133,16 @@ export function GamePage() {
   const aiTurn = game.currentPlayerId === AI_ID;
   const canHumanPlay = game.status === "playing" && humanTurn && !isAnimating;
 
+  useEffect(() => {
+    const handleNativeBack = (event: Event) => {
+      if (game.status !== "playing") return;
+      event.preventDefault();
+      setResignOpen(true);
+    };
+    window.addEventListener(nativeBackEvent, handleNativeBack);
+    return () => window.removeEventListener(nativeBackEvent, handleNativeBack);
+  }, [game.status]);
+
   const clearEffectTimers = useCallback(() => {
     effectTimers.current.forEach((timer) => window.clearTimeout(timer));
     effectTimers.current = [];
@@ -163,6 +175,7 @@ export function GamePage() {
       if (isAnimating || game.status !== "playing") return;
 
       if (game.board[position.row]?.[position.col] !== null) {
+        void notifyInvalidMove();
         setInvalidCell(position);
         const timer = window.setTimeout(() => setInvalidCell(null), 320);
         effectTimers.current.push(timer);
@@ -177,10 +190,12 @@ export function GamePage() {
       });
 
       if (!result.ok) {
+        if (playerId === HUMAN_ID) void notifyInvalidMove();
         setGame(result.state);
         return;
       }
 
+      if (playerId === HUMAN_ID) void notifyTilePlaced();
       setLastPlaced(position);
       if (playerId === AI_ID) setOpponentLastPlaced(position);
       const shouldCueOpponentTurn =

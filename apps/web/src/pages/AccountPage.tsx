@@ -4,6 +4,7 @@ import {
   checkInAttendance,
   ApiError,
   clearAuthToken,
+  deleteAccount,
   fetchLeaderboard,
   fetchMatches,
   fetchMe,
@@ -30,7 +31,7 @@ const findLeaderboardRank = (players: PublicProfile[], accountId: string): numbe
   return index === -1 ? null : index + 1;
 };
 
-export function AccountPage() {
+export function AccountPage({ deletionEntry = false }: { deletionEntry?: boolean }) {
   const { t, formatNumber } = useI18n();
   const [mode, setMode] = useState<AuthMode>("login");
   const [account, setAccount] = useState<Account | null>(null);
@@ -43,6 +44,9 @@ export function AccountPage() {
   const [busy, setBusy] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [leaderboardRank, setLeaderboardRank] = useState<number | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deletePassword, setDeletePassword] = useState("");
+  const [deleteBusy, setDeleteBusy] = useState(false);
 
   useEffect(() => {
     void fetchMe()
@@ -50,9 +54,10 @@ export function AccountPage() {
         const nextAccount = await checkInAttendance().catch(() => storedAccount);
         setAccount(nextAccount);
         await refreshAccountData(nextAccount);
+        if (deletionEntry) setDeleteOpen(true);
       })
       .catch(() => undefined);
-  }, []);
+  }, [deletionEntry]);
 
   async function refreshAccountData(nextAccount: Account) {
     const [nextMatches, leaderboard] = await Promise.all([
@@ -74,6 +79,7 @@ export function AccountPage() {
       const checkedInAccount = await checkInAttendance().catch(() => nextAccount);
       setAccount(checkedInAccount);
       await refreshAccountData(checkedInAccount);
+      if (deletionEntry) setDeleteOpen(true);
     } catch (error) {
       setMessage(error instanceof ApiError ? error.code : "계정 요청을 처리하지 못했습니다.");
     } finally {
@@ -88,6 +94,24 @@ export function AccountPage() {
     setLeaderboardRank(null);
   };
 
+  const removeAccount = async () => {
+    setDeleteBusy(true);
+    setMessage(null);
+    try {
+      await deleteAccount(deletePassword);
+      setDeleteOpen(false);
+      setDeletePassword("");
+      setAccount(null);
+      setMatches([]);
+      setLeaderboardRank(null);
+      setMessage("계정이 삭제되었습니다.");
+    } catch (error) {
+      setMessage(error instanceof ApiError ? error.code : "계정 삭제 요청을 처리하지 못했습니다.");
+    } finally {
+      setDeleteBusy(false);
+    }
+  };
+
   return (
     <main className="online-page app-frame">
       <AppSidebar onSettings={() => setSettingsOpen(true)} />
@@ -95,8 +119,8 @@ export function AccountPage() {
       <section className="online-shell account-shell app-content-shell" aria-labelledby="account-title">
         <div className="online-copy">
           <p className="eyebrow">PLAYER ACCOUNT</p>
-          <h1 id="account-title">{t("전적과 레이팅은 계정에 저장됩니다.")}</h1>
-          <p>{t("경쟁 게임은 로그인한 플레이어만 참가할 수 있습니다. 계정에는 전적, 레이팅, 최근 경기 기록이 저장됩니다.")}</p>
+          <h1 id="account-title">{t(deletionEntry ? "Tango 계정 삭제" : "전적과 레이팅은 계정에 저장됩니다.")}</h1>
+          <p>{t(deletionEntry ? "로그인한 뒤 비밀번호를 확인하면 계정과 연결된 데이터를 삭제할 수 있습니다." : "경쟁 게임은 로그인한 플레이어만 참가할 수 있습니다. 계정에는 전적, 레이팅, 최근 경기 기록이 저장됩니다.")}</p>
         </div>
 
         <div className="online-card">
@@ -156,6 +180,8 @@ export function AccountPage() {
                 <span><small>{t("최장 출석")}</small><strong>{t("{days}일", { days: formatNumber(account.longestAttendanceStreak) })}</strong></span>
               </div>
               <button className="secondary-action" type="button" onClick={logout}>{t("로그아웃")}</button>
+              <button className="danger-action" type="button" onClick={() => setDeleteOpen(true)}>{t("계정 삭제")}</button>
+              <Link className="account-policy-link" to="/privacy">{t("개인정보 처리방침")}</Link>
               <h3>{t("최근 전적")}</h3>
               {matches.length === 0 ? (
                 <p className="online-message">{t("아직 기록된 경기가 없습니다.")}</p>
@@ -176,6 +202,31 @@ export function AccountPage() {
           )}
         </div>
       </section>
+      {deleteOpen && account !== null && (
+        <div className="modal-backdrop" role="presentation" onMouseDown={() => setDeleteOpen(false)}>
+          <section className="confirm-panel" role="dialog" aria-modal="true" aria-labelledby="delete-account-title" onMouseDown={(event) => event.stopPropagation()}>
+            <p className="eyebrow">DELETE ACCOUNT</p>
+            <h2 id="delete-account-title">{t("계정을 영구 삭제할까요?")}</h2>
+            <p>{t("계정, 출석 기록, 연결된 경기 기록과 리플레이가 삭제되며 복구할 수 없습니다.")}</p>
+            <label className="online-field">
+              <span>{t("현재 비밀번호")}</span>
+              <input
+                value={deletePassword}
+                type="password"
+                autoComplete="current-password"
+                onChange={(event) => setDeletePassword(event.target.value)}
+              />
+            </label>
+            {message !== null && <p className="online-message">{t(message)}</p>}
+            <div className="result-actions">
+              <button className="secondary-action" type="button" onClick={() => setDeleteOpen(false)}>{t("취소")}</button>
+              <button className="danger-action" type="button" disabled={deleteBusy || deletePassword.length < 8} onClick={() => void removeAccount()}>
+                {t(deleteBusy ? "삭제 처리 중" : "영구 삭제")}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
       <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </main>
   );

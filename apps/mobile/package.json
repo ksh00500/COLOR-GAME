@@ -1,0 +1,28 @@
+{
+  "name": "@color-game/mobile",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build:web": "pnpm --filter @color-game/web build:android",
+    "sync:android": "pnpm build:web && cap sync android",
+    "open:android": "cap open android",
+    "run:android": "pnpm sync:android && cap run android",
+    "build:debug": "pnpm sync:android && cd android && gradlew.bat assembleDebug",
+    "bundle:release": "pnpm sync:android && cd android && gradlew.bat bundleRelease",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@capacitor/android": "8.4.1",
+    "@capacitor/app": "8.1.0",
+    "@capacitor/core": "8.4.1",
+    "@capacitor/haptics": "8.0.2",
+    "@capacitor/share": "8.0.1",
+    "@capacitor/splash-screen": "8.0.1",
+    "@capacitor/status-bar": "8.0.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.4.1",
+    "typescript": "5.8.3"
+  }
+}

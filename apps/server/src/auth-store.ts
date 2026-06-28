@@ -66,6 +66,7 @@ export interface AccountStore {
   getAccount(accountId: string): Promise<AccountSummary | null>;
   getAccountForSession(accountId: string, sessionId: string): Promise<AccountSummary | null>;
   rotateSession(accountId: string): Promise<string | null>;
+  deleteAccount(accountId: string): Promise<boolean>;
   getPublicProfile(accountId: string): Promise<PublicProfile | null>;
   getLeaderboard(limit: number): Promise<PublicProfile[]>;
   getMatchHistory(accountId: string, limit: number): Promise<MatchHistoryItem[]>;
@@ -98,6 +99,10 @@ export class NullAccountStore implements AccountStore {
 
   async rotateSession(): Promise<string | null> {
     return null;
+  }
+
+  async deleteAccount(): Promise<boolean> {
+    return false;
   }
 
   async getPublicProfile(): Promise<PublicProfile | null> {
@@ -314,6 +319,35 @@ export class PostgresAccountStore implements AccountStore {
       [accountId, sessionId],
     );
     return result.rows[0] === undefined ? null : sessionId;
+  }
+
+  async deleteAccount(accountId: string): Promise<boolean> {
+    const client = await this.pool.connect();
+    try {
+      await client.query("begin");
+      await client.query(
+        `
+          delete from game_rooms
+          where code in (
+            select room_code
+            from game_room_players
+            where account_id = $1
+          )
+        `,
+        [accountId],
+      );
+      const result = await client.query(
+        "delete from accounts where id = $1",
+        [accountId],
+      );
+      await client.query("commit");
+      return (result.rowCount ?? 0) > 0;
+    } catch (error) {
+      await client.query("rollback");
+      throw error;
+    } finally {
+      client.release();
+    }
   }
 
   async getPublicProfile(accountId: string): Promise<PublicProfile | null> {

@@ -11,7 +11,10 @@
     "db:migrate": "pnpm --filter @color-game/server db:migrate",
     "build": "pnpm -r build",
     "test": "pnpm -r test",
-    "typecheck": "pnpm -r typecheck"
+    "typecheck": "pnpm -r typecheck",
+    "android:sync": "pnpm --filter @color-game/mobile sync:android",
+    "android:debug": "pnpm --filter @color-game/mobile build:debug",
+    "android:open": "pnpm --filter @color-game/mobile open:android"
   },
   "devDependencies": {
     "typescript": "5.8.3",

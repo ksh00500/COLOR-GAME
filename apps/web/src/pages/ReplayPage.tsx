@@ -7,6 +7,7 @@ import { PlayerCard } from "../components/PlayerCard";
 import { SettingsPanel } from "../components/SettingsPanel";
 import { ApiError, fetchReplay } from "../api";
 import { shareUrl } from "../share";
+import { publicAppUrl } from "../nativeApp";
 import { useSettings } from "../settings";
 import { useI18n } from "../i18n";
 import { buildReplayFrame } from "../replayFrames";
@@ -122,7 +123,7 @@ export function ReplayPage() {
 
   const shareCurrentMove = async () => {
     if (replay === null) return;
-    const url = `${window.location.origin}/replay/${encodeURIComponent(replay.gameId)}?move=${step}`;
+    const url = publicAppUrl(`/replay/${encodeURIComponent(replay.gameId)}?move=${step}`);
     try {
       const result = await shareUrl({
         title: t("Tango 리플레이"),

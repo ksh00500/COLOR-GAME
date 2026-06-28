@@ -102,6 +102,14 @@ const request = async <T>(
   return parseResponse<T>(response);
 };
 
+export const deleteAccount = async (password: string): Promise<void> => {
+  await request<void>("/auth/account", {
+    method: "DELETE",
+    body: JSON.stringify({ password }),
+  });
+  clearAuthToken();
+};
+
 export const registerAccount = async (input: {
   email: string;
   password: string;

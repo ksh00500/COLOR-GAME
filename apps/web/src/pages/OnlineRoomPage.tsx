@@ -17,6 +17,8 @@ import { SettingsPanel } from "../components/SettingsPanel";
 import { getAuthToken } from "../api";
 import { playOpponentTurnCue } from "../audio";
 import { shareUrl } from "../share";
+import { nativeBackEvent, publicAppUrl } from "../nativeApp";
+import { notifyInvalidMove, notifyTilePlaced } from "../nativeFeedback";
 import { useSettings } from "../settings";
 import { useI18n } from "../i18n";
 import { createAppSocket } from "../socket";
@@ -176,6 +178,16 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
     visualBoard === null &&
     !isBoardClearing &&
     connectionStatus === "connected";
+
+  useEffect(() => {
+    const handleNativeBack = (event: Event) => {
+      if (game?.status !== "playing") return;
+      event.preventDefault();
+      setResignOpen(true);
+    };
+    window.addEventListener(nativeBackEvent, handleNativeBack);
+    return () => window.removeEventListener(nativeBackEvent, handleNativeBack);
+  }, [game?.status]);
 
   const clearEffectTimers = useCallback(() => {
     effectTimers.current.forEach((timer) => window.clearTimeout(timer));
@@ -400,6 +412,7 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
     const socket = socketRef.current;
     if (socket === null || room === null || playerId === null || game === null) return;
     if (game.board[position.row]?.[position.col] !== null) {
+      void notifyInvalidMove();
       setInvalidCell(position);
       const timer = window.setTimeout(() => setInvalidCell(null), 320);
       effectTimers.current.push(timer);
@@ -407,6 +420,7 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
     }
 
     setBusyLabel("수 전송 중");
+    void notifyTilePlaced();
     setVisualBoard(boardWithPlacement(game.board, position, selectedColor));
     socket.emit(
       "game:move",
@@ -467,7 +481,7 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
     const path = kind === "invite"
       ? `/private?code=${encodeURIComponent(room.code)}`
       : `/spectate/${encodeURIComponent(room.code)}`;
-    const url = `${window.location.origin}${path}`;
+    const url = publicAppUrl(path);
     if (game?.status === "playing") {
       setShareDialog({ kind, url });
       return;

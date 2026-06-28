@@ -45,6 +45,21 @@ amplify.yml           AWS Amplify Hosting 빌드 설정
 deploy/ec2/           EC2 + RDS 운영 템플릿
 ```
 
+## Android 앱
+
+기존 React/Vite 앱을 Capacitor Android 컨테이너에 포함하는 Android 앱이
+`apps/mobile`에 있습니다. 앱은 웹과 게임 코드를 공유하고 운영 API·Socket.IO 서버에
+HTTPS로 연결합니다.
+
+```text
+pnpm android:sync
+pnpm android:debug
+pnpm android:open
+```
+
+개발 환경, 실제 기기 설치, CORS, App Links, 서명과 Play Store 배포 절차는
+`docs/android.md`를 참고합니다.
+
 ## 주요 게임 엔진 함수
 
 - `createInitialGame`

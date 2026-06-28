@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Tango</string>
+    <string name="title_activity_main">Tango</string>
+    <string name="package_name">com.ksh.tangogame</string>
+    <string name="custom_url_scheme">com.ksh.tangogame</string>
+</resources>

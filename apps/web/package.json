@@ -6,10 +6,17 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0 --port 5173",
     "build": "tsc -b && vite build",
+    "build:android": "tsc -b && vite build --mode android",
     "test": "vitest run --passWithNoTests",
     "typecheck": "tsc -b --pretty false"
   },
   "dependencies": {
+    "@capacitor/app": "8.1.0",
+    "@capacitor/core": "8.4.1",
+    "@capacitor/haptics": "8.0.2",
+    "@capacitor/share": "8.0.1",
+    "@capacitor/splash-screen": "8.0.1",
+    "@capacitor/status-bar": "8.0.2",
     "@color-game/ai-engine": "workspace:*",
     "@color-game/game-core": "workspace:*",
     "@color-game/shared-types": "workspace:*",

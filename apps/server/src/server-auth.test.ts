@@ -78,6 +78,10 @@ class MemoryAccountStore implements AccountStore {
     return activeSessionId;
   }
 
+  async deleteAccount(accountId: string): Promise<boolean> {
+    return this.accounts.delete(accountId);
+  }
+
   async getPublicProfile(accountId: string): Promise<PublicProfile | null> {
     const account = this.accounts.get(accountId);
     if (account === undefined) return null;
@@ -278,6 +282,74 @@ describe("auth routes", () => {
       headers: { authorization: `Bearer ${secondToken}` },
     });
     expect(currentSession.statusCode).toBe(200);
+  });
+
+  it("requires password confirmation and permanently deletes an account", async () => {
+    const accountStore = new MemoryAccountStore();
+    const { app } = createServer({
+      accountStore,
+      authSecret: "test-auth-secret-with-more-than-32-characters",
+    });
+    apps.push(app);
+
+    const registered = await app.inject({
+      method: "POST",
+      url: "/auth/register",
+      payload: {
+        email: "delete@example.com",
+        password: "password123",
+        displayName: "Delete Me",
+        avatarId: "orbit",
+      },
+    });
+    const token = registered.json<{ token: string }>().token;
+
+    const wrongPassword = await app.inject({
+      method: "DELETE",
+      url: "/auth/account",
+      headers: { authorization: `Bearer ${token}` },
+      payload: { password: "incorrect123" },
+    });
+    expect(wrongPassword.statusCode).toBe(403);
+
+    const deleted = await app.inject({
+      method: "DELETE",
+      url: "/auth/account",
+      headers: { authorization: `Bearer ${token}` },
+      payload: { password: "password123" },
+    });
+    expect(deleted.statusCode).toBe(204);
+
+    const me = await app.inject({
+      method: "GET",
+      url: "/auth/me",
+      headers: { authorization: `Bearer ${token}` },
+    });
+    expect(me.statusCode).toBe(401);
+
+    const leaderboard = await app.inject({ method: "GET", url: "/leaderboard" });
+    expect(leaderboard.json<{ players: PublicProfile[] }>().players).toHaveLength(0);
+  });
+
+  it("allows Android WebView preflight requests for account deletion", async () => {
+    const { app } = createServer({
+      corsOrigin: ["https://localhost"],
+    });
+    apps.push(app);
+
+    const preflight = await app.inject({
+      method: "OPTIONS",
+      url: "/auth/account",
+      headers: {
+        origin: "https://localhost",
+        "access-control-request-method": "DELETE",
+        "access-control-request-headers": "authorization,content-type",
+      },
+    });
+
+    expect(preflight.statusCode).toBe(204);
+    expect(preflight.headers["access-control-allow-origin"]).toBe("https://localhost");
+    expect(preflight.headers["access-control-allow-methods"]).toContain("DELETE");
   });
 
   it("records anonymous visitor heartbeats and exposes visitor counts", async () => {

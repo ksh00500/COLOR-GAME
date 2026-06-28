@@ -51,7 +51,7 @@ HTTPS 설정은 `colortile.kro.kr`과 `tangogame.kro.kr`의 Certbot 인증서를
 NODE_ENV=production
 HOST=127.0.0.1
 PORT=8080
-CORS_ORIGIN=http://colortile.kro.kr,http://3.26.178.31,https://colortile.kro.kr,http://tangogame.kro.kr,https://tangogame.kro.kr
+CORS_ORIGIN=http://colortile.kro.kr,http://3.26.178.31,https://colortile.kro.kr,http://tangogame.kro.kr,https://tangogame.kro.kr,https://localhost
 DATABASE_URL=postgresql://user:password@your-rds-endpoint:5432/color_game
 DATABASE_SSL=true
 DATABASE_REQUIRED=true

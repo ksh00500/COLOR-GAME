@@ -25,6 +25,7 @@ export function AppSidebar({ onSettings }: AppSidebarProps) {
         <button type="button" onClick={() => navigate("/patch-notes")}>{t("패치노트")}</button>
       </nav>
       <div className="sidebar-bottom">
+        <button type="button" onClick={() => navigate("/privacy")}>{t("개인정보")}</button>
         <button type="button" onClick={onSettings}>{t("설정")}</button>
       </div>
     </aside>

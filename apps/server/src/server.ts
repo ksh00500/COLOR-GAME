@@ -88,6 +88,10 @@ const analyticsHeartbeatSchema = z.object({
   path: z.string().trim().max(256).optional().default("/"),
 });
 
+const deleteAccountSchema = z.object({
+  password: z.string().min(8).max(128),
+});
+
 const attendanceCheckInSchema = z.object({
   timeZone: z.string().trim().max(120).optional(),
 });
@@ -163,6 +167,7 @@ export const createServer = (options: ServerOptions = {}) => {
 
   void app.register(cors, {
     origin: options.corsOrigin ?? true,
+    methods: ["GET", "HEAD", "POST", "DELETE", "OPTIONS"],
   });
 
   const recordFinishedRoom = async (room: RoomSnapshot): Promise<void> => {
@@ -499,6 +504,52 @@ export const createServer = (options: ServerOptions = {}) => {
       return reply.code(401).send({ code: "UNAUTHORIZED", message: "Sign in is required." });
     }
     return { account: publicAccount(account) };
+  });
+
+  app.delete("/auth/account", async (request, reply) => {
+    const account = await authenticateToken(bearerToken(request.headers.authorization));
+    if (account === null || !accountStore.enabled) {
+      return reply.code(401).send({ code: "UNAUTHORIZED", message: "Sign in is required." });
+    }
+
+    const parsed = deleteAccountSchema.safeParse(request.body ?? {});
+    if (!parsed.success) {
+      return reply.code(400).send({ code: "INVALID_REQUEST", details: parsed.error.flatten() });
+    }
+
+    const verified = await accountStore.authenticate(account.email, parsed.data.password);
+    if (verified?.id !== account.id) {
+      return reply.code(403).send({ code: "INVALID_PASSWORD", message: "Password is invalid." });
+    }
+
+    const activeGameSocket = [...io.sockets.sockets.values()].some((socket) => {
+      const socketAccount = getSocketAccount(socket);
+      return socketAccount?.id === account.id && typeof socket.data.playerId === "string";
+    });
+    if (activeGameSocket) {
+      return reply.code(409).send({
+        code: "ACCOUNT_IN_ACTIVE_MATCH",
+        message: "Leave the active match before deleting this account.",
+      });
+    }
+
+    const deleted = await accountStore.deleteAccount(account.id);
+    if (!deleted) {
+      return reply.code(404).send({ code: "PROFILE_NOT_FOUND", message: "Profile was not found." });
+    }
+
+    for (const socket of io.sockets.sockets.values()) {
+      const socketAccount = getSocketAccount(socket);
+      if (socketAccount?.id === account.id) {
+        socket.emit("auth:session-replaced", {
+          code: "ACCOUNT_DELETED",
+          message: "This account was deleted.",
+        });
+        socket.disconnect(true);
+      }
+    }
+
+    return reply.code(204).send();
   });
 
   app.get("/leaderboard", async (request, reply) => {

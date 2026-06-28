@@ -1,9 +1,22 @@
+import { Share } from "@capacitor/share";
+import { isNativeApp } from "./nativeApp";
+
 export const shareUrl = async (input: {
   title: string;
   text: string;
   url: string;
   copyOnly?: boolean;
 }): Promise<"shared" | "copied"> => {
+  if (input.copyOnly !== true && isNativeApp()) {
+    await Share.share({
+      title: input.title,
+      text: input.text,
+      url: input.url,
+      dialogTitle: input.title,
+    });
+    return "shared";
+  }
+
   if (input.copyOnly !== true && typeof navigator.share === "function") {
     await navigator.share(input);
     return "shared";

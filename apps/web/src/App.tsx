@@ -8,12 +8,15 @@ import { OnlineRoomPage } from "./pages/OnlineRoomPage";
 import { PatchNotesPage } from "./pages/PatchNotesPage";
 import { ReplayPage } from "./pages/ReplayPage";
 import { SpectatePage } from "./pages/SpectatePage";
+import { PrivacyPage } from "./pages/PrivacyPage";
 import { PatchNotesPanel } from "./components/PatchNotesPanel";
 import { TutorialPanel } from "./components/TutorialPanel";
+import { NativeAppBridge } from "./components/NativeAppBridge";
 
 export function App() {
   return (
     <>
+      <NativeAppBridge />
       <Routes>
         <Route path="/" element={<LobbyPage />} />
         <Route path="/game" element={<GamePage />} />
@@ -21,6 +24,8 @@ export function App() {
         <Route path="/match" element={<OnlineRoomPage matchmakingEntry />} />
         <Route path="/private" element={<OnlineRoomPage />} />
         <Route path="/account" element={<AccountPage />} />
+        <Route path="/account-deletion" element={<AccountPage deletionEntry />} />
+        <Route path="/privacy" element={<PrivacyPage />} />
         <Route path="/leaderboard" element={<LeaderboardPage />} />
         <Route path="/patch-notes" element={<PatchNotesPage />} />
         <Route path="/replay/:gameId" element={<ReplayPage />} />

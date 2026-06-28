@@ -17,6 +17,10 @@ describe("localization catalog", () => {
     "온라인 대전 정보",
     "REPLAY_NOT_FOUND",
     "TURN_TIME_EXPIRED",
+    "개인정보 처리방침",
+    "계정 삭제",
+    "INVALID_PASSWORD",
+    "ACCOUNT_IN_ACTIVE_MATCH",
   ])("contains every critical user-facing translation: %s", (key) => {
     expect(hasTranslation(key)).toBe(true);
   });
