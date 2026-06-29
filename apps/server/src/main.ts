@@ -3,6 +3,7 @@ import { createAnalyticsStoreFromEnv } from "./analytics-store.js";
 import { GameRoomService } from "./game-room-service.js";
 import { createGameHistoryStoreFromEnv } from "./history-store.js";
 import { createMatchmakingWaitStoreFromEnv } from "./matchmaking-wait-store.js";
+import { createEconomyStoreFromEnv } from "./economy-store.js";
 import { createServer, type ServerOptions } from "./server.js";
 
 const port = Number.parseInt(process.env.PORT ?? "8080", 10);
@@ -17,6 +18,7 @@ const historyStore = createGameHistoryStoreFromEnv();
 const accountStore = createAccountStoreFromEnv();
 const analyticsStore = createAnalyticsStoreFromEnv();
 const matchmakingWaitStore = createMatchmakingWaitStoreFromEnv();
+const economyStore = createEconomyStoreFromEnv();
 
 if (databaseRequired && !historyStore.enabled) {
   console.error("DATABASE_REQUIRED=true but DATABASE_URL is not set.");
@@ -35,6 +37,7 @@ const serverOptions: ServerOptions = {
   accountStore,
   analyticsStore,
   matchmakingWaitStore,
+  economyStore,
   authSecret,
   requireDatabaseHealth,
 };
@@ -61,5 +64,6 @@ try {
   await accountStore.close();
   await analyticsStore.close();
   await matchmakingWaitStore.close();
+  await economyStore.close();
   process.exit(1);
 }

@@ -21,6 +21,7 @@ import type {
 export interface RoomPlayer {
   id: string;
   accountId?: string | null;
+  guestId?: string | null;
   nickname: string;
   avatarId: string;
   isGuest: boolean;
@@ -31,6 +32,7 @@ export interface RoomPlayer {
 
 export interface PlayerProfile {
   accountId?: string | null;
+  guestId?: string | null;
   nickname: string;
   avatarId: string;
   isGuest: boolean;
@@ -61,8 +63,10 @@ interface RoomSession {
   mode: GameMode;
   status: RoomStatus;
   hostPlayerId: string;
+  spectatorsAllowed: boolean;
   players: [RoomPlayer, RoomPlayer | null];
   game: GameState | null;
+  config: GameConfig;
   createdAt: number;
   updatedAt: number;
 }
@@ -108,6 +112,7 @@ const toPlayerSnapshot = (player: RoomPlayer) => ({
 const fromPlayerSnapshot = (player: RoomPlayerSnapshot): RoomPlayer => ({
   id: player.id,
   accountId: player.accountId ?? null,
+  guestId: null,
   nickname: player.nickname,
   avatarId: player.avatarId,
   isGuest: player.isGuest,
@@ -133,11 +138,13 @@ const cloneRoom = (room: RoomSession): RoomSnapshot => ({
   mode: room.mode,
   status: room.status,
   hostPlayerId: room.hostPlayerId,
+  spectatorsAllowed: room.spectatorsAllowed,
   players: [
     toPlayerSnapshot(room.players[0]),
     room.players[1] === null ? null : toPlayerSnapshot(room.players[1]),
   ],
   game: structuredClone(room.game) as GameState | null,
+  config: cloneConfig(room.config),
   createdAt: room.createdAt,
   updatedAt: room.updatedAt,
 });
@@ -171,7 +178,12 @@ export class GameRoomService {
     this.now = options.now ?? (() => Date.now());
   }
 
-  createRoom(profile: PlayerProfile, mode: GameMode = "private"): RoomSnapshot {
+  createRoom(
+    profile: PlayerProfile,
+    mode: GameMode = "private",
+    config: GameConfig = this.config,
+    spectatorsAllowed = true,
+  ): RoomSnapshot {
     const now = this.now();
     let code = this.codeGenerator().toUpperCase();
     while (this.rooms.has(code)) {
@@ -181,6 +193,7 @@ export class GameRoomService {
     const host: RoomPlayer = {
       id: this.idGenerator(),
       accountId: profile.accountId ?? null,
+      guestId: profile.guestId ?? null,
       nickname: profile.nickname,
       avatarId: profile.avatarId,
       isGuest: profile.isGuest,
@@ -194,8 +207,10 @@ export class GameRoomService {
       mode,
       status: "waiting",
       hostPlayerId: host.id,
+      spectatorsAllowed,
       players: [host, null],
       game: null,
+      config: cloneConfig(config),
       createdAt: now,
       updatedAt: now,
     };
@@ -218,6 +233,7 @@ export class GameRoomService {
     const first: RoomPlayer = {
       id: this.idGenerator(),
       accountId: firstProfile.accountId ?? null,
+      guestId: firstProfile.guestId ?? null,
       nickname: firstProfile.nickname,
       avatarId: firstProfile.avatarId,
       isGuest: firstProfile.isGuest,
@@ -228,6 +244,7 @@ export class GameRoomService {
     const second: RoomPlayer = {
       id: this.idGenerator(),
       accountId: secondProfile.accountId ?? null,
+      guestId: secondProfile.guestId ?? null,
       nickname: secondProfile.nickname,
       avatarId: secondProfile.avatarId,
       isGuest: secondProfile.isGuest,
@@ -241,8 +258,10 @@ export class GameRoomService {
       mode,
       status: "waiting",
       hostPlayerId: first.id,
+      spectatorsAllowed: true,
       players: [first, second],
       game: null,
+      config: cloneConfig(this.config),
       createdAt: now,
       updatedAt: now,
     };
@@ -258,11 +277,13 @@ export class GameRoomService {
       mode: snapshot.mode ?? "private",
       status: snapshot.status,
       hostPlayerId: snapshot.hostPlayerId,
+      spectatorsAllowed: snapshot.spectatorsAllowed ?? true,
       players: [
         fromPlayerSnapshot(snapshot.players[0]),
         snapshot.players[1] === null ? null : fromPlayerSnapshot(snapshot.players[1]),
       ],
       game: disconnectGamePlayers(snapshot.game),
+      config: cloneConfig(snapshot.config ?? snapshot.game?.config ?? this.config),
       createdAt: snapshot.createdAt,
       updatedAt: this.now(),
     };
@@ -289,6 +310,7 @@ export class GameRoomService {
     room.players[1] = {
       id: this.idGenerator(),
       accountId: profile.accountId ?? null,
+      guestId: profile.guestId ?? null,
       nickname: profile.nickname,
       avatarId: profile.avatarId,
       isGuest: profile.isGuest,
@@ -307,6 +329,21 @@ export class GameRoomService {
       return { ok: false, error: makeError("ROOM_NOT_FOUND", "Room was not found.") };
     }
     return { ok: true, value: cloneRoom(room) };
+  }
+
+  getRewardIdentities(code: string): Record<string, string> {
+    const room = this.rooms.get(code);
+    if (room === undefined) return {};
+    return Object.fromEntries(
+      room.players
+        .filter((player): player is RoomPlayer => player !== null)
+        .map((player) => [
+          player.id,
+          player.accountId
+            ? `account:${player.accountId}`
+            : `guest:${player.guestId ?? player.id}`,
+        ]),
+    );
   }
 
   setReady(
@@ -517,7 +554,7 @@ export class GameRoomService {
     }
 
     const now = this.now();
-    room.game = createInitialGame(this.config, {
+    room.game = createInitialGame(room.config, {
       id: `${room.mode}-${room.code}-${now}`,
       mode: room.mode,
       firstPlayerId: room.hostPlayerId,

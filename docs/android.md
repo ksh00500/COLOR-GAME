@@ -137,3 +137,17 @@ Play Store에 업로드할 때마다 `versionCode`를 반드시 증가시킨다.
 6. APK를 14일간 GitHub Actions artifact로 보관
 
 릴리스 AAB 서명 자동화는 Play Console과 업로드 키가 준비된 뒤 별도 workflow로 추가한다.
+
+## 수익화 준비 상태
+
+무료 컬러 칩 경제와 타일 색 상점은 서버 기능으로 동작한다. 창립자 팩, 프리미엄 팩,
+보상형 광고는 화면에 출시 예정으로만 표시하며 Play 상품 ID와 AdMob ID가 준비되기 전에는
+서버가 `FEATURE_LOCKED`로 거부한다.
+
+AdMob 계정이 준비되면 `deploy/android/app-ads.txt.example`의 게시자 ID를 실제 값으로
+교체하고 `https://tangogame.kro.kr/app-ads.txt`에서 제공한다. 개발 중에는 Google 공식
+테스트 광고 단위만 사용한다. 보상 지급은 앱 콜백이 아니라 EC2의 SSV 검증과 고유
+`transaction_id`를 기준으로 처리한다.
+
+Play Billing 연결 시 창립자·프리미엄 팩은 비소모성 일회성 상품으로 등록한다. 정식 출시
+시각과 창립자 판매 종료 시각은 서버 설정에 입력하며, 창립자 판매 기간은 정확히 30일이다.

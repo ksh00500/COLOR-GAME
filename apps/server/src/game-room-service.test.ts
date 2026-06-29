@@ -78,6 +78,27 @@ describe("GameRoomService", () => {
     expect(guestReady.value.game?.currentPlayerId).toBe(room.players[0].id);
   });
 
+  it("stores premium spectator settings and private reward identities", () => {
+    const { service } = createDeterministicService();
+    const room = service.createRoom(
+      { ...profile("Host"), accountId: "account-1", isGuest: false },
+      "private",
+      undefined,
+      false,
+    );
+    const joined = service.joinRoom(room.code, {
+      ...profile("Guest"),
+      guestId: "guest-device-1",
+    });
+    expect(joined.ok).toBe(true);
+    if (!joined.ok) return;
+    expect(joined.value.spectatorsAllowed).toBe(false);
+    expect(service.getRewardIdentities(room.code)).toEqual({
+      "player-1": "account:account-1",
+      "player-2": "guest:guest-device-1",
+    });
+  });
+
   it("rejects a move before the game starts", () => {
     const { service } = createDeterministicService();
     const room = service.createRoom(profile("Host"));

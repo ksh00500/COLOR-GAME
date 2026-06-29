@@ -16,6 +16,11 @@ export const roomCodeSchema = z
 
 export const roomCreateSchema = z.object({
   player: playerProfileSchema.optional(),
+  settings: z.object({
+    targetScore: z.union([z.literal(5), z.literal(7), z.literal(10)]),
+    turnTimeLimitSeconds: z.union([z.literal(30), z.literal(60), z.literal(90)]),
+    spectatorsAllowed: z.boolean().default(true),
+  }).optional(),
 });
 
 export const roomJoinSchema = z.object({

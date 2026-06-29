@@ -14,7 +14,7 @@ import { HelpPanel } from "../components/HelpPanel";
 import { PlayerCard } from "../components/PlayerCard";
 import { ResultPanel } from "../components/ResultPanel";
 import { SettingsPanel } from "../components/SettingsPanel";
-import { getAuthToken } from "../api";
+import { fetchEconomy, getAuthToken } from "../api";
 import { playOpponentTurnCue } from "../audio";
 import { shareUrl } from "../share";
 import { nativeBackEvent, publicAppUrl } from "../nativeApp";
@@ -136,6 +136,10 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
   const effectTimers = useRef<number[]>([]);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>("connecting");
   const [profile, setProfile] = useState(readProfile);
+  const [hasPremium, setHasPremium] = useState(false);
+  const [targetScore, setTargetScore] = useState<5 | 7 | 10>(7);
+  const [turnTimeLimitSeconds, setTurnTimeLimitSeconds] = useState<30 | 60 | 90>(60);
+  const [spectatorsAllowed, setSpectatorsAllowed] = useState(true);
   const [joinCode, setJoinCode] = useState(initialCode);
   const [room, setRoom] = useState<RoomSnapshot | null>(() => readRoomSnapshot(initialCode));
   const [playerId, setPlayerId] = useState<string | null>(initialPlayerId);
@@ -178,6 +182,15 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
     visualBoard === null &&
     !isBoardClearing &&
     connectionStatus === "connected";
+
+  useEffect(() => {
+    if (getAuthToken() === null) return;
+    void fetchEconomy()
+      .then((economy) => setHasPremium(
+        economy.entitlements.includes("premium") || economy.entitlements.includes("founder"),
+      ))
+      .catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     const handleNativeBack = (event: Event) => {
@@ -360,7 +373,10 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
     if (socket === null) return;
     setBusyLabel("방 생성 중");
     setMessage(null);
-    socket.emit("room:create", { player: profile }, (response: RoomAck) => {
+    socket.emit("room:create", {
+      player: profile,
+      settings: hasPremium ? { targetScore, turnTimeLimitSeconds, spectatorsAllowed } : undefined,
+    }, (response: RoomAck) => {
       setBusyLabel(null);
       if (!response.ok || response.room === undefined || response.playerId === undefined) {
         setMessage(describeError(response.error));
@@ -590,6 +606,52 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
                   </button>
                 ))}
               </div>
+            </fieldset>
+
+            <fieldset className="premium-room-settings">
+              <legend>{t("커스텀 방 설정")} {!hasPremium && <span>🔒 PREMIUM</span>}</legend>
+              <label>
+                <span>{t("목표 점수")}</span>
+                <div className="segmented-control three-up">
+                  {([5, 7, 10] as const).map((score) => (
+                    <button
+                      key={score}
+                      type="button"
+                      className={targetScore === score ? "active" : ""}
+                      disabled={!hasPremium}
+                      onClick={() => setTargetScore(score)}
+                    >
+                      {score}
+                    </button>
+                  ))}
+                </div>
+              </label>
+              <label>
+                <span>{t("턴 제한시간")}</span>
+                <div className="segmented-control three-up">
+                  {([30, 60, 90] as const).map((seconds) => (
+                    <button
+                      key={seconds}
+                      type="button"
+                      className={turnTimeLimitSeconds === seconds ? "active" : ""}
+                      disabled={!hasPremium}
+                      onClick={() => setTurnTimeLimitSeconds(seconds)}
+                    >
+                      {seconds}{t("초")}
+                    </button>
+                  ))}
+                </div>
+              </label>
+              <label className="premium-toggle-row">
+                <span>{t("관전 허용")}</span>
+                <input
+                  type="checkbox"
+                  checked={spectatorsAllowed}
+                  disabled={!hasPremium}
+                  onChange={(event) => setSpectatorsAllowed(event.target.checked)}
+                />
+              </label>
+              {!hasPremium && <small>{t("기본 사설방은 무료이며, 시간과 목표 점수 설정은 프리미엄 전용입니다.")}</small>}
             </fieldset>
 
             <button className="primary-action" type="button" onClick={createRoom} disabled={connectionStatus !== "connected" || busyLabel !== null}>

@@ -161,8 +161,10 @@ export interface RoomSnapshot {
   mode: GameMode;
   status: RoomStatus;
   hostPlayerId: PlayerId;
+  spectatorsAllowed?: boolean;
   players: [RoomPlayerSnapshot, RoomPlayerSnapshot | null];
   game: GameState | null;
+  config?: GameConfig;
   createdAt: number;
   updatedAt: number;
 }

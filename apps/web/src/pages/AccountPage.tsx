@@ -17,6 +17,7 @@ import {
 import { AppSidebar } from "../components/AppSidebar";
 import { RankBadge } from "../components/RankBadge";
 import { SettingsPanel } from "../components/SettingsPanel";
+import { EconomyAccountPanel } from "../components/EconomyAccountPanel";
 import { useI18n } from "../i18n";
 
 type AuthMode = "login" | "register";
@@ -182,6 +183,7 @@ export function AccountPage({ deletionEntry = false }: { deletionEntry?: boolean
               <button className="secondary-action" type="button" onClick={logout}>{t("로그아웃")}</button>
               <button className="danger-action" type="button" onClick={() => setDeleteOpen(true)}>{t("계정 삭제")}</button>
               <Link className="account-policy-link" to="/privacy">{t("개인정보 처리방침")}</Link>
+              <EconomyAccountPanel />
               <h3>{t("최근 전적")}</h3>
               {matches.length === 0 ? (
                 <p className="online-message">{t("아직 기록된 경기가 없습니다.")}</p>
@@ -207,7 +209,7 @@ export function AccountPage({ deletionEntry = false }: { deletionEntry?: boolean
           <section className="confirm-panel" role="dialog" aria-modal="true" aria-labelledby="delete-account-title" onMouseDown={(event) => event.stopPropagation()}>
             <p className="eyebrow">DELETE ACCOUNT</p>
             <h2 id="delete-account-title">{t("계정을 영구 삭제할까요?")}</h2>
-            <p>{t("계정, 출석 기록, 연결된 경기 기록과 리플레이가 삭제되며 복구할 수 없습니다.")}</p>
+            <p>{t("계정, 출석 기록, 컬러 칩 원장과 보유 스킨, 연결된 경기 기록과 리플레이가 삭제되며 복구할 수 없습니다.")}</p>
             <label className="online-field">
               <span>{t("현재 비밀번호")}</span>
               <input

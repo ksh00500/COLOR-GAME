@@ -62,6 +62,108 @@ export class ApiError extends Error {
   }
 }
 
+export type CosmeticRarity = "common" | "rare" | "epic" | "legendary";
+export type CosmeticCategory = "tile_color" | "placement_effect" | "score_effect" | "profile" | "victory_effect";
+export type CosmeticEquipSlot =
+  | "tile_color"
+  | "placement_effect"
+  | "score_effect"
+  | "victory_effect"
+  | "profile_frame"
+  | "profile_badge"
+  | "profile_title";
+export type TileLoadoutSlot = "colorA" | "colorB" | "colorC";
+
+export interface CosmeticItem {
+  id: string;
+  category: CosmeticCategory;
+  equipSlot: CosmeticEquipSlot;
+  rarity: CosmeticRarity;
+  nameKo: string;
+  nameEn: string;
+  localizedNames: Record<string, string>;
+  descriptionKo: string;
+  chipPrice: number;
+  visualKind: "solid" | "split" | "gradient" | "pattern" | "placeholder";
+  colors: string[];
+  pattern: string | null;
+  representativeColor: string | null;
+  availability: "active" | "upcoming" | "pack_only";
+  owned: boolean;
+  equippedSlots: TileLoadoutSlot[];
+}
+
+export interface EconomyOverview {
+  wallet: {
+    colorChips: number;
+    lifetimeEarned: number;
+    lifetimeSpent: number;
+  };
+  fragments: Record<CosmeticRarity, number>;
+  weeklyStore: {
+    weekKey: string;
+    endsAt: string;
+    items: CosmeticItem[];
+  };
+  inventory: CosmeticItem[];
+  loadout: Partial<Record<TileLoadoutSlot, string>>;
+  upcomingCategories: Array<Exclude<CosmeticCategory, "tile_color">>;
+  quests: Array<{
+    key: "welcome" | "attendance" | "attendance_streak" | "online_matches" | "first_online_win" | "reward_ad";
+    cycleKey: string;
+    rewardChips: number;
+    claimed: boolean;
+    claimable: boolean;
+    progress: number;
+    goal: number;
+  }>;
+  ledger: Array<{
+    id: string;
+    delta: number;
+    reason: string;
+    balanceAfter: number;
+    createdAt: string;
+  }>;
+  entitlements: string[];
+  monetization: {
+    rewardAds: {
+      status: "upcoming" | "available" | "ended";
+      rewardChips: number;
+      dailyLimit: number;
+      usedToday: number;
+    };
+    founderPack: {
+      status: "upcoming" | "available" | "ended";
+      referencePriceKrw: number;
+      bonusChips: number;
+      startsAt: string | null;
+      endsAt: string | null;
+    };
+    premiumPack: {
+      status: "upcoming" | "available" | "ended";
+      referencePriceKrw: number;
+    };
+  };
+  box: {
+    priceChips: number;
+    fragmentRequirement: number;
+    probabilityVersion: string;
+    outcomes: Array<{
+      type: "fragment" | "cosmetic";
+      rarity: CosmeticRarity;
+      probability: number;
+    }>;
+  };
+}
+
+export interface CosmeticOutcome {
+  type: "fragment" | "cosmetic";
+  rarity: CosmeticRarity;
+  cosmetic: CosmeticItem | null;
+  fragmentQuantity: number;
+  overview: EconomyOverview;
+}
+
 export const getAuthToken = (): string | null =>
   window.localStorage.getItem(tokenKey);
 
@@ -183,4 +285,68 @@ export const recordVisitorHeartbeat = async (
 export const fetchVisitorCounts = async (): Promise<VisitorCounts> => {
   const data = await request<{ visitors: VisitorCounts }>("/analytics/visitors");
   return data.visitors;
+};
+
+const browserTimeZone = (): string =>
+  Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+
+export const fetchEconomy = async (): Promise<EconomyOverview> => {
+  const query = new URLSearchParams({ timeZone: browserTimeZone() });
+  const data = await request<{ economy: EconomyOverview }>(`/economy/overview?${query}`);
+  return data.economy;
+};
+
+export const claimEconomyQuest = async (
+  quest: "welcome" | "attendance" | "attendance-streak" | "first-online-win",
+): Promise<{ economy: EconomyOverview; account?: Account }> => {
+  return request<{ economy: EconomyOverview; account?: Account }>(
+    `/economy/quests/${quest}/claim`,
+    {
+      method: "POST",
+      body: JSON.stringify({ timeZone: browserTimeZone() }),
+    },
+  );
+};
+
+export const purchaseCosmetic = async (cosmeticId: string): Promise<EconomyOverview> => {
+  const data = await request<{ economy: EconomyOverview }>(
+    `/economy/store/${encodeURIComponent(cosmeticId)}/purchase`,
+    {
+      method: "POST",
+      body: JSON.stringify({ timeZone: browserTimeZone() }),
+    },
+  );
+  return data.economy;
+};
+
+export const openPaletteBox = async (): Promise<CosmeticOutcome> => {
+  const data = await request<{ outcome: CosmeticOutcome }>("/economy/box/open", {
+    method: "POST",
+    body: JSON.stringify({ timeZone: browserTimeZone() }),
+  });
+  return data.outcome;
+};
+
+export const combineCosmeticFragments = async (
+  rarity: CosmeticRarity,
+): Promise<CosmeticOutcome> => {
+  const data = await request<{ outcome: CosmeticOutcome }>("/economy/fragments/combine", {
+    method: "POST",
+    body: JSON.stringify({ rarity, timeZone: browserTimeZone() }),
+  });
+  return data.outcome;
+};
+
+export const equipTileColor = async (
+  slot: TileLoadoutSlot,
+  cosmeticId: string,
+): Promise<EconomyOverview> => {
+  const data = await request<{ economy: EconomyOverview }>(
+    `/economy/loadout/tile/${slot}`,
+    {
+      method: "PUT",
+      body: JSON.stringify({ cosmeticId, timeZone: browserTimeZone() }),
+    },
+  );
+  return data.economy;
 };
