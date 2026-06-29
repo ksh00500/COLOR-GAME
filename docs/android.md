@@ -118,12 +118,12 @@ Play Store에 업로드할 때마다 `versionCode`를 반드시 증가시킨다.
 5. Play Console 내부 테스트 업로드
 6. App Links 인증서 지문 배포
 7. 개인정보 처리방침·계정 삭제·Data Safety 검토
-8. `apps/web/.env.android`의 `VITE_SUPPORT_EMAIL`에 실제 지원 이메일 입력
+8. Play Store 등록 정보의 지원 이메일을 `data.official.kr@gmail.com`으로 설정
 
 앱과 웹에는 `/privacy`, `/account-deletion` 경로가 준비되어 있다. 계정 삭제는 현재
 비밀번호를 다시 확인하고 계정 정보, 출석, 연결된 경기 기록과 리플레이를 함께 삭제한다.
-개인정보 처리방침 문안은 기능 구현 기준의 초안이므로 공개 출시 전에 실제 개발자 정보와
-지원 이메일을 입력하고 법률 검토를 거친다.
+개인정보 처리방침 문안은 기능 구현 기준의 초안이므로 공개 출시 전에 실제 개발자 정보를
+입력하고 법률 검토를 거친다.
 
 ## CI
 

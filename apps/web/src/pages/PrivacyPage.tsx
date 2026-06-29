@@ -7,7 +7,7 @@ import { useI18n } from "../i18n";
 export function PrivacyPage() {
   const { t } = useI18n();
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const supportEmail = import.meta.env.VITE_SUPPORT_EMAIL?.trim();
+  const supportEmail = import.meta.env.VITE_SUPPORT_EMAIL?.trim() || "data.official.kr@gmail.com";
 
   return (
     <main className="online-page app-frame">
@@ -38,11 +38,7 @@ export function PrivacyPage() {
         </section>
         <section>
           <h2>{t("문의")}</h2>
-          {supportEmail ? (
-            <a href={`mailto:${supportEmail}`}>{supportEmail}</a>
-          ) : (
-            <p>{t("지원 이메일은 정식 출시 전에 이 페이지와 Play Store 등록 정보에 추가됩니다.")}</p>
-          )}
+          <a href={`mailto:${supportEmail}`}>{supportEmail}</a>
         </section>
       </article>
       <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
