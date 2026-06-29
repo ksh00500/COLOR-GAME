@@ -29,7 +29,7 @@ location ~ ^/(health|livez|readyz|metrics)$ {
   proxy_set_header X-Forwarded-Proto $scheme;
 }
 
-location ~ ^/(analytics|attendance|auth|profiles|replays|rooms)/ {
+location ~ ^/(ads|analytics|attendance|auth|economy|profiles|replays|rooms)/ {
   proxy_pass http://127.0.0.1:8080$request_uri;
   proxy_http_version 1.1;
   proxy_set_header Host $host;
