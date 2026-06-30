@@ -47,4 +47,20 @@ describe("cosmetic backgrounds", () => {
       colors: ["#202124", "#d7ad45", "#6e5524"],
     }))).toContain("#d7ad45");
   });
+
+  it("renders distinct refined patterns for every legendary skin", () => {
+    const stainedGlass = cosmeticBackground(item({
+      visualKind: "pattern",
+      pattern: "stained-glass",
+      colors: ["#e85a6b", "#e8c84f", "#45a7c6"],
+    }));
+    const spectrum = cosmeticBackground(item({
+      visualKind: "pattern",
+      pattern: "tango-spectrum",
+      colors: ["#d84d63", "#36a173", "#4d6ed7"],
+    }));
+    expect(stainedGlass).toContain("conic-gradient");
+    expect(stainedGlass).toContain("49.5%");
+    expect(spectrum).toContain("repeating-linear-gradient");
+  });
 });

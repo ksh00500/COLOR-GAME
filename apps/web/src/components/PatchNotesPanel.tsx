@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { useI18n } from "../i18n";
 
-const latestPatchVersion = "20260625-V1.1.1";
+const latestPatchVersion = "20260630-v1.1.2";
 const patchNotesKey = `tango-patch-notes-seen-${latestPatchVersion}`;
 const patchNotesOpenEvent = "tango:open-patch-notes";
 
@@ -26,6 +26,44 @@ export interface PatchNoteRelease {
 export const patchNoteReleases: PatchNoteRelease[] = [
   {
     version: latestPatchVersion,
+    title: "컬러 칩 경제와 타일 스킨",
+    date: "2026-06-30",
+    summary: "무료 컬러 칩 경제, 36종 타일 스킨, 출석 팝업과 웹·모바일 화면 개선을 함께 담은 패치입니다.",
+    entries: [
+      {
+        tag: "ECONOMY",
+        title: "무료 컬러 칩 경제 시작",
+        body: "신규 계정, 출석, 연속 출석, 일반·경쟁전과 첫 승리 보상을 추가했습니다. 광고와 유료 상품은 정식 출시 전까지 잠금 상태로 유지됩니다.",
+      },
+      {
+        tag: "COSMETIC",
+        title: "타일 스킨 36종과 스킨 도감",
+        body: "단색, 50:50 분할, 그라데이션, 고유 문양으로 구성된 타일 스킨을 추가했습니다. 상점의 스킨 도감에서 전체 목록과 수집 현황을 확인할 수 있습니다.",
+      },
+      {
+        tag: "STORE",
+        title: "주간 상점과 팔레트 상자",
+        body: "매주 바뀌는 타일 상점과 등급별 파편, 팔레트 상자를 추가했습니다. 구매한 타일은 빨강·파랑·초록 슬롯에 각각 장착할 수 있습니다.",
+      },
+      {
+        tag: "ATTENDANCE",
+        title: "로그인 출석 팝업",
+        body: "로그인하면 오늘의 출석 팝업이 열립니다. 7일 진행도와 연속 출석을 확인하고 컬러 칩 보상을 바로 받을 수 있습니다.",
+      },
+      {
+        tag: "COUPON",
+        title: "쿠폰 보상",
+        body: "마이 Tango에서 쿠폰 코드를 등록해 컬러 칩, 팔레트 상자, 파편과 스킨 보상을 받을 수 있습니다.",
+      },
+      {
+        tag: "UI",
+        title: "웹·모바일 화면 개선",
+        body: "메인, 상점, 마이페이지와 패치노트의 크기와 정렬을 다듬고, 모바일 내비게이션과 게임 모드 영역을 화면에 맞게 개선했습니다.",
+      },
+    ],
+  },
+  {
+    version: "20260625-V1.1.1",
     title: "온보딩과 AI 난이도 정리",
     date: "2026-06-25",
     summary: "튜토리얼을 실제 규칙 이해 중심으로 다시 쓰고, AI 난이도와 로그인 접근성을 정리한 패치입니다.",

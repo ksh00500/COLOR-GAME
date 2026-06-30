@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { AccountPage } from "./pages/AccountPage";
 import { GamePage } from "./pages/GamePage";
 import { LeaderboardPage } from "./pages/LeaderboardPage";
@@ -14,13 +14,17 @@ import { PatchNotesPanel } from "./components/PatchNotesPanel";
 import { TutorialPanel } from "./components/TutorialPanel";
 import { NativeAppBridge } from "./components/NativeAppBridge";
 import { CosmeticLoadoutBridge } from "./components/CosmeticLoadoutBridge";
+import { AttendanceCheckInModal } from "./components/AttendanceCheckInModal";
+import { AdminPage } from "./pages/AdminPage";
 
 export function App() {
+  const adminRoute = useLocation().pathname.startsWith("/admin");
   return (
     <>
-      <NativeAppBridge />
-      <CosmeticLoadoutBridge />
+      {!adminRoute && <NativeAppBridge />}
+      {!adminRoute && <CosmeticLoadoutBridge />}
       <Routes>
+        <Route path="/admin" element={<AdminPage />} />
         <Route path="/" element={<LobbyPage />} />
         <Route path="/game" element={<GamePage />} />
         <Route path="/matchmaking" element={<MatchmakingPage />} />
@@ -36,8 +40,9 @@ export function App() {
         <Route path="/spectate/:code" element={<SpectatePage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-      <TutorialPanel />
-      <PatchNotesPanel />
+      {!adminRoute && <TutorialPanel />}
+      {!adminRoute && <PatchNotesPanel />}
+      {!adminRoute && <AttendanceCheckInModal />}
     </>
   );
 }

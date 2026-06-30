@@ -8,6 +8,7 @@
     "build": "tsup",
     "db:check": "tsx src/db/check.ts",
     "db:migrate": "tsx src/db/migrate.ts",
+    "admin:bootstrap": "tsx src/db/bootstrap-admin.ts",
     "ai:export-training": "tsx src/db/export-ai-training.ts",
     "start": "node dist/main.js",
     "test": "vitest run",

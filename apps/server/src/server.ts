@@ -37,6 +37,12 @@ import {
   type TileLoadoutSlot,
 } from "./economy-store.js";
 import {
+  NullAdminStore,
+  createAdminToken,
+  verifyAdminToken,
+  type AdminStore,
+} from "./admin-store.js";
+import {
   gameMoveSchema,
   gameResignSchema,
   playerProfileSchema,
@@ -53,6 +59,7 @@ export interface ServerOptions {
   analyticsStore?: AnalyticsStore;
   matchmakingWaitStore?: MatchmakingWaitStore;
   economyStore?: EconomyStore;
+  adminStore?: AdminStore;
   authSecret?: string;
   tokenTtlSeconds?: number;
   requireDatabaseHealth?: boolean;
@@ -125,6 +132,42 @@ const tileLoadoutParamsSchema = z.object({
 const fragmentCombineSchema = z.object({
   rarity: z.enum(["common", "rare", "epic", "legendary"]),
 });
+
+const couponRewardSchema = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("color_chips"), amount: z.number().int().min(1).max(1_000_000) }),
+  z.object({ type: z.literal("palette_box_ticket"), amount: z.number().int().min(1).max(1_000) }),
+  z.object({
+    type: z.literal("fragments"),
+    rarity: z.enum(["common", "rare", "epic", "legendary"]),
+    amount: z.number().int().min(1).max(10_000),
+  }),
+  z.object({ type: z.literal("cosmetic"), cosmeticId: z.string().trim().min(1).max(80) }),
+  z.object({
+    type: z.literal("random_cosmetic"),
+    cosmeticIds: z.array(z.string().trim().min(1).max(80)).min(1).max(100),
+    pickCount: z.number().int().min(1).max(20),
+  }).refine((value) => value.pickCount <= new Set(value.cosmeticIds).size, {
+    message: "pickCount cannot exceed the number of unique cosmetic candidates.",
+  }),
+  z.object({ type: z.literal("entitlement"), entitlement: z.literal("premium") }),
+]);
+
+const couponInputSchema = z.object({
+  code: z.string().trim().min(3).max(40).regex(/^[A-Za-z0-9_-]+$/),
+  name: z.string().trim().min(1).max(80),
+  description: z.string().trim().max(500).optional().default(""),
+  rewards: z.array(couponRewardSchema).min(1).max(20),
+  startsAt: z.string().datetime().nullable().optional(),
+  expiresAt: z.string().datetime().nullable().optional(),
+  maxRedemptions: z.number().int().positive().max(10_000_000).nullable().optional(),
+  active: z.boolean().optional().default(true),
+}).refine(
+  (value) => !value.startsAt || !value.expiresAt || new Date(value.expiresAt) > new Date(value.startsAt),
+  { message: "expiresAt must be later than startsAt." },
+);
+
+const couponIdParamsSchema = z.object({ couponId: z.string().uuid() });
+const accountIdParamsSchema = z.object({ accountId: z.string().min(1).max(80) });
 
 let cachedWebIndexHtml: string | null | undefined;
 const webIndexUrl = new URL("../../web/dist/index.html", import.meta.url);
@@ -221,6 +264,7 @@ export const createServer = (options: ServerOptions = {}) => {
   const analyticsStore = options.analyticsStore ?? new NullAnalyticsStore();
   const matchmakingWaitStore = options.matchmakingWaitStore ?? new NullMatchmakingWaitStore();
   const economyStore = options.economyStore ?? new NullEconomyStore();
+  const adminStore = options.adminStore ?? new NullAdminStore();
   const metrics = new ServerMetrics();
   const authSecret = options.authSecret ?? "dev-only-color-game-secret-for-local-development";
   const tokenTtlSeconds = options.tokenTtlSeconds ?? 60 * 60 * 24 * 30;
@@ -303,6 +347,13 @@ export const createServer = (options: ServerOptions = {}) => {
     const payload = verifyAuthToken(token, authSecret);
     if (payload === null) return null;
     return accountStore.getAccountForSession(payload.accountId, payload.sessionId);
+  };
+
+  const authenticateAdmin = async (token: string | null) => {
+    if (token === null || !adminStore.enabled) return null;
+    const payload = verifyAdminToken(token, authSecret);
+    if (payload === null) return null;
+    return adminStore.getAdminForSession(payload.adminId, payload.sessionId);
   };
 
   const disconnectAccountSockets = (accountId: string): void => {
@@ -650,6 +701,165 @@ export const createServer = (options: ServerOptions = {}) => {
     return reply.code(204).send();
   });
 
+  app.post("/admin/auth/login", async (request, reply) => {
+    if (!adminStore.enabled) {
+      return reply.code(503).send({ code: "DATABASE_DISABLED" });
+    }
+    const parsed = authSchema.safeParse(request.body ?? {});
+    if (!parsed.success) {
+      return reply.code(400).send({ code: "INVALID_REQUEST", details: parsed.error.flatten() });
+    }
+    const admin = await adminStore.authenticate(parsed.data.email, parsed.data.password);
+    if (admin === null) {
+      return reply.code(401).send({ code: "INVALID_CREDENTIALS" });
+    }
+    const sessionId = await adminStore.rotateSession(admin.id);
+    if (sessionId === null) return reply.code(500).send({ code: "SESSION_CREATE_FAILED" });
+    return {
+      token: createAdminToken(admin.id, sessionId, authSecret, 60 * 60 * 12),
+      admin,
+    };
+  });
+
+  app.get("/admin/auth/me", async (request, reply) => {
+    const admin = await authenticateAdmin(bearerToken(request.headers.authorization));
+    if (admin === null) return reply.code(401).send({ code: "UNAUTHORIZED" });
+    return { admin };
+  });
+
+  app.get("/admin/catalog", async (request, reply) => {
+    const admin = await authenticateAdmin(bearerToken(request.headers.authorization));
+    if (admin === null) return reply.code(401).send({ code: "UNAUTHORIZED" });
+    return { catalog: await adminStore.listCatalog() };
+  });
+
+  app.get("/admin/coupons", async (request, reply) => {
+    const admin = await authenticateAdmin(bearerToken(request.headers.authorization));
+    if (admin === null) return reply.code(401).send({ code: "UNAUTHORIZED" });
+    return { coupons: await adminStore.listCoupons() };
+  });
+
+  app.post("/admin/coupons", async (request, reply) => {
+    const admin = await authenticateAdmin(bearerToken(request.headers.authorization));
+    if (admin === null) return reply.code(401).send({ code: "UNAUTHORIZED" });
+    const parsed = couponInputSchema.safeParse(request.body ?? {});
+    if (!parsed.success) {
+      return reply.code(400).send({ code: "INVALID_REQUEST", details: parsed.error.flatten() });
+    }
+    try {
+      return reply.code(201).send({ coupon: await adminStore.createCoupon(admin.id, parsed.data) });
+    } catch (error) {
+      app.log.warn({ err: error }, "Coupon creation failed");
+      return reply.code(409).send({ code: "COUPON_CODE_EXISTS" });
+    }
+  });
+
+  app.put("/admin/coupons/:couponId", async (request, reply) => {
+    const admin = await authenticateAdmin(bearerToken(request.headers.authorization));
+    if (admin === null) return reply.code(401).send({ code: "UNAUTHORIZED" });
+    const params = couponIdParamsSchema.safeParse(request.params);
+    const body = couponInputSchema.safeParse(request.body ?? {});
+    if (!params.success || !body.success) return reply.code(400).send({ code: "INVALID_REQUEST" });
+    try {
+      const coupon = await adminStore.updateCoupon(admin.id, params.data.couponId, body.data);
+      return coupon === null
+        ? reply.code(404).send({ code: "COUPON_NOT_FOUND" })
+        : { coupon };
+    } catch (error) {
+      app.log.warn({ err: error }, "Coupon update failed");
+      return reply.code(409).send({ code: "COUPON_UPDATE_CONFLICT" });
+    }
+  });
+
+  app.delete("/admin/coupons/:couponId", async (request, reply) => {
+    const admin = await authenticateAdmin(bearerToken(request.headers.authorization));
+    if (admin === null) return reply.code(401).send({ code: "UNAUTHORIZED" });
+    const params = couponIdParamsSchema.safeParse(request.params);
+    if (!params.success) return reply.code(400).send({ code: "INVALID_REQUEST" });
+    return (await adminStore.deleteCoupon(admin.id, params.data.couponId))
+      ? reply.code(204).send()
+      : reply.code(404).send({ code: "COUPON_NOT_FOUND" });
+  });
+
+  app.get("/admin/users", async (request, reply) => {
+    const admin = await authenticateAdmin(bearerToken(request.headers.authorization));
+    if (admin === null) return reply.code(401).send({ code: "UNAUTHORIZED" });
+    const parsed = z.object({
+      query: z.string().trim().max(120).default(""),
+      limit: z.coerce.number().int().min(1).max(100).default(50),
+    }).safeParse(request.query ?? {});
+    if (!parsed.success) return reply.code(400).send({ code: "INVALID_REQUEST" });
+    return { users: await adminStore.listUsers(parsed.data.query, parsed.data.limit) };
+  });
+
+  app.post("/admin/users/:accountId/chips", async (request, reply) => {
+    const admin = await authenticateAdmin(bearerToken(request.headers.authorization));
+    if (admin === null) return reply.code(401).send({ code: "UNAUTHORIZED" });
+    const params = accountIdParamsSchema.safeParse(request.params);
+    const body = z.object({
+      delta: z.number().int().min(-1_000_000).max(1_000_000).refine((value) => value !== 0),
+      reason: z.string().trim().min(2).max(200),
+    }).safeParse(request.body ?? {});
+    if (!params.success || !body.success) return reply.code(400).send({ code: "INVALID_REQUEST" });
+    try {
+      const user = await adminStore.adjustUserChips(
+        admin.id,
+        params.data.accountId,
+        body.data.delta,
+        body.data.reason,
+      );
+      return user === null ? reply.code(404).send({ code: "PROFILE_NOT_FOUND" }) : { user };
+    } catch {
+      return reply.code(409).send({ code: "ADMIN_CHIP_ADJUSTMENT_FAILED" });
+    }
+  });
+
+  app.post("/admin/users/:accountId/cosmetics", async (request, reply) => {
+    const admin = await authenticateAdmin(bearerToken(request.headers.authorization));
+    if (admin === null) return reply.code(401).send({ code: "UNAUTHORIZED" });
+    const params = accountIdParamsSchema.safeParse(request.params);
+    const body = z.object({
+      cosmeticId: z.string().trim().min(1).max(80),
+      reason: z.string().trim().min(2).max(200),
+    }).safeParse(request.body ?? {});
+    if (!params.success || !body.success) return reply.code(400).send({ code: "INVALID_REQUEST" });
+    const granted = await adminStore.grantUserCosmetic(
+      admin.id,
+      params.data.accountId,
+      body.data.cosmeticId,
+      body.data.reason,
+    );
+    return { granted };
+  });
+
+  app.put("/admin/users/:accountId/suspension", async (request, reply) => {
+    const admin = await authenticateAdmin(bearerToken(request.headers.authorization));
+    if (admin === null) return reply.code(401).send({ code: "UNAUTHORIZED" });
+    const params = accountIdParamsSchema.safeParse(request.params);
+    const body = z.object({
+      suspended: z.boolean(),
+      reason: z.string().trim().max(200).default(""),
+    }).safeParse(request.body ?? {});
+    if (!params.success || !body.success) return reply.code(400).send({ code: "INVALID_REQUEST" });
+    const updated = await adminStore.setUserSuspension(
+      admin.id,
+      params.data.accountId,
+      body.data.suspended,
+      body.data.reason,
+    );
+    return updated ? { updated: true } : reply.code(404).send({ code: "PROFILE_NOT_FOUND" });
+  });
+
+  app.get("/admin/audit", async (request, reply) => {
+    const admin = await authenticateAdmin(bearerToken(request.headers.authorization));
+    if (admin === null) return reply.code(401).send({ code: "UNAUTHORIZED" });
+    const parsed = z.object({
+      limit: z.coerce.number().int().min(1).max(200).default(100),
+    }).safeParse(request.query ?? {});
+    if (!parsed.success) return reply.code(400).send({ code: "INVALID_REQUEST" });
+    return { entries: await adminStore.listAudit(parsed.data.limit) };
+  });
+
   app.get("/leaderboard", async (request, reply) => {
     if (acceptsHtml(request.headers.accept)) {
       const indexHtml = await readWebIndexHtml();
@@ -719,6 +929,35 @@ export const createServer = (options: ServerOptions = {}) => {
       return reply.code(400).send({ code: "INVALID_REQUEST", details: parsed.error.flatten() });
     }
     return { economy: await economyStore.getOverview(account.id, account.attendanceStreak) };
+  });
+
+  app.post("/coupons/redeem", async (request, reply) => {
+    const account = await authenticateToken(bearerToken(request.headers.authorization));
+    if (account === null) return reply.code(401).send({ code: "UNAUTHORIZED" });
+    if (!adminStore.enabled || !economyStore.enabled) {
+      return reply.code(503).send({ code: "DATABASE_DISABLED" });
+    }
+    const parsed = z.object({
+      code: z.string().trim().min(3).max(40),
+    }).safeParse(request.body ?? {});
+    if (!parsed.success) return reply.code(400).send({ code: "INVALID_REQUEST" });
+    try {
+      return {
+        redemption: await adminStore.redeemCoupon(account.id, parsed.data.code),
+        economy: await economyStore.getOverview(account.id, account.attendanceStreak),
+      };
+    } catch (error) {
+      const code = error instanceof Error ? error.message : "COUPON_REDEEM_FAILED";
+      const status = code === "COUPON_NOT_FOUND" ? 404
+        : code === "COUPON_ALREADY_REDEEMED"
+          || code === "COUPON_EXPIRED"
+          || code === "COUPON_INACTIVE"
+          || code === "COUPON_NOT_STARTED"
+          || code === "COUPON_LIMIT_REACHED"
+          ? 409
+          : 500;
+      return reply.code(status).send({ code });
+    }
   });
 
   app.post("/economy/quests/welcome/claim", async (request, reply) => {
@@ -1313,6 +1552,7 @@ export const createServer = (options: ServerOptions = {}) => {
     await historyStore.close();
     await accountStore.close();
     await economyStore.close();
+    await adminStore.close();
     await analyticsStore.close();
     await matchmakingWaitStore.close();
   });

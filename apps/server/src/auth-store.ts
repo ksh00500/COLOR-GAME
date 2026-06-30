@@ -278,7 +278,7 @@ export class PostgresAccountStore implements AccountStore {
 
   async authenticate(email: string, password: string): Promise<AccountSummary | null> {
     const result = await this.pool.query<AccountRow>(
-      "select * from accounts where email = $1",
+      "select * from accounts where email = $1 and suspended_at is null",
       [normalizeEmail(email)],
     );
     const row = result.rows[0];
@@ -299,7 +299,7 @@ export class PostgresAccountStore implements AccountStore {
 
   async getAccountForSession(accountId: string, sessionId: string): Promise<AccountSummary | null> {
     const result = await this.pool.query<AccountRow>(
-      "select * from accounts where id = $1 and active_session_id = $2",
+      "select * from accounts where id = $1 and active_session_id = $2 and suspended_at is null",
       [accountId, sessionId],
     );
     const row = result.rows[0];
@@ -313,7 +313,7 @@ export class PostgresAccountStore implements AccountStore {
         update accounts set
           active_session_id = $2,
           updated_at = now()
-        where id = $1
+        where id = $1 and suspended_at is null
         returning *
       `,
       [accountId, sessionId],

@@ -76,6 +76,19 @@ pnpm --filter @color-game/server db:check
 
 `db:migrate`는 `apps/server/db/migrations`의 SQL 파일을 `schema_migrations` 테이블로 추적합니다.
 
+관리자 계정은 일반 회원과 분리되어 있으며, 마이그레이션 후 한 번만 환경변수로 생성합니다.
+평문 비밀번호를 저장소나 `server.env`에 남기지 말고 명령이 끝나면 셸 환경변수를 지웁니다.
+
+```bash
+export ADMIN_EMAIL='admin@example.com'
+read -s -p 'Admin password: ' ADMIN_PASSWORD
+export ADMIN_PASSWORD
+pnpm --filter @color-game/server admin:bootstrap
+unset ADMIN_EMAIL ADMIN_PASSWORD
+```
+
+관리자 화면은 공개 메뉴에 노출되지 않는 `/admin` 경로이며 관리자 전용 세션을 사용합니다.
+
 ## HTTP and Socket Surface
 
 Nginx는 다음 경로를 `127.0.0.1:8080` 서버로 프록시해야 합니다.
@@ -85,6 +98,8 @@ Nginx는 다음 경로를 `127.0.0.1:8080` 서버로 프록시해야 합니다.
 - `POST /analytics/heartbeat`, `GET /analytics/visitors`
 - `POST /auth/register`, `POST /auth/login`, `GET /auth/me`
 - `POST /attendance/check-in`
+- `POST /coupons/redeem`
+- `/admin/*` (관리자 인증, 쿠폰, 유저 관리, 감사 로그)
 - `GET /leaderboard`
 - `GET /profiles/:accountId`, `GET /profiles/:accountId/matches`
 - `GET /replays/:gameId`
