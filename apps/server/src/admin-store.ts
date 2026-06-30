@@ -809,10 +809,11 @@ export class PostgresAdminStore implements AdminStore {
 export const createAdminStoreFromEnv = (): AdminStore => {
   const connectionString = process.env.DATABASE_URL;
   if (connectionString === undefined || connectionString.trim() === "") return new NullAdminStore();
-  return new PostgresAdminStore({
-    connectionString,
-    ssl: process.env.DATABASE_SSL === "true",
-  });
+  const config: PoolConfig = { connectionString };
+  if (process.env.DATABASE_SSL === "true") {
+    config.ssl = { rejectUnauthorized: false };
+  }
+  return new PostgresAdminStore(config);
 };
 
 const tokenSign = (value: string, secret: string) =>
