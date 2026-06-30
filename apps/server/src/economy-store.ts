@@ -40,6 +40,7 @@ export interface EconomyCatalogItem {
   visualKind: "solid" | "split" | "gradient" | "pattern" | "placeholder";
   colors: string[];
   pattern: string | null;
+  splitAngle: number | null;
   representativeColor: string | null;
   availability: "active" | "upcoming" | "pack_only";
   owned: boolean;
@@ -149,6 +150,12 @@ export interface EconomyStore {
     accountId: string,
     slot: TileLoadoutSlot,
     cosmeticId: string,
+    allowSimilar?: boolean,
+    attendanceStreak?: number,
+  ): Promise<EconomyOverview>;
+  resetTileColor(
+    accountId: string,
+    slot: TileLoadoutSlot,
     attendanceStreak?: number,
   ): Promise<EconomyOverview>;
   hasEntitlement(accountId: string, entitlement: "founder" | "premium"): Promise<boolean>;
@@ -187,7 +194,7 @@ interface CatalogRow {
   description_ko: string;
   chip_price: number;
   visual_kind: EconomyCatalogItem["visualKind"];
-  visual_config: { colors?: unknown; pattern?: unknown } | null;
+  visual_config: { colors?: unknown; pattern?: unknown; splitAngle?: unknown } | null;
   representative_color: string | null;
   availability: EconomyCatalogItem["availability"];
   owned: boolean;
@@ -258,6 +265,9 @@ const toCatalogItem = (
   visualKind: row.visual_kind,
   colors: readColors(row.visual_config),
   pattern: typeof row.visual_config?.pattern === "string" ? row.visual_config.pattern : null,
+  splitAngle: typeof row.visual_config?.splitAngle === "number"
+    ? row.visual_config.splitAngle
+    : null,
   representativeColor: row.representative_color,
   availability: row.availability,
   owned: row.owned,
@@ -354,25 +364,53 @@ export const oklabDistance = (first: string, second: string): number => {
 };
 
 export const validateTileColorCombination = (
-  items: Array<{ id: string; representativeColor: string }>,
+  items: Array<{
+    id: string;
+    representativeColor: string;
+    slot?: TileLoadoutSlot;
+  }>,
+  allowSimilar = false,
 ): void => {
   if (new Set(items.map((item) => item.id)).size !== items.length) {
     throw new Error("DUPLICATE_TILE_COLOR");
   }
+  const conflicts: TileColorConflict[] = [];
   for (let first = 0; first < items.length; first += 1) {
     for (let second = first + 1; second < items.length; second += 1) {
       const left = items[first];
       const right = items[second];
-      if (
-        left !== undefined
-        && right !== undefined
-        && oklabDistance(left.representativeColor, right.representativeColor) < 0.1
-      ) {
-        throw new Error("TILE_COLORS_TOO_SIMILAR");
+      if (left !== undefined && right !== undefined) {
+        const distance = oklabDistance(left.representativeColor, right.representativeColor);
+        if (distance < 0.1) {
+          conflicts.push({
+            slots: [
+              left.slot ?? (["colorA", "colorB", "colorC"][first] as TileLoadoutSlot),
+              right.slot ?? (["colorA", "colorB", "colorC"][second] as TileLoadoutSlot),
+            ],
+            distance,
+          });
+        }
       }
     }
   }
+  if (conflicts.length > 0 && !allowSimilar) {
+    throw new TileColorSimilarityError(conflicts);
+  }
 };
+
+export interface TileColorConflict {
+  slots: [TileLoadoutSlot, TileLoadoutSlot];
+  distance: number;
+}
+
+export class TileColorSimilarityError extends Error {
+  readonly code = "TILE_COLORS_TOO_SIMILAR";
+
+  constructor(readonly conflicts: TileColorConflict[]) {
+    super("TILE_COLORS_TOO_SIMILAR");
+    this.name = "TileColorSimilarityError";
+  }
+}
 
 const defaultTileSafetyColors: Record<TileLoadoutSlot, string> = {
   colorA: "#b84d67",
@@ -398,6 +436,7 @@ export class NullEconomyStore implements EconomyStore {
   async openBox(): Promise<BoxOutcome> { throw new Error("DATABASE_DISABLED"); }
   async combineFragments(): Promise<BoxOutcome> { throw new Error("DATABASE_DISABLED"); }
   async equipTileColor(): Promise<EconomyOverview> { throw new Error("DATABASE_DISABLED"); }
+  async resetTileColor(): Promise<EconomyOverview> { throw new Error("DATABASE_DISABLED"); }
   async hasEntitlement(): Promise<boolean> { return false; }
   async recordFinishedRoom(): Promise<void> {}
 }
@@ -1070,6 +1109,7 @@ export class PostgresEconomyStore implements EconomyStore {
     accountId: string,
     slot: TileLoadoutSlot,
     cosmeticId: string,
+    allowSimilar = false,
     attendanceStreak = 0,
   ): Promise<EconomyOverview> {
     const client = await this.pool.connect();
@@ -1106,12 +1146,15 @@ export class PostgresEconomyStore implements EconomyStore {
             ? {
                 id: `default:${loadoutSlot}`,
                 representativeColor: defaultTileSafetyColors[loadoutSlot],
+                slot: loadoutSlot,
               }
             : {
                 id,
                 representativeColor: selectedById.get(id) ?? defaultTileSafetyColors[loadoutSlot],
+                slot: loadoutSlot,
               };
         }),
+        allowSimilar,
       );
       const column: Record<TileLoadoutSlot, string> = {
         colorA: "tile_color_a_id",
@@ -1122,6 +1165,35 @@ export class PostgresEconomyStore implements EconomyStore {
         `update account_loadouts set ${column[slot]} = $2, updated_at = now()
          where account_id = $1`,
         [accountId, cosmeticId],
+      );
+      await client.query("commit");
+    } catch (error) {
+      await client.query("rollback");
+      throw error;
+    } finally {
+      client.release();
+    }
+    return this.getOverview(accountId, attendanceStreak);
+  }
+
+  async resetTileColor(
+    accountId: string,
+    slot: TileLoadoutSlot,
+    attendanceStreak = 0,
+  ): Promise<EconomyOverview> {
+    const client = await this.pool.connect();
+    try {
+      await client.query("begin");
+      await this.ensureAccount(client, accountId);
+      const column: Record<TileLoadoutSlot, string> = {
+        colorA: "tile_color_a_id",
+        colorB: "tile_color_b_id",
+        colorC: "tile_color_c_id",
+      };
+      await client.query(
+        `update account_loadouts set ${column[slot]} = null, updated_at = now()
+         where account_id = $1`,
+        [accountId],
       );
       await client.query("commit");
     } catch (error) {

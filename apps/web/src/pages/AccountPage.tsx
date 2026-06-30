@@ -17,7 +17,10 @@ import {
 import { AppSidebar } from "../components/AppSidebar";
 import { RankBadge } from "../components/RankBadge";
 import { SettingsPanel } from "../components/SettingsPanel";
-import { EconomyAccountPanel } from "../components/EconomyAccountPanel";
+import {
+  EconomyAccountPanel,
+  type AccountEconomyTab,
+} from "../components/EconomyAccountPanel";
 import { useI18n } from "../i18n";
 
 type AuthMode = "login" | "register";
@@ -48,6 +51,7 @@ export function AccountPage({ deletionEntry = false }: { deletionEntry?: boolean
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deletePassword, setDeletePassword] = useState("");
   const [deleteBusy, setDeleteBusy] = useState(false);
+  const [accountTab, setAccountTab] = useState<AccountEconomyTab>("tiles");
 
   useEffect(() => {
     void fetchMe()
@@ -120,8 +124,12 @@ export function AccountPage({ deletionEntry = false }: { deletionEntry?: boolean
       <section className="online-shell account-shell app-content-shell" aria-labelledby="account-title">
         <div className="online-copy">
           <p className="eyebrow">PLAYER ACCOUNT</p>
-          <h1 id="account-title">{t(deletionEntry ? "Tango 계정 삭제" : "전적과 레이팅은 계정에 저장됩니다.")}</h1>
-          <p>{t(deletionEntry ? "로그인한 뒤 비밀번호를 확인하면 계정과 연결된 데이터를 삭제할 수 있습니다." : "경쟁 게임은 로그인한 플레이어만 참가할 수 있습니다. 계정에는 전적, 레이팅, 최근 경기 기록이 저장됩니다.")}</p>
+          <h1 id="account-title">{t(deletionEntry ? "Tango 계정 삭제" : account === null ? "Tango 계정" : "마이 Tango")}</h1>
+          <p>{t(deletionEntry
+            ? "로그인한 뒤 비밀번호를 확인하면 계정과 연결된 데이터를 삭제할 수 있습니다."
+            : account === null
+              ? "로그인하고 전적과 보상을 안전하게 저장하세요."
+              : "전적·스킨·보상을 한곳에서 관리하세요.")}</p>
         </div>
 
         <div className="online-card">
@@ -180,25 +188,53 @@ export function AccountPage({ deletionEntry = false }: { deletionEntry?: boolean
                 <span><small>{t("연속 출석")}</small><strong>{t("{days}일", { days: formatNumber(account.attendanceStreak) })}</strong></span>
                 <span><small>{t("최장 출석")}</small><strong>{t("{days}일", { days: formatNumber(account.longestAttendanceStreak) })}</strong></span>
               </div>
-              <button className="secondary-action" type="button" onClick={logout}>{t("로그아웃")}</button>
-              <button className="danger-action" type="button" onClick={() => setDeleteOpen(true)}>{t("계정 삭제")}</button>
-              <Link className="account-policy-link" to="/privacy">{t("개인정보 처리방침")}</Link>
-              <EconomyAccountPanel />
-              <h3>{t("최근 전적")}</h3>
-              {matches.length === 0 ? (
-                <p className="online-message">{t("아직 기록된 경기가 없습니다.")}</p>
-              ) : (
-                <div className="match-history">
-                  {matches.map((match) => (
-                    <article key={match.gameId}>
-                      <span>
-                        <b>{match.mode.toUpperCase()} · {match.opponentName}</b>
-                      <small>{t(matchOutcome(match, account.id))} · {match.result ?? t("완료")} · TURN {match.turnNumber}</small>
-                      </span>
-                      <Link to={`/replay/${encodeURIComponent(match.gameId)}`}>{t("리플레이")}</Link>
-                    </article>
-                  ))}
-                </div>
+              <nav className="account-tabs" aria-label={t("마이페이지 메뉴")}>
+                {([
+                  ["tiles", "타일 설정"],
+                  ["quests", "퀘스트·파편"],
+                  ["records", "기록"],
+                  ["benefits", "혜택·계정"],
+                ] as const).map(([key, label]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    className={accountTab === key ? "active" : ""}
+                    onClick={() => setAccountTab(key)}
+                  >
+                    {t(label)}
+                  </button>
+                ))}
+              </nav>
+
+              <EconomyAccountPanel activeTab={accountTab} />
+
+              {accountTab === "records" && (
+                <section className="account-tab-section">
+                  <h3>{t("최근 전적")}</h3>
+                  {matches.length === 0 ? (
+                    <p className="online-message">{t("아직 기록된 경기가 없습니다.")}</p>
+                  ) : (
+                    <div className="match-history">
+                      {matches.map((match) => (
+                        <article key={match.gameId}>
+                          <span>
+                            <b>{match.mode.toUpperCase()} · {match.opponentName}</b>
+                            <small>{t(matchOutcome(match, account.id))} · {match.result ?? t("완료")} · TURN {match.turnNumber}</small>
+                          </span>
+                          <Link to={`/replay/${encodeURIComponent(match.gameId)}`}>{t("리플레이")}</Link>
+                        </article>
+                      ))}
+                    </div>
+                  )}
+                </section>
+              )}
+
+              {accountTab === "benefits" && (
+                <section className="account-security-actions">
+                  <Link className="account-policy-link" to="/privacy">{t("개인정보 처리방침")}</Link>
+                  <button className="secondary-action" type="button" onClick={logout}>{t("로그아웃")}</button>
+                  <button className="danger-action" type="button" onClick={() => setDeleteOpen(true)}>{t("계정 삭제")}</button>
+                </section>
               )}
             </section>
           )}

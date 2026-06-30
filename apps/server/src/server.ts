@@ -30,6 +30,7 @@ import {
 } from "./matchmaking-wait-store.js";
 import {
   NullEconomyStore,
+  TileColorSimilarityError,
   type CosmeticRarity,
   type EconomyStore,
   seoulDayKey,
@@ -111,6 +112,10 @@ const economyTimeZoneSchema = z.object({
 
 const cosmeticIdSchema = z.object({
   cosmeticId: z.string().trim().min(1).max(80),
+});
+
+const tileEquipSchema = cosmeticIdSchema.extend({
+  allowSimilar: z.boolean().optional().default(false),
 });
 
 const tileLoadoutParamsSchema = z.object({
@@ -874,7 +879,7 @@ export const createServer = (options: ServerOptions = {}) => {
       return reply.code(401).send({ code: "UNAUTHORIZED", message: "Sign in is required." });
     }
     const params = tileLoadoutParamsSchema.safeParse(request.params);
-    const body = cosmeticIdSchema.merge(economyTimeZoneSchema).safeParse(request.body ?? {});
+    const body = tileEquipSchema.merge(economyTimeZoneSchema).safeParse(request.body ?? {});
     if (!params.success || !body.success) {
       return reply.code(400).send({ code: "INVALID_REQUEST" });
     }
@@ -884,6 +889,37 @@ export const createServer = (options: ServerOptions = {}) => {
           account.id,
           params.data.slot as TileLoadoutSlot,
           body.data.cosmeticId,
+          body.data.allowSimilar,
+          account.attendanceStreak,
+        ),
+      };
+    } catch (error) {
+      if (error instanceof TileColorSimilarityError) {
+        return reply.code(409).send({
+          code: error.code,
+          conflicts: error.conflicts,
+        });
+      }
+      const mapped = economyErrorStatus(error);
+      return reply.code(mapped.status).send({ code: mapped.code });
+    }
+  });
+
+  app.delete("/economy/loadout/tile/:slot", async (request, reply) => {
+    const account = await authenticateToken(bearerToken(request.headers.authorization));
+    if (account === null || !economyStore.enabled) {
+      return reply.code(401).send({ code: "UNAUTHORIZED", message: "Sign in is required." });
+    }
+    const params = tileLoadoutParamsSchema.safeParse(request.params);
+    const body = economyTimeZoneSchema.safeParse(request.body ?? {});
+    if (!params.success || !body.success) {
+      return reply.code(400).send({ code: "INVALID_REQUEST" });
+    }
+    try {
+      return {
+        economy: await economyStore.resetTileColor(
+          account.id,
+          params.data.slot as TileLoadoutSlot,
           account.attendanceStreak,
         ),
       };
