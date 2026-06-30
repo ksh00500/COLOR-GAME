@@ -19,6 +19,7 @@ const item = (input: Partial<CosmeticItem>): CosmeticItem => ({
   representativeColor: "#112233",
   availability: "active",
   owned: false,
+  isNew: false,
   equippedSlots: [],
   ...input,
 });
@@ -60,7 +61,8 @@ describe("cosmetic backgrounds", () => {
       colors: ["#d84d63", "#36a173", "#4d6ed7"],
     }));
     expect(stainedGlass).toContain("conic-gradient");
-    expect(stainedGlass).toContain("49.5%");
-    expect(spectrum).toContain("repeating-linear-gradient");
+    expect(stainedGlass).not.toContain("rgba(25,22,29");
+    expect(spectrum).toContain("radial-gradient");
+    expect(spectrum).not.toContain("repeating-linear-gradient");
   });
 });

@@ -16,6 +16,7 @@ import { localizedCosmeticName } from "../cosmetic-localization";
 import { useI18n } from "../i18n";
 import { EconomyQuestGrid } from "./EconomyQuestGrid";
 import { TileSkinPreview } from "./TileSkinPreview";
+import { CosmeticOutcomeModal } from "./CosmeticOutcomeModal";
 
 export type AccountEconomyTab = "tiles" | "quests" | "records" | "benefits";
 
@@ -39,6 +40,7 @@ export function EconomyAccountPanel({ activeTab }: { activeTab: AccountEconomyTa
   const [selectedSlot, setSelectedSlot] = useState<TileLoadoutSlot>("colorA");
   const [couponCode, setCouponCode] = useState("");
   const [couponResult, setCouponResult] = useState<string | null>(null);
+  const [ledgerExpanded, setLedgerExpanded] = useState(false);
   const [similarWarning, setSimilarWarning] = useState<{
     slot: TileLoadoutSlot;
     item: CosmeticItem;
@@ -206,6 +208,9 @@ export function EconomyAccountPanel({ activeTab }: { activeTab: AccountEconomyTa
                     >
                       {equippedHere ? t("장착 중") : equippedElsewhere ? t("다른 슬롯 사용 중") : t("장착")}
                     </button>
+                    {item.isNew && (
+                      <span className="new-cosmetic-badge" title={t("새로 획득한 스킨")}>!</span>
+                    )}
                   </article>
                 );
               })}
@@ -258,7 +263,7 @@ export function EconomyAccountPanel({ activeTab }: { activeTab: AccountEconomyTa
           <div className="economy-ledger">
             {economy.ledger.length === 0 ? (
               <p className="online-message">{t("아직 컬러 칩 기록이 없습니다.")}</p>
-            ) : economy.ledger.map((entry) => (
+            ) : economy.ledger.slice(0, ledgerExpanded ? economy.ledger.length : 5).map((entry) => (
               <div key={entry.id}>
                 <span>
                   <strong>{t(entry.reason)}</strong>
@@ -270,6 +275,11 @@ export function EconomyAccountPanel({ activeTab }: { activeTab: AccountEconomyTa
               </div>
             ))}
           </div>
+          {economy.ledger.length > 5 && (
+            <button className="history-more-button" type="button" onClick={() => setLedgerExpanded(!ledgerExpanded)}>
+              {t(ledgerExpanded ? "접기" : "더보기")}
+            </button>
+          )}
         </>
       )}
 
@@ -318,12 +328,12 @@ export function EconomyAccountPanel({ activeTab }: { activeTab: AccountEconomyTa
       )}
 
       {message && <p className="online-message">{t(message)}</p>}
-      {outcome?.cosmetic && (
-        <p className="economy-unlock-message">
-          {t("{name} 스킨을 획득했습니다.", {
-            name: localizedCosmeticName(outcome.cosmetic, locale),
-          })}
-        </p>
+      {outcome !== null && (
+        <CosmeticOutcomeModal
+          outcome={outcome}
+          source="combine"
+          onClose={() => setOutcome(null)}
+        />
       )}
 
       {similarWarning && (

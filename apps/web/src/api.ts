@@ -93,6 +93,7 @@ export interface CosmeticItem {
   representativeColor: string | null;
   availability: "active" | "upcoming" | "pack_only";
   owned: boolean;
+  isNew: boolean;
   equippedSlots: TileLoadoutSlot[];
 }
 
@@ -242,6 +243,16 @@ export interface AdminAuditEntry {
   targetId: string | null;
   details: Record<string, unknown>;
   createdAt: string;
+}
+
+export interface AdminCatalogItem {
+  id: string;
+  nameKo: string;
+  rarity: CosmeticRarity;
+  visualKind: CosmeticItem["visualKind"];
+  colors: string[];
+  pattern: string | null;
+  splitAngle: number | null;
 }
 
 export interface CouponRedemptionResult {
@@ -492,13 +503,8 @@ export const deleteAdminCoupon = async (id: string): Promise<void> => {
   await adminRequest<void>(`/admin/coupons/${id}`, { method: "DELETE" });
 };
 
-export const fetchAdminCatalog = async (): Promise<Array<{
-  id: string;
-  nameKo: string;
-  rarity: CosmeticRarity;
-}>> => (await adminRequest<{
-  catalog: Array<{ id: string; nameKo: string; rarity: CosmeticRarity }>;
-}>("/admin/catalog")).catalog;
+export const fetchAdminCatalog = async (): Promise<AdminCatalogItem[]> =>
+  (await adminRequest<{ catalog: AdminCatalogItem[] }>("/admin/catalog")).catalog;
 
 export const fetchAdminUsers = async (query = ""): Promise<ManagedUser[]> =>
   (await adminRequest<{ users: ManagedUser[] }>(
@@ -525,6 +531,19 @@ export const grantAdminUserCosmetic = async (
     {
       method: "POST",
       body: JSON.stringify({ cosmeticId, reason }),
+    },
+  )).granted;
+
+export const grantAdminUserCosmetics = async (
+  accountId: string,
+  selection: { cosmeticIds?: string[]; rarity?: CosmeticRarity },
+  reason: string,
+): Promise<number> =>
+  (await adminRequest<{ granted: number }>(
+    `/admin/users/${encodeURIComponent(accountId)}/cosmetics/batch`,
+    {
+      method: "POST",
+      body: JSON.stringify({ ...selection, reason }),
     },
   )).granted;
 

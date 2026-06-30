@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
-import type { CosmeticItem, TileLoadoutSlot } from "../api";
-import { cosmeticBackground } from "../cosmetics";
+import type { TileLoadoutSlot } from "../api";
+import { cosmeticBackground, type CosmeticVisual } from "../cosmetics";
 
 const defaultBackgrounds: Record<TileLoadoutSlot, string> = {
   colorA: "linear-gradient(145deg, var(--burgundy-light), var(--burgundy))",
@@ -14,7 +14,7 @@ export function TileSkinPreview({
   className = "",
   label,
 }: {
-  item?: CosmeticItem;
+  item?: CosmeticVisual;
   defaultSlot?: TileLoadoutSlot;
   className?: string;
   label?: string;
@@ -24,7 +24,7 @@ export function TileSkinPreview({
     : defaultBackgrounds[defaultSlot ?? "colorA"];
   return (
     <span
-      className={`tile-skin-preview ${item?.pattern === "tango-spectrum" ? "animated-spectrum" : ""} ${className}`.trim()}
+      className={`tile-skin-preview ${className}`.trim()}
       style={{ "--tile-skin-background": background } as CSSProperties}
       role={label ? "img" : undefined}
       aria-label={label}

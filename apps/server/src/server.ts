@@ -832,6 +832,31 @@ export const createServer = (options: ServerOptions = {}) => {
     return { granted };
   });
 
+  app.post("/admin/users/:accountId/cosmetics/batch", async (request, reply) => {
+    const admin = await authenticateAdmin(bearerToken(request.headers.authorization));
+    if (admin === null) return reply.code(401).send({ code: "UNAUTHORIZED" });
+    const params = accountIdParamsSchema.safeParse(request.params);
+    const body = z.object({
+      cosmeticIds: z.array(z.string().trim().min(1).max(80)).min(1).max(100).optional(),
+      rarity: z.enum(["common", "rare", "epic", "legendary"]).optional(),
+      reason: z.string().trim().min(2).max(200),
+    }).refine((value) => value.rarity !== undefined || value.cosmeticIds !== undefined, {
+      message: "A rarity or cosmeticIds selection is required.",
+    }).safeParse(request.body ?? {});
+    if (!params.success || !body.success) return reply.code(400).send({ code: "INVALID_REQUEST" });
+    const selection: { cosmeticIds?: string[]; rarity?: CosmeticRarity } = {};
+    if (body.data.cosmeticIds !== undefined) selection.cosmeticIds = body.data.cosmeticIds;
+    if (body.data.rarity !== undefined) selection.rarity = body.data.rarity;
+    return {
+      granted: await adminStore.grantUserCosmetics(
+        admin.id,
+        params.data.accountId,
+        selection,
+        body.data.reason,
+      ),
+    };
+  });
+
   app.put("/admin/users/:accountId/suspension", async (request, reply) => {
     const admin = await authenticateAdmin(bearerToken(request.headers.authorization));
     if (admin === null) return reply.code(401).send({ code: "UNAUTHORIZED" });

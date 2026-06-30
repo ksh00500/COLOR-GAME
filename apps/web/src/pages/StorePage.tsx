@@ -13,6 +13,7 @@ import {
 import { AppSidebar } from "../components/AppSidebar";
 import { SettingsPanel } from "../components/SettingsPanel";
 import { TileSkinPreview } from "../components/TileSkinPreview";
+import { CosmeticOutcomeModal } from "../components/CosmeticOutcomeModal";
 import { localizedCosmeticName } from "../cosmetic-localization";
 import { useI18n } from "../i18n";
 
@@ -338,19 +339,20 @@ export function StorePage() {
       </section>
 
       {outcome !== null && (
-        <div className="modal-backdrop" role="presentation" onMouseDown={() => setOutcome(null)}>
-          <section className="box-result-panel" role="dialog" aria-modal="true" onMouseDown={(event) => event.stopPropagation()}>
-            <p className="eyebrow">PALETTE BOX OPEN</p>
-            <div className={`box-result-gem rarity-${outcome.rarity}`}>◆</div>
-            <h2>
-              {outcome.cosmetic
-                ? localizedCosmeticName(outcome.cosmetic, locale)
-                : t("{rarity} 파편 1개", { rarity: t(outcome.rarity) })}
-            </h2>
-            <p>{outcome.cosmetic ? t("새로운 스킨을 획득했습니다.") : t("같은 등급 파편 4개를 모아 스킨을 합성하세요.")}</p>
-            <button className="primary-action" type="button" onClick={() => setOutcome(null)}>{t("확인했어요")}</button>
-          </section>
-        </div>
+        <CosmeticOutcomeModal
+          outcome={outcome}
+          source="box"
+          onClose={() => setOutcome(null)}
+          onAgain={() => {
+            setOutcome(null);
+            void openBox();
+          }}
+          againDisabled={
+            busyId !== null
+            || (outcome.overview.boxTickets < 1
+              && outcome.overview.wallet.colorChips < outcome.overview.box.priceChips)
+          }
+        />
       )}
       <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </main>
