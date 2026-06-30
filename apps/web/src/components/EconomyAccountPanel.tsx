@@ -4,6 +4,7 @@ import {
   combineCosmeticFragments,
   equipTileColor,
   fetchEconomy,
+  redeemCoupon,
   resetTileColor,
   type CosmeticItem,
   type CosmeticOutcome,
@@ -36,6 +37,8 @@ export function EconomyAccountPanel({ activeTab }: { activeTab: AccountEconomyTa
   const [message, setMessage] = useState<string | null>(null);
   const [outcome, setOutcome] = useState<CosmeticOutcome | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<TileLoadoutSlot>("colorA");
+  const [couponCode, setCouponCode] = useState("");
+  const [couponResult, setCouponResult] = useState<string | null>(null);
   const [similarWarning, setSimilarWarning] = useState<{
     slot: TileLoadoutSlot;
     item: CosmeticItem;
@@ -93,6 +96,35 @@ export function EconomyAccountPanel({ activeTab }: { activeTab: AccountEconomyTa
       applyEconomy(await resetTileColor(slot));
     } catch (error) {
       setMessage(error instanceof ApiError ? error.code : "기본 타일로 복원하지 못했습니다.");
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const submitCoupon = async () => {
+    if (couponCode.trim() === "") return;
+    setBusy("coupon");
+    setMessage(null);
+    setCouponResult(null);
+    try {
+      const result = await redeemCoupon(couponCode);
+      applyEconomy(result.economy);
+      const rewards = result.redemption.rewards.map((reward) => {
+        if (reward.cosmeticName) {
+          return reward.convertedToFragment
+            ? `${reward.cosmeticName} (보유 중 · 파편 1개로 전환)`
+            : reward.cosmeticName;
+        }
+        if (reward.type === "color_chips") return `컬러 칩 ${reward.amount ?? 0}개`;
+        if (reward.type === "palette_box_ticket") return `팔레트 상자 ${reward.amount ?? 0}개`;
+        if (reward.type === "fragments") return `${t(reward.rarity ?? "common")} 파편 ${reward.amount ?? 0}개`;
+        if (reward.type === "entitlement") return "영구 프리미엄";
+        return reward.type;
+      });
+      setCouponResult(`${result.redemption.coupon.name}: ${rewards.join(", ")}`);
+      setCouponCode("");
+    } catch (error) {
+      setMessage(error instanceof ApiError ? error.code : "쿠폰을 사용할 수 없습니다.");
     } finally {
       setBusy(null);
     }
@@ -262,6 +294,26 @@ export function EconomyAccountPanel({ activeTab }: { activeTab: AccountEconomyTa
             </article>
             <button type="button" disabled>{t("구매 복원")} · {t("출시 예정")}</button>
           </div>
+          <section className="coupon-redeem-card">
+            <div>
+              <p className="eyebrow">COUPON</p>
+              <h3>{t("쿠폰 등록")}</h3>
+              <p>{t("쿠폰 코드를 입력해 보상을 받으세요.")}</p>
+            </div>
+            <form onSubmit={(event) => { event.preventDefault(); void submitCoupon(); }}>
+              <input
+                value={couponCode}
+                onChange={(event) => setCouponCode(event.target.value.toUpperCase())}
+                placeholder={t("쿠폰 코드")}
+                maxLength={40}
+                autoCapitalize="characters"
+              />
+              <button type="submit" disabled={busy !== null || couponCode.trim().length < 3}>
+                {busy === "coupon" ? t("처리 중") : t("등록")}
+              </button>
+            </form>
+            {couponResult && <strong className="coupon-success">{couponResult}</strong>}
+          </section>
         </>
       )}
 

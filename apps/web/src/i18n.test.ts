@@ -21,6 +21,9 @@ describe("localization catalog", () => {
     "계정 삭제",
     "INVALID_PASSWORD",
     "ACCOUNT_IN_ACTIVE_MATCH",
+    "스킨 도감",
+    "타일 스킨 36종과 스킨 도감",
+    "로그인 출석 팝업",
   ])("contains every critical user-facing translation: %s", (key) => {
     expect(hasTranslation(key)).toBe(true);
   });

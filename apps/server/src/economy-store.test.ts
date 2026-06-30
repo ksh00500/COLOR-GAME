@@ -96,6 +96,15 @@ describe("economy policy", () => {
     expect(first.filter((id) => id.startsWith("legendary-"))).toHaveLength(1);
   });
 
+  it("keeps 36 public tile skins available to the collection", () => {
+    const migrationPath = fileURLToPath(new URL("../db/migrations/007_economy_store.sql", import.meta.url));
+    const migration = readFileSync(migrationPath, "utf8");
+    const publicTileRows = migration.match(
+      /^\s*\('tile-[^']+', 'tile_color', 'tile_color'.*'active', true, true\),?$/gm,
+    ) ?? [];
+    expect(publicTileRows).toHaveLength(36);
+  });
+
   it("enforces daily, opponent, and duplicate match limits", () => {
     expect(canRewardOnlineMatch(0, 0, false)).toBe(true);
     expect(canRewardOnlineMatch(4, 1, false)).toBe(true);

@@ -63,12 +63,14 @@ export interface EconomyOverview {
     lifetimeEarned: number;
     lifetimeSpent: number;
   };
+  boxTickets: number;
   fragments: Record<CosmeticRarity, number>;
   weeklyStore: {
     weekKey: string;
     endsAt: string;
     items: EconomyCatalogItem[];
   };
+  catalog: EconomyCatalogItem[];
   inventory: EconomyCatalogItem[];
   loadout: Partial<Record<TileLoadoutSlot, string>>;
   upcomingCategories: Array<Exclude<CosmeticCategory, "tile_color">>;
@@ -464,6 +466,11 @@ export class PostgresEconomyStore implements EconomyStore {
       `insert into account_loadouts (account_id) values ($1) on conflict (account_id) do nothing`,
       [accountId],
     );
+    await client.query(
+      `insert into account_palette_box_tickets (account_id) values ($1)
+       on conflict (account_id) do nothing`,
+      [accountId],
+    );
     for (const rarity of rarities) {
       await client.query(
         `insert into economy_fragments (account_id, rarity) values ($1, $2)
@@ -618,8 +625,10 @@ export class PostgresEconomyStore implements EconomyStore {
     const loadout = await this.readLoadout(client, accountId);
     const [
       walletResult,
+      ticketResult,
       fragmentResult,
       weeklyRows,
+      catalogRows,
       inventoryRows,
       ledgerResult,
       configResult,
@@ -630,6 +639,10 @@ export class PostgresEconomyStore implements EconomyStore {
       products,
     ] = await Promise.all([
       client.query<WalletRow>(`select * from economy_wallets where account_id = $1`, [accountId]),
+      client.query<{ quantity: number }>(
+        `select quantity from account_palette_box_tickets where account_id = $1`,
+        [accountId],
+      ),
       client.query<FragmentRow>(
         `select rarity, quantity from economy_fragments where account_id = $1`,
         [accountId],
@@ -640,6 +653,20 @@ export class PostgresEconomyStore implements EconomyStore {
         `join weekly_store_items w on w.cosmetic_id = c.id
          where w.week_key = $2 and c.active order by w.display_order`,
         [week.weekKey],
+      ),
+      this.readCatalog(
+        client,
+        accountId,
+        `where c.active and c.category = 'tile_color' and c.availability = 'active'
+         order by
+           case c.rarity
+             when 'common' then 1
+             when 'rare' then 2
+             when 'epic' then 3
+             when 'legendary' then 4
+           end,
+           c.name_ko`,
+        [],
       ),
       this.readCatalog(
         client,
@@ -721,12 +748,14 @@ export class PostgresEconomyStore implements EconomyStore {
         lifetimeEarned: wallet.lifetime_earned,
         lifetimeSpent: wallet.lifetime_spent,
       },
+      boxTickets: ticketResult.rows[0]?.quantity ?? 0,
       fragments,
       weeklyStore: {
         weekKey: week.weekKey,
         endsAt: week.endsAt.toISOString(),
         items: catalogWithLoadout(weeklyRows),
       },
+      catalog: catalogWithLoadout(catalogRows),
       inventory: catalogWithLoadout(inventoryRows),
       loadout,
       upcomingCategories: ["placement_effect", "score_effect", "profile", "victory_effect"],
@@ -1019,9 +1048,18 @@ export class PostgresEconomyStore implements EconomyStore {
       await this.ensureAccount(client, accountId);
       await this.lockWallet(client, accountId);
       const openingId = randomUUID();
-      await this.debit(client, accountId, boxPrice, "palette_box", `box:${openingId}`, {
-        probabilityVersion,
-      });
+      const ticket = await client.query(
+        `update account_palette_box_tickets
+         set quantity = quantity - 1, updated_at = now()
+         where account_id = $1 and quantity > 0 returning quantity`,
+        [accountId],
+      );
+      const usedTicket = (ticket.rowCount ?? 0) > 0;
+      if (!usedTicket) {
+        await this.debit(client, accountId, boxPrice, "palette_box", `box:${openingId}`, {
+          probabilityVersion,
+        });
+      }
       const roll = randomInt(10_000);
       const selected = boxOutcomeForRoll(roll);
       let cosmetic: CatalogRow | null = null;
@@ -1039,18 +1077,19 @@ export class PostgresEconomyStore implements EconomyStore {
       await client.query(
         `insert into cosmetic_box_openings (
            id, account_id, price_chips, outcome_type, rarity, cosmetic_id,
-           fragment_quantity, probability_version, roll
-         ) values ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+           fragment_quantity, probability_version, roll, payment_method
+         ) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
         [
           openingId,
           accountId,
-          boxPrice,
+          usedTicket ? 0 : boxPrice,
           cosmetic === null ? "fragment" : "cosmetic",
           selected.rarity,
           cosmetic?.id ?? null,
           fragmentQuantity,
           probabilityVersion,
           roll,
+          usedTicket ? "ticket" : "chips",
         ],
       );
       result = {

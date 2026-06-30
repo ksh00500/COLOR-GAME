@@ -23,7 +23,8 @@ const compactRarityLabels: Record<CosmeticRarity, string> = {
   epic: "영웅",
   legendary: "전설",
 };
-type StoreTab = "weekly" | "box" | "upcoming";
+type StoreTab = "weekly" | "collection" | "box" | "upcoming";
+type CollectionRarity = CosmeticRarity | "all";
 
 export function StorePage() {
   const { t, locale, formatNumber, formatDate } = useI18n();
@@ -35,6 +36,7 @@ export function StorePage() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [storeTab, setStoreTab] = useState<StoreTab>("weekly");
   const [rarity, setRarity] = useState<CosmeticRarity>("common");
+  const [collectionRarity, setCollectionRarity] = useState<CollectionRarity>("all");
   const [wideCatalog, setWideCatalog] = useState(
     () => typeof window !== "undefined" && window.matchMedia("(min-width: 901px)").matches,
   );
@@ -140,6 +142,7 @@ export function StorePage() {
             <nav className="store-tabs" aria-label={t("상점 메뉴")}>
               {([
                 ["weekly", "주간 타일"],
+                ["collection", "스킨 도감"],
                 ["box", "팔레트 상자"],
                 ["upcoming", "출시 예정"],
               ] as const).map(([key, label]) => (
@@ -206,6 +209,63 @@ export function StorePage() {
               </section>
             )}
 
+            {storeTab === "collection" && (
+              <section className="store-section collection-section">
+                <div className="collection-heading">
+                  <div>
+                    <p className="eyebrow">TILE COLLECTION</p>
+                    <h2>{t("스킨 도감")}</h2>
+                    <p>{t("Tango의 타일 스킨을 모아 도감을 완성하세요.")}</p>
+                  </div>
+                  <div className="collection-progress">
+                    <strong>
+                      {formatNumber(economy.catalog.filter((item) => item.owned).length)}
+                      <small> / {formatNumber(economy.catalog.length)}</small>
+                    </strong>
+                    <span>{t("수집 완료")}</span>
+                  </div>
+                </div>
+
+                <nav className="collection-filters" aria-label={t("도감 등급 필터")}>
+                  {(["all", ...rarityOrder] as const).map((entry) => (
+                    <button
+                      key={entry}
+                      type="button"
+                      className={collectionRarity === entry ? "active" : ""}
+                      onClick={() => setCollectionRarity(entry)}
+                    >
+                      {t(entry === "all" ? "모두" : entry)}
+                      <small>
+                        {economy.catalog.filter((item) => entry === "all" || item.rarity === entry).length}
+                      </small>
+                    </button>
+                  ))}
+                </nav>
+
+                <div className="collection-grid">
+                  {economy.catalog
+                    .filter((item) => collectionRarity === "all" || item.rarity === collectionRarity)
+                    .map((item) => (
+                      <article
+                        className={`collection-card rarity-border-${item.rarity}${item.owned ? " owned" : " locked"}`}
+                        key={item.id}
+                      >
+                        <TileSkinPreview
+                          item={item}
+                          className="collection-tile-preview"
+                          label={localizedCosmeticName(item, locale)}
+                        />
+                        <span>
+                          <small>{t(item.rarity)}</small>
+                          <strong>{localizedCosmeticName(item, locale)}</strong>
+                        </span>
+                        <b>{item.owned ? `✓ ${t("보유 중")}` : `🔒 ${t("미보유")}`}</b>
+                      </article>
+                    ))}
+                </div>
+              </section>
+            )}
+
             {storeTab === "box" && (
               <section className="store-feature-grid single-feature">
                 <article className="palette-box-card">
@@ -220,10 +280,12 @@ export function StorePage() {
                 <button
                   className="primary-action"
                   type="button"
-                  disabled={busyId !== null || economy.wallet.colorChips < economy.box.priceChips}
+                  disabled={busyId !== null || (economy.boxTickets < 1 && economy.wallet.colorChips < economy.box.priceChips)}
                   onClick={() => void openBox()}
                 >
-                  {t("{chips} 칩으로 열기", { chips: formatNumber(economy.box.priceChips) })}
+                  {economy.boxTickets > 0
+                    ? t("상자 이용권으로 열기 ({count}개 보유)", { count: formatNumber(economy.boxTickets) })
+                    : t("{chips} 칩으로 열기", { chips: formatNumber(economy.box.priceChips) })}
                 </button>
                 <details className="box-odds">
                   <summary>{t("획득 확률 보기")}</summary>
@@ -262,7 +324,7 @@ export function StorePage() {
                       <article key={category}>
                         <span>🔒</span>
                         <strong>{t(category)}</strong>
-                        <small>{t("DB 구조 준비 완료 · 효과는 추후 제공")}</small>
+                        <small>{t("출시 예정")}</small>
                       </article>
                     ))}
                   </div>
