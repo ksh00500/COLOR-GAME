@@ -44,6 +44,7 @@ export interface EconomyCatalogItem {
   representativeColor: string | null;
   availability: "active" | "upcoming" | "pack_only";
   owned: boolean;
+  isNew: boolean;
   equippedSlots: TileLoadoutSlot[];
 }
 
@@ -200,6 +201,7 @@ interface CatalogRow {
   representative_color: string | null;
   availability: EconomyCatalogItem["availability"];
   owned: boolean;
+  first_equipped_at: Date | null;
 }
 
 interface WalletRow {
@@ -273,6 +275,7 @@ const toCatalogItem = (
   representativeColor: row.representative_color,
   availability: row.availability,
   owned: row.owned,
+  isNew: row.owned && row.first_equipped_at === null,
   equippedSlots: (Object.entries(loadout) as Array<[TileLoadoutSlot, string]>)
     .filter(([, id]) => id === row.id)
     .map(([slot]) => slot),
@@ -589,11 +592,14 @@ export class PostgresEconomyStore implements EconomyStore {
       `select c.id, c.category, c.equip_slot, c.rarity, c.name_ko, c.name_en, c.localized_names,
               c.description_ko, c.chip_price, c.visual_kind, c.visual_config,
               c.representative_color, c.availability,
+              ac_owned.first_equipped_at,
               exists (
                 select 1 from account_cosmetics ac
                 where ac.account_id = $1 and ac.cosmetic_id = c.id
               ) as owned
        from cosmetic_catalog c
+       left join account_cosmetics ac_owned
+         on ac_owned.account_id = $1 and ac_owned.cosmetic_id = c.id
        ${suffix}`,
       [accountId, ...params],
     );
@@ -1203,6 +1209,12 @@ export class PostgresEconomyStore implements EconomyStore {
       await client.query(
         `update account_loadouts set ${column[slot]} = $2, updated_at = now()
          where account_id = $1`,
+        [accountId, cosmeticId],
+      );
+      await client.query(
+        `update account_cosmetics
+         set first_equipped_at = coalesce(first_equipped_at, now())
+         where account_id = $1 and cosmetic_id = $2`,
         [accountId, cosmeticId],
       );
       await client.query("commit");

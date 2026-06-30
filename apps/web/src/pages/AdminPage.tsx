@@ -10,20 +10,37 @@ import {
   fetchAdminCoupons,
   fetchAdminMe,
   fetchAdminUsers,
-  grantAdminUserCosmetic,
+  grantAdminUserCosmetics,
   hasAdminToken,
   saveAdminCoupon,
   setAdminUserSuspension,
   type AdminAuditEntry,
+  type AdminCatalogItem,
   type CouponRecord,
   type CouponReward,
   type CosmeticRarity,
   type ManagedUser,
 } from "../api";
+import { TileSkinPreview } from "../components/TileSkinPreview";
 
 type AdminTab = "coupons" | "users" | "audit";
-type CatalogOption = { id: string; nameKo: string; rarity: CosmeticRarity };
+type CatalogOption = AdminCatalogItem;
 type CouponDraft = Omit<CouponRecord, "id" | "redemptionCount" | "createdAt" | "updatedAt">;
+
+const raritySearchTerms: Record<CosmeticRarity, string> = {
+  common: "common 커먼 일반",
+  rare: "rare 레어 희귀",
+  epic: "epic 에픽 영웅",
+  legendary: "legendary 레전더리 전설",
+};
+
+const matchesCatalogSearch = (item: CatalogOption, search: string) => {
+  const needle = search.trim().toLowerCase();
+  return needle === ""
+    || item.nameKo.toLowerCase().includes(needle)
+    || item.id.toLowerCase().includes(needle)
+    || raritySearchTerms[item.rarity].includes(needle);
+};
 
 const emptyDraft = (): CouponDraft => ({
   code: "",
@@ -61,6 +78,8 @@ function RewardEditor({
   onChange: (next: CouponReward) => void;
   onRemove: () => void;
 }) {
+  const [search, setSearch] = useState("");
+  const filteredCatalog = catalog.filter((item) => matchesCatalogSearch(item, search));
   const switchType = (type: CouponReward["type"]) => {
     if (type === "color_chips") onChange({ type, amount: 100 });
     else if (type === "palette_box_ticket") onChange({ type, amount: 1 });
@@ -109,12 +128,27 @@ function RewardEditor({
         </>
       )}
       {reward.type === "cosmetic" && (
-        <select value={reward.cosmeticId} onChange={(event) => onChange({ ...reward, cosmeticId: event.target.value })}>
-          <option value="">스킨 선택</option>
-          {catalog.map((item) => (
-            <option key={item.id} value={item.id}>[{item.rarity}] {item.nameKo}</option>
-          ))}
-        </select>
+        <div className="admin-visual-picker">
+          <input
+            type="search"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="스킨 이름·ID·등급 검색"
+          />
+          <div className="admin-skin-picker-grid">
+            {filteredCatalog.map((item) => (
+              <button
+                type="button"
+                className={reward.cosmeticId === item.id ? "selected" : ""}
+                key={item.id}
+                onClick={() => onChange({ ...reward, cosmeticId: item.id })}
+              >
+                <TileSkinPreview item={item} label={item.nameKo} />
+                <span><strong>{item.nameKo}</strong><small>{item.rarity} · {item.id}</small></span>
+              </button>
+            ))}
+          </div>
+        </div>
       )}
       {reward.type === "random_cosmetic" && (
         <div className="admin-random-cosmetic">
@@ -128,22 +162,33 @@ function RewardEditor({
               onChange={(event) => onChange({ ...reward, pickCount: Number(event.target.value) })}
             />
           </label>
-          <div className="admin-candidate-list">
-            {catalog.map((item) => (
-              <label key={item.id}>
-                <input
-                  type="checkbox"
-                  checked={reward.cosmeticIds.includes(item.id)}
-                  onChange={(event) => {
-                    const ids = event.target.checked
-                      ? [...reward.cosmeticIds, item.id]
-                      : reward.cosmeticIds.filter((id) => id !== item.id);
+          <input
+            type="search"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="후보 스킨 이름·ID·등급 검색"
+          />
+          <div className="admin-skin-picker-grid admin-candidate-list">
+            {filteredCatalog.map((item) => {
+              const selected = reward.cosmeticIds.includes(item.id);
+              return (
+                <button
+                  type="button"
+                  className={selected ? "selected" : ""}
+                  key={item.id}
+                  onClick={() => {
+                    const ids = selected
+                      ? reward.cosmeticIds.filter((id) => id !== item.id)
+                      : [...reward.cosmeticIds, item.id];
                     onChange({ ...reward, cosmeticIds: ids, pickCount: Math.min(reward.pickCount, Math.max(1, ids.length)) });
                   }}
-                />
-                <span>[{item.rarity}] {item.nameKo}</span>
-              </label>
-            ))}
+                >
+                  <TileSkinPreview item={item} label={item.nameKo} />
+                  <span><strong>{item.nameKo}</strong><small>{item.rarity}</small></span>
+                  <b>{selected ? "✓" : "+"}</b>
+                </button>
+              );
+            })}
           </div>
           <small>선택한 후보 중 서버가 무작위로 지급합니다. 이미 보유한 스킨은 같은 등급 파편 1개로 전환됩니다.</small>
         </div>
@@ -167,7 +212,8 @@ export function AdminPage() {
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [chipDelta, setChipDelta] = useState(0);
   const [actionReason, setActionReason] = useState("");
-  const [grantCosmeticId, setGrantCosmeticId] = useState("");
+  const [grantSearch, setGrantSearch] = useState("");
+  const [grantCosmeticIds, setGrantCosmeticIds] = useState<string[]>([]);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -187,7 +233,6 @@ export function AdminPage() {
     setCatalog(catalogData);
     setUsers(userData);
     setAudit(auditData);
-    if (!grantCosmeticId && catalogData[0]) setGrantCosmeticId(catalogData[0].id);
   };
 
   useEffect(() => {
@@ -251,6 +296,27 @@ export function AdminPage() {
     const next = await fetchAdminUsers(query);
     setUsers(next);
     if (selectedUserId && !next.some((user) => user.id === selectedUserId)) setSelectedUserId(null);
+  };
+
+  const filteredGrantCatalog = catalog.filter((item) => matchesCatalogSearch(item, grantSearch));
+
+  const grantSelectedCosmetics = async (
+    selection: { cosmeticIds?: string[]; rarity?: CosmeticRarity },
+  ) => {
+    if (selectedUser === null || actionReason.trim() === "") return;
+    setBusy(true);
+    setMessage(null);
+    try {
+      const granted = await grantAdminUserCosmetics(selectedUser.id, selection, actionReason);
+      setMessage(`${granted}개의 스킨을 새로 지급했습니다.`);
+      setGrantCosmeticIds([]);
+      await refreshUsers();
+      setAudit(await fetchAdminAudit());
+    } catch (error) {
+      setMessage(error instanceof ApiError ? error.code : "스킨을 지급하지 못했습니다.");
+    } finally {
+      setBusy(false);
+    }
   };
 
   if (admin === null) {
@@ -328,6 +394,22 @@ export function AdminPage() {
                   <div><strong>{coupon.code}</strong><span className={coupon.active ? "status-on" : "status-off"}>{coupon.active ? "활성" : "중지"}</span></div>
                   <h3>{coupon.name}</h3>
                   <p>{coupon.rewards.map((reward) => rewardLabel(reward, catalog)).join(" · ")}</p>
+                  <div className="admin-coupon-skin-preview">
+                    {coupon.rewards.flatMap((reward) =>
+                      reward.type === "cosmetic"
+                        ? [reward.cosmeticId]
+                        : reward.type === "random_cosmetic"
+                          ? reward.cosmeticIds
+                          : [],
+                    ).map((cosmeticId) => catalog.find((item) => item.id === cosmeticId))
+                      .filter((item): item is CatalogOption => item !== undefined)
+                      .map((item) => (
+                        <span key={item.id} title={item.nameKo}>
+                          <TileSkinPreview item={item} label={item.nameKo} />
+                          <small>{item.nameKo}</small>
+                        </span>
+                      ))}
+                  </div>
                   <small>수령 {coupon.redemptionCount}{coupon.maxRedemptions ? ` / ${coupon.maxRedemptions}` : ""}명</small>
                   <div className="admin-actions">
                     <button type="button" onClick={() => editCoupon(coupon)}>수정</button>
@@ -385,15 +467,60 @@ export function AdminPage() {
                     setMessage("칩 잔액을 변경했습니다.");
                   })}>칩 증감</button>
                 </div>
-                <div className="admin-user-action">
-                  <select value={grantCosmeticId} onChange={(event) => setGrantCosmeticId(event.target.value)}>
-                    {catalog.map((item) => <option key={item.id} value={item.id}>[{item.rarity}] {item.nameKo}</option>)}
-                  </select>
-                  <button type="button" disabled={!actionReason || !grantCosmeticId} onClick={() => void grantAdminUserCosmetic(selectedUser.id, grantCosmeticId, actionReason).then((granted) => {
-                    setMessage(granted ? "스킨을 지급했습니다." : "이미 보유한 스킨입니다.");
-                    void refreshUsers();
-                  })}>스킨 지급</button>
-                </div>
+                <section className="admin-grant-cosmetics">
+                  <div className="admin-section-title">
+                    <div><h3>스킨 지급</h3><small>검색하거나 등급 전체를 한 번에 지급할 수 있습니다.</small></div>
+                    <strong>{grantCosmeticIds.length}개 선택</strong>
+                  </div>
+                  <input
+                    type="search"
+                    value={grantSearch}
+                    onChange={(event) => setGrantSearch(event.target.value)}
+                    placeholder="스킨 이름·ID·등급 검색"
+                  />
+                  <div className="admin-rarity-grants">
+                    {(["common", "rare", "epic", "legendary"] as const).map((rarity) => (
+                      <button
+                        type="button"
+                        className={`rarity-border-${rarity}`}
+                        disabled={busy || !actionReason}
+                        key={rarity}
+                        onClick={() => void grantSelectedCosmetics({ rarity })}
+                      >
+                        {rarity === "common" ? "일반" : rarity === "rare" ? "희귀" : rarity === "epic" ? "영웅" : "전설"} 전체 지급
+                      </button>
+                    ))}
+                  </div>
+                  <div className="admin-skin-picker-grid admin-user-skin-picker">
+                    {filteredGrantCatalog.map((item) => {
+                      const selected = grantCosmeticIds.includes(item.id);
+                      return (
+                        <button
+                          type="button"
+                          className={selected ? "selected" : ""}
+                          key={item.id}
+                          onClick={() => setGrantCosmeticIds(
+                            selected
+                              ? grantCosmeticIds.filter((id) => id !== item.id)
+                              : [...grantCosmeticIds, item.id],
+                          )}
+                        >
+                          <TileSkinPreview item={item} label={item.nameKo} />
+                          <span><strong>{item.nameKo}</strong><small>{item.rarity} · {item.id}</small></span>
+                          <b>{selected ? "✓" : "+"}</b>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <button
+                    type="button"
+                    className="primary-action"
+                    disabled={busy || !actionReason || grantCosmeticIds.length === 0}
+                    onClick={() => void grantSelectedCosmetics({ cosmeticIds: grantCosmeticIds })}
+                  >
+                    선택한 스킨 지급
+                  </button>
+                </section>
                 <button className={selectedUser.suspendedAt ? "primary-action" : "danger-action"} type="button" disabled={!actionReason} onClick={() => void setAdminUserSuspension(selectedUser.id, !selectedUser.suspendedAt, actionReason).then(async () => {
                   await refreshUsers();
                   setAudit(await fetchAdminAudit());

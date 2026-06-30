@@ -93,6 +93,16 @@ export interface AdminAuditEntry {
   createdAt: string;
 }
 
+export interface AdminCatalogItem {
+  id: string;
+  nameKo: string;
+  rarity: CosmeticRarity;
+  visualKind: "solid" | "split" | "gradient" | "pattern" | "placeholder";
+  colors: string[];
+  pattern: string | null;
+  splitAngle: number | null;
+}
+
 export interface AdminStore {
   readonly enabled: boolean;
   close(): Promise<void>;
@@ -108,8 +118,14 @@ export interface AdminStore {
   listUsers(query: string, limit: number): Promise<ManagedUser[]>;
   adjustUserChips(adminId: string, accountId: string, delta: number, reason: string): Promise<ManagedUser | null>;
   grantUserCosmetic(adminId: string, accountId: string, cosmeticId: string, reason: string): Promise<boolean>;
+  grantUserCosmetics(
+    adminId: string,
+    accountId: string,
+    selection: { cosmeticIds?: string[]; rarity?: CosmeticRarity },
+    reason: string,
+  ): Promise<number>;
   setUserSuspension(adminId: string, accountId: string, suspended: boolean, reason: string): Promise<boolean>;
-  listCatalog(): Promise<Array<{ id: string; nameKo: string; rarity: CosmeticRarity }>>;
+  listCatalog(): Promise<AdminCatalogItem[]>;
   listAudit(limit: number): Promise<AdminAuditEntry[]>;
 }
 
@@ -128,8 +144,9 @@ export class NullAdminStore implements AdminStore {
   async listUsers(): Promise<ManagedUser[]> { return []; }
   async adjustUserChips(): Promise<ManagedUser | null> { return null; }
   async grantUserCosmetic(): Promise<boolean> { return false; }
+  async grantUserCosmetics(): Promise<number> { return 0; }
   async setUserSuspension(): Promise<boolean> { return false; }
-  async listCatalog(): Promise<Array<{ id: string; nameKo: string; rarity: CosmeticRarity }>> { return []; }
+  async listCatalog(): Promise<AdminCatalogItem[]> { return []; }
   async listAudit(): Promise<AdminAuditEntry[]> { return []; }
 }
 
@@ -736,6 +753,50 @@ export class PostgresAdminStore implements AdminStore {
     }
   }
 
+  async grantUserCosmetics(
+    adminId: string,
+    accountId: string,
+    selection: { cosmeticIds?: string[]; rarity?: CosmeticRarity },
+    reason: string,
+  ): Promise<number> {
+    const client = await this.pool.connect();
+    try {
+      await client.query("begin");
+      const ids = [...new Set(selection.cosmeticIds ?? [])];
+      const result = selection.rarity
+        ? await client.query(
+            `insert into account_cosmetics (account_id, cosmetic_id, source)
+             select $1, id, 'admin_batch'
+             from cosmetic_catalog
+             where active and category = 'tile_color' and rarity = $2
+             on conflict do nothing`,
+            [accountId, selection.rarity],
+          )
+        : await client.query(
+            `insert into account_cosmetics (account_id, cosmetic_id, source)
+             select $1, id, 'admin_batch'
+             from cosmetic_catalog
+             where active and category = 'tile_color' and id = any($2::text[])
+             on conflict do nothing`,
+            [accountId, ids],
+          );
+      const granted = result.rowCount ?? 0;
+      await this.audit(client, adminId, "user.cosmetics.grant_batch", "account", accountId, {
+        cosmeticIds: ids,
+        rarity: selection.rarity ?? null,
+        reason,
+        granted,
+      });
+      await client.query("commit");
+      return granted;
+    } catch (error) {
+      await client.query("rollback");
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
   async setUserSuspension(
     adminId: string,
     accountId: string,
@@ -767,12 +828,28 @@ export class PostgresAdminStore implements AdminStore {
     }
   }
 
-  async listCatalog(): Promise<Array<{ id: string; nameKo: string; rarity: CosmeticRarity }>> {
-    const result = await this.pool.query<{ id: string; name_ko: string; rarity: CosmeticRarity }>(
-      `select id, name_ko, rarity from cosmetic_catalog
+  async listCatalog(): Promise<AdminCatalogItem[]> {
+    const result = await this.pool.query<{
+      id: string;
+      name_ko: string;
+      rarity: CosmeticRarity;
+      visual_kind: AdminCatalogItem["visualKind"];
+      visual_config: { colors?: unknown; pattern?: unknown; splitAngle?: unknown };
+    }>(
+      `select id, name_ko, rarity, visual_kind, visual_config from cosmetic_catalog
        where active order by rarity, name_ko`,
     );
-    return result.rows.map((row) => ({ id: row.id, nameKo: row.name_ko, rarity: row.rarity }));
+    return result.rows.map((row) => ({
+      id: row.id,
+      nameKo: row.name_ko,
+      rarity: row.rarity,
+      visualKind: row.visual_kind,
+      colors: Array.isArray(row.visual_config.colors)
+        ? row.visual_config.colors.filter((value): value is string => typeof value === "string")
+        : [],
+      pattern: typeof row.visual_config.pattern === "string" ? row.visual_config.pattern : null,
+      splitAngle: typeof row.visual_config.splitAngle === "number" ? row.visual_config.splitAngle : null,
+    }));
   }
 
   async listAudit(limit: number): Promise<AdminAuditEntry[]> {

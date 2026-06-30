@@ -52,6 +52,7 @@ export function AccountPage({ deletionEntry = false }: { deletionEntry?: boolean
   const [deletePassword, setDeletePassword] = useState("");
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [accountTab, setAccountTab] = useState<AccountEconomyTab>("tiles");
+  const [matchesExpanded, setMatchesExpanded] = useState(false);
 
   useEffect(() => {
     void fetchMe()
@@ -185,6 +186,7 @@ export function AccountPage({ deletionEntry = false }: { deletionEntry?: boolean
                 <span><small>{t("경기")}</small><strong>{formatNumber(account.gamesPlayed)}</strong></span>
                 <span><small>{t("승")}</small><strong>{formatNumber(account.rankedWins)}</strong></span>
                 <span><small>{t("패")}</small><strong>{formatNumber(account.rankedLosses)}</strong></span>
+                <span><small>{t("무")}</small><strong>{formatNumber(account.rankedDraws)}</strong></span>
                 <span><small>{t("연속 출석")}</small><strong>{t("{days}일", { days: formatNumber(account.attendanceStreak) })}</strong></span>
                 <span><small>{t("최장 출석")}</small><strong>{t("{days}일", { days: formatNumber(account.longestAttendanceStreak) })}</strong></span>
               </div>
@@ -206,28 +208,51 @@ export function AccountPage({ deletionEntry = false }: { deletionEntry?: boolean
                 ))}
               </nav>
 
-              <EconomyAccountPanel activeTab={accountTab} />
-
               {accountTab === "records" && (
                 <section className="account-tab-section">
-                  <h3>{t("최근 전적")}</h3>
+                  <div className="account-record-heading">
+                    <h3>{t("최근 전적")}</h3>
+                    <div className="record-outcome-summary" aria-label={t("경쟁전 승패무")}>
+                      <span className="win"><small>{t("승")}</small><strong>{formatNumber(account.rankedWins)}</strong></span>
+                      <span className="loss"><small>{t("패")}</small><strong>{formatNumber(account.rankedLosses)}</strong></span>
+                      <span className="draw"><small>{t("무")}</small><strong>{formatNumber(account.rankedDraws)}</strong></span>
+                    </div>
+                  </div>
                   {matches.length === 0 ? (
                     <p className="online-message">{t("아직 기록된 경기가 없습니다.")}</p>
                   ) : (
-                    <div className="match-history">
-                      {matches.map((match) => (
-                        <article key={match.gameId}>
-                          <span>
-                            <b>{match.mode.toUpperCase()} · {match.opponentName}</b>
-                            <small>{t(matchOutcome(match, account.id))} · {match.result ?? t("완료")} · TURN {match.turnNumber}</small>
-                          </span>
-                          <Link to={`/replay/${encodeURIComponent(match.gameId)}`}>{t("리플레이")}</Link>
-                        </article>
-                      ))}
-                    </div>
+                    <>
+                      <div className="match-history">
+                        {matches.slice(0, matchesExpanded ? matches.length : 5).map((match) => {
+                          const outcomeLabel = matchOutcome(match, account.id);
+                          const outcomeClass = outcomeLabel === "승리"
+                            ? "win"
+                            : outcomeLabel === "패배"
+                              ? "loss"
+                              : "draw";
+                          return (
+                            <article className={`match-history-${outcomeClass}`} key={match.gameId}>
+                              <b className={`match-outcome-badge ${outcomeClass}`}>{t(outcomeLabel)}</b>
+                              <span>
+                                <b>{match.mode.toUpperCase()} · {match.opponentName}</b>
+                                <small>{match.result ?? t("완료")} · TURN {match.turnNumber}</small>
+                              </span>
+                              <Link to={`/replay/${encodeURIComponent(match.gameId)}`}>{t("리플레이")}</Link>
+                            </article>
+                          );
+                        })}
+                      </div>
+                      {matches.length > 5 && (
+                        <button className="history-more-button" type="button" onClick={() => setMatchesExpanded(!matchesExpanded)}>
+                          {t(matchesExpanded ? "접기" : "더보기")}
+                        </button>
+                      )}
+                    </>
                   )}
                 </section>
               )}
+
+              <EconomyAccountPanel activeTab={accountTab} />
 
               {accountTab === "benefits" && (
                 <section className="account-security-actions">

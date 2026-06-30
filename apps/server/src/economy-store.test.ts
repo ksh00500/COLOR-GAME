@@ -174,4 +174,14 @@ describe("economy policy", () => {
       expect(definition?.[1], table).toContain("references accounts(id) on delete cascade");
     }
   });
+
+  it("persists the first cosmetic equip used by the new badge", () => {
+    const migrationPath = fileURLToPath(
+      new URL("../db/migrations/010_cosmetic_seen_and_static_patterns.sql", import.meta.url),
+    );
+    const migration = readFileSync(migrationPath, "utf8");
+    expect(migration).toContain("first_equipped_at timestamptz");
+    expect(migration).toContain("tile-tango-spectrum");
+    expect(migration).toContain("정적으로 겹쳐진");
+  });
 });
