@@ -30,7 +30,9 @@ export function TileSkinPreview({
       aria-label={label}
       aria-hidden={label ? undefined : true}
     >
-      <i />
+      <span className="tile-skin-preview-fill" aria-hidden="true">
+        <i />
+      </span>
     </span>
   );
 }

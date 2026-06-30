@@ -101,10 +101,10 @@ adb shell pm get-app-links com.ksh.tangogame
 
 ## 버전과 서명
 
-현재 최초 버전:
+현재 앱 버전:
 
-- `versionName`: `1.0.0`
-- `versionCode`: `1`
+- `versionName`: `1.1.2`
+- `versionCode`: `2`
 
 Play Store에 업로드할 때마다 `versionCode`를 반드시 증가시킨다.
 업로드 키와 `keystore.properties`는 Git에 커밋하지 않는다.

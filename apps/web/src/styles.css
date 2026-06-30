@@ -1914,12 +1914,19 @@ fieldset legend {
   min-width: 0;
   min-height: 0;
   place-items: center;
-  border: 1px solid rgba(255,255,255,0.12);
+  overflow: hidden;
+  border: 0;
   border-radius: inherit;
   color: rgba(255,255,255,0.82);
   font-size: clamp(0.7rem, 2vw, 1.25rem);
   text-shadow: 0 1px 2px rgba(0,0,0,0.22);
-  box-shadow: inset 0 3px 3px rgba(255,255,255,0.11), inset 0 -4px 7px rgba(0,0,0,0.11), 0 5px 8px rgba(30,14,7,0.24);
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,0.12),
+    inset 0 3px 3px rgba(255,255,255,0.11),
+    inset 0 -4px 7px rgba(0,0,0,0.11),
+    0 5px 8px rgba(30,14,7,0.24);
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
 
 .board-cell.colorA .tile-face,
@@ -5977,9 +5984,12 @@ kbd {
 :root[data-tango-tile-color-a]:not([data-tango-tile-color-a=""]) .board-cell.colorA .tile-face,
 :root[data-tango-tile-color-b]:not([data-tango-tile-color-b=""]) .board-cell.colorB .tile-face,
 :root[data-tango-tile-color-c]:not([data-tango-tile-color-c=""]) .board-cell.colorC .tile-face {
-  border-color: rgba(255,255,255,0.38);
   background-size: 100% 100%;
-  box-shadow: inset 0 3px 4px rgba(255,255,255,0.24), inset 0 -5px 9px rgba(0,0,0,0.2), 0 5px 9px rgba(0,0,0,0.23);
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,0.38),
+    inset 0 3px 4px rgba(255,255,255,0.24),
+    inset 0 -5px 9px rgba(0,0,0,0.2),
+    0 5px 9px rgba(0,0,0,0.23);
 }
 
 .segmented-control.three-up {
@@ -6120,23 +6130,38 @@ kbd {
 /* Compact economy, store and account layout */
 .tile-skin-preview {
   position: relative;
-  display: inline-grid;
+  display: inline-block;
   flex: 0 0 auto;
   width: 72px;
   aspect-ratio: 1;
+  border-radius: 16px;
+  background: transparent;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.2);
+  vertical-align: middle;
+}
+
+.tile-skin-preview-fill {
+  position: absolute;
+  inset: 0;
+  display: grid;
   place-items: center;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 16px;
+  border-radius: inherit;
   background: var(--tile-skin-background);
-  background-size: 220% 220%;
+  background-position: center;
+  background-size: 100% 100%;
   box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.3),
     inset 0 3px 3px rgba(255, 255, 255, 0.24),
-    inset 0 -8px 14px rgba(0, 0, 0, 0.2),
-    0 8px 18px rgba(0, 0, 0, 0.2);
+    inset 0 -8px 14px rgba(0, 0, 0, 0.2);
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  contain: paint;
 }
 
 .tile-skin-preview i {
+  position: relative;
+  z-index: 1;
   width: 34%;
   height: 16%;
   border-radius: 999px;
@@ -7897,7 +7922,7 @@ kbd {
   background: color-mix(in srgb, var(--app-accent) 8%, var(--app-panel-muted));
 }
 
-.tile-skin-preview,
+.tile-skin-preview-fill,
 :root[data-tango-tile-color-a] .board-cell.colorA .tile-face,
 :root[data-tango-tile-color-b] .board-cell.colorB .tile-face,
 :root[data-tango-tile-color-c] .board-cell.colorC .tile-face {
@@ -7933,7 +7958,7 @@ kbd {
 }
 
 /* Exact cosmetic rendering, daily check-in, and balanced mobile content */
-.tile-skin-preview {
+.tile-skin-preview-fill {
   background-size: 100% 100%;
 }
 
