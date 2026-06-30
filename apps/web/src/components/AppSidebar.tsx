@@ -15,20 +15,25 @@ export function AppSidebar({ onSettings }: AppSidebarProps) {
       <button className="sidebar-brand" type="button" onClick={() => navigate("/")}>
         <BrandMark />
       </button>
+      <nav className="mobile-header-actions" aria-label={t("주요 메뉴")}>
+        <button type="button" onClick={() => navigate("/store")}>{t("상점")}</button>
+        <button type="button" onClick={() => navigate("/account")}>{t("마이")}</button>
+        <button type="button" onClick={onSettings}>{t("설정")}</button>
+      </nav>
       <div className="sidebar-menu">
         <nav className="sidebar-nav">
           <button type="button" onClick={() => navigate("/")}>{t("플레이")}</button>
-          <button type="button" onClick={() => navigate("/matchmaking?mode=casual")}>{t("일반")}</button>
-          <button type="button" onClick={() => navigate("/matchmaking?mode=ranked")}>{t("경쟁")}</button>
-          <button type="button" onClick={() => navigate("/private")}>{t("사설방")}</button>
-          <button type="button" onClick={() => navigate("/store")}>{t("상점")}</button>
+          <button className="mobile-nav-detail" type="button" onClick={() => navigate("/matchmaking?mode=casual")}>{t("일반")}</button>
+          <button className="mobile-nav-detail" type="button" onClick={() => navigate("/matchmaking?mode=ranked")}>{t("경쟁")}</button>
+          <button className="mobile-nav-detail" type="button" onClick={() => navigate("/private")}>{t("사설방")}</button>
+          <button className="mobile-nav-promoted" type="button" onClick={() => navigate("/store")}>{t("상점")}</button>
           <button type="button" onClick={() => navigate("/leaderboard")}>{t("리더보드")}</button>
-          <button type="button" onClick={() => navigate("/account")}>{t("마이")}</button>
+          <button className="mobile-nav-promoted" type="button" onClick={() => navigate("/account")}>{t("마이")}</button>
           <button type="button" onClick={() => navigate("/patch-notes")}>{t("패치노트")}</button>
         </nav>
         <div className="sidebar-bottom">
           <button type="button" onClick={() => navigate("/privacy")}>{t("개인정보")}</button>
-          <button type="button" onClick={onSettings}>{t("설정")}</button>
+          <button className="mobile-nav-promoted" type="button" onClick={onSettings}>{t("설정")}</button>
         </div>
       </div>
     </aside>

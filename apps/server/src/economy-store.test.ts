@@ -12,6 +12,7 @@ import {
   selectWeeklyCatalog,
   seoulDayKey,
   seoulWeek,
+  TileColorSimilarityError,
   validateTileColorCombination,
 } from "./economy-store.js";
 import { createGuestToken, verifyGuestToken } from "./server.js";
@@ -118,7 +119,15 @@ describe("economy policy", () => {
     expect(() => validateTileColorCombination([
       { id: "one", representativeColor: "#d93f5c" },
       { id: "two", representativeColor: "#da405d" },
-    ])).toThrow("TILE_COLORS_TOO_SIMILAR");
+    ])).toThrow(TileColorSimilarityError);
+    expect(() => validateTileColorCombination([
+      { id: "one", representativeColor: "#d93f5c" },
+      { id: "two", representativeColor: "#da405d" },
+    ], true)).not.toThrow();
+    expect(() => validateTileColorCombination([
+      { id: "one", representativeColor: "#d93f5c" },
+      { id: "one", representativeColor: "#da405d" },
+    ], true)).toThrow("DUPLICATE_TILE_COLOR");
     expect(() => validateTileColorCombination([
       { id: "one", representativeColor: "#d93f5c" },
       { id: "two", representativeColor: "#31a56f" },

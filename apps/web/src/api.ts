@@ -56,7 +56,7 @@ const apiUrl = (
 const tokenKey = "color-game-auth-token";
 
 export class ApiError extends Error {
-  constructor(readonly code: string, message: string) {
+  constructor(readonly code: string, message: string, readonly details?: unknown) {
     super(message);
     this.name = "ApiError";
   }
@@ -87,6 +87,7 @@ export interface CosmeticItem {
   visualKind: "solid" | "split" | "gradient" | "pattern" | "placeholder";
   colors: string[];
   pattern: string | null;
+  splitAngle: number | null;
   representativeColor: string | null;
   availability: "active" | "upcoming" | "pack_only";
   owned: boolean;
@@ -181,7 +182,7 @@ const parseResponse = async <T>(response: Response): Promise<T> => {
     if (response.status === 401 && data.code === "UNAUTHORIZED") {
       clearAuthToken();
     }
-    throw new ApiError(data.code ?? "REQUEST_FAILED", data.message ?? "Request failed.");
+    throw new ApiError(data.code ?? "REQUEST_FAILED", data.message ?? "Request failed.", data);
   }
   return data;
 };
@@ -340,12 +341,26 @@ export const combineCosmeticFragments = async (
 export const equipTileColor = async (
   slot: TileLoadoutSlot,
   cosmeticId: string,
+  allowSimilar = false,
 ): Promise<EconomyOverview> => {
   const data = await request<{ economy: EconomyOverview }>(
     `/economy/loadout/tile/${slot}`,
     {
       method: "PUT",
-      body: JSON.stringify({ cosmeticId, timeZone: browserTimeZone() }),
+      body: JSON.stringify({ cosmeticId, allowSimilar, timeZone: browserTimeZone() }),
+    },
+  );
+  return data.economy;
+};
+
+export const resetTileColor = async (
+  slot: TileLoadoutSlot,
+): Promise<EconomyOverview> => {
+  const data = await request<{ economy: EconomyOverview }>(
+    `/economy/loadout/tile/${slot}`,
+    {
+      method: "DELETE",
+      body: JSON.stringify({ timeZone: browserTimeZone() }),
     },
   );
   return data.economy;
