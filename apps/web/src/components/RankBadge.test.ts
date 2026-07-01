@@ -4,13 +4,13 @@ import { paintSpots, paletteHole } from "./RankBadge";
 describe("palette tier icon", () => {
   it("follows the outer palette curve from red to violet", () => {
     expect(paintSpots.map(({ cx, cy }) => [cx, cy])).toEqual([
-      [54, 21],
-      [71, 24],
-      [86, 31],
-      [92, 43],
-      [86, 55],
-      [70, 62],
-      [52, 60],
+      [42, 22],
+      [55, 18],
+      [68, 19],
+      [80, 23],
+      [89, 30],
+      [94, 40],
+      [91, 51],
     ]);
   });
 
@@ -21,7 +21,7 @@ describe("palette tier icon", () => {
         spot.cy - paletteHole.cy,
       );
       expect(centerDistance).toBeGreaterThan(
-        paletteHole.radius + Math.max(spot.rx, spot.ry) + 2,
+        paletteHole.radius + spot.r + 2,
       );
     }
   });
@@ -34,7 +34,7 @@ describe("palette tier icon", () => {
           spot.cy - other.cy,
         );
         expect(centerDistance).toBeGreaterThan(
-          Math.max(spot.rx, spot.ry) + Math.max(other.rx, other.ry),
+          spot.r + other.r,
         );
       }
     }

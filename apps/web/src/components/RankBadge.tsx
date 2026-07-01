@@ -16,13 +16,13 @@ export const rainbowRankLimit = 50;
 export const paletteHole = { cx: 25.5, cy: 36, radius: 8.3 } as const;
 
 export const paintSpots = [
-  { cx: 54, cy: 21, rx: 6.2, ry: 5.2, rotate: -4 },
-  { cx: 71, cy: 24, rx: 6.2, ry: 5, rotate: 8 },
-  { cx: 86, cy: 31, rx: 6, ry: 5, rotate: 14 },
-  { cx: 92, cy: 43, rx: 6.1, ry: 5.1, rotate: 6 },
-  { cx: 86, cy: 55, rx: 6.1, ry: 5.1, rotate: -8 },
-  { cx: 70, cy: 62, rx: 6.2, ry: 5.2, rotate: -4 },
-  { cx: 52, cy: 60, rx: 6.2, ry: 5.2, rotate: 5 },
+  { cx: 42, cy: 22, r: 4.5 },
+  { cx: 55, cy: 18, r: 4.5 },
+  { cx: 68, cy: 19, r: 4.5 },
+  { cx: 80, cy: 23, r: 4.5 },
+  { cx: 89, cy: 30, r: 4.5 },
+  { cx: 94, cy: 40, r: 4.5 },
+  { cx: 91, cy: 51, r: 4.5 },
 ] as const;
 
 export const getRankTier = (rating: number, leaderboardRank?: number | null) => {
@@ -136,29 +136,41 @@ export function PaletteTierIcon({
       <ellipse className="palette-highlight" cx="58" cy="20" rx="27" ry="8" />
       <circle className="palette-hole" cx={paletteHole.cx} cy={paletteHole.cy} r={paletteHole.radius} />
       <circle className="palette-hole-highlight" cx="22.7" cy="32.8" r="2" />
-      {!isRainbow && paintSpots.map((spot, index) => {
+      {paintSpots.map((spot, index) => {
         const step = paletteSteps[index]!;
-        const filled = index < visibleCount;
+        const filled = !isRainbow && index < visibleCount;
         return (
           <g key={step.label}>
-            <ellipse
-              className={`palette-paint${filled ? " filled" : ""}`}
+            <circle
+              className="palette-well-shadow"
               cx={spot.cx}
               cy={spot.cy}
-              rx={spot.rx}
-              ry={spot.ry}
-              fill={filled ? step.color : "transparent"}
-              transform={`rotate(${spot.rotate} ${spot.cx} ${spot.cy})`}
+              r={spot.r + 1.35}
+            />
+            <circle
+              className="palette-well"
+              cx={spot.cx}
+              cy={spot.cy}
+              r={spot.r + 0.45}
             />
             {filled && (
-              <ellipse
-                className="palette-paint-highlight"
-                cx={spot.cx - 1.6}
-                cy={spot.cy - 1.5}
-                rx={spot.rx * 0.34}
-                ry={spot.ry * 0.26}
-                transform={`rotate(${spot.rotate} ${spot.cx} ${spot.cy})`}
-              />
+              <>
+                <circle
+                  className="palette-paint filled"
+                  cx={spot.cx}
+                  cy={spot.cy}
+                  r={spot.r - 0.35}
+                  fill={step.color}
+                />
+                <ellipse
+                  className="palette-paint-highlight"
+                  cx={spot.cx - 1.35}
+                  cy={spot.cy - 1.45}
+                  rx={spot.r * 0.38}
+                  ry={spot.r * 0.22}
+                  transform={`rotate(-18 ${spot.cx} ${spot.cy})`}
+                />
+              </>
             )}
           </g>
         );
