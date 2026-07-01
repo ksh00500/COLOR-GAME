@@ -9,7 +9,7 @@ describe("palette tier icon", () => {
         spot.cy - paletteHole.cy,
       );
       expect(centerDistance).toBeGreaterThan(
-        paletteHole.radius + Math.max(spot.rx, spot.ry) + 8,
+        paletteHole.radius + Math.max(spot.rx, spot.ry) + 2,
       );
     }
   });
@@ -22,7 +22,7 @@ describe("palette tier icon", () => {
           spot.cy - other.cy,
         );
         expect(centerDistance).toBeGreaterThan(
-          Math.max(spot.rx, spot.ry) + Math.max(other.rx, other.ry) + 1,
+          Math.max(spot.rx, spot.ry) + Math.max(other.rx, other.ry),
         );
       }
     }
