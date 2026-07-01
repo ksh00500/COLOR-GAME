@@ -2,19 +2,40 @@ import { afterEach, describe, expect, it } from "vitest";
 import type {
   AccountStore,
   AccountSummary,
+  AuthMethods,
+  GoogleIdentity,
   MatchHistoryItem,
   PublicProfile,
 } from "./auth-store.js";
 import type { AnalyticsStore, VisitorCounts } from "./analytics-store.js";
 import { createServer } from "./server.js";
 import type { RoomSnapshot } from "@color-game/shared-types";
+import type {
+  GoogleTokenVerifier,
+  VerifiedGoogleIdentity,
+} from "./google-auth.js";
+
+class FakeGoogleTokenVerifier implements GoogleTokenVerifier {
+  readonly enabled = true;
+
+  async verify(idToken: string): Promise<VerifiedGoogleIdentity | null> {
+    if (idToken !== "valid-google-token".repeat(10)) return null;
+    return {
+      subject: "google-subject-1",
+      email: "google@example.com",
+      name: "Google Player",
+      picture: null,
+    };
+  }
+}
 
 class MemoryAccountStore implements AccountStore {
   readonly enabled = true;
 
   private readonly accounts = new Map<string, AccountSummary & {
     activeSessionId: string | null;
-    password: string;
+    password: string | null;
+    googleSubject: string | null;
   }>();
 
   async close(): Promise<void> {
@@ -48,6 +69,7 @@ class MemoryAccountStore implements AccountStore {
       createdAt: new Date(0).toISOString(),
       activeSessionId: null,
       password: input.password,
+      googleSubject: null,
     };
     this.accounts.set(account.id, account);
     return account;
@@ -57,7 +79,72 @@ class MemoryAccountStore implements AccountStore {
     const account = [...this.accounts.values()].find(
       (candidate) => candidate.email === email.toLowerCase(),
     );
-    return account?.password === password ? account : null;
+    return account?.password !== null && account?.password === password ? account : null;
+  }
+
+  async getAccountByEmail(email: string): Promise<AccountSummary | null> {
+    return [...this.accounts.values()].find(
+      (candidate) => candidate.email === email.toLowerCase(),
+    ) ?? null;
+  }
+
+  async getAccountByGoogleSubject(subject: string): Promise<AccountSummary | null> {
+    return [...this.accounts.values()].find(
+      (candidate) => candidate.googleSubject === subject,
+    ) ?? null;
+  }
+
+  async registerGoogle(input: {
+    identity: GoogleIdentity;
+    displayName: string;
+    avatarId: string;
+  }): Promise<AccountSummary> {
+    if (await this.getAccountByEmail(input.identity.email) !== null) {
+      throw new Error("duplicate account");
+    }
+    const account = {
+      id: `account-${this.accounts.size + 1}`,
+      email: input.identity.email.toLowerCase(),
+      displayName: input.displayName,
+      avatarId: input.avatarId,
+      rating: 1000,
+      gamesPlayed: 0,
+      rankedWins: 0,
+      rankedLosses: 0,
+      rankedDraws: 0,
+      attendanceStreak: 0,
+      longestAttendanceStreak: 0,
+      lastAttendanceDate: null,
+      createdAt: new Date(0).toISOString(),
+      activeSessionId: null,
+      password: null,
+      googleSubject: input.identity.subject,
+    };
+    this.accounts.set(account.id, account);
+    return account;
+  }
+
+  async linkGoogle(accountId: string, identity: GoogleIdentity): Promise<void> {
+    const account = this.accounts.get(accountId);
+    if (account === undefined || await this.getAccountByGoogleSubject(identity.subject) !== null) {
+      throw new Error("duplicate identity");
+    }
+    this.accounts.set(accountId, { ...account, googleSubject: identity.subject });
+  }
+
+  async unlinkGoogle(accountId: string): Promise<boolean> {
+    const account = this.accounts.get(accountId);
+    if (account === undefined || account.googleSubject === null) return false;
+    this.accounts.set(accountId, { ...account, googleSubject: null });
+    return true;
+  }
+
+  async getAuthMethods(accountId: string): Promise<AuthMethods> {
+    const account = this.accounts.get(accountId);
+    return {
+      password: account?.password !== null && account?.password !== undefined,
+      google: account?.googleSubject !== null && account?.googleSubject !== undefined,
+    };
   }
 
   async getAccount(accountId: string): Promise<AccountSummary | null> {
@@ -329,6 +416,111 @@ describe("auth routes", () => {
 
     const leaderboard = await app.inject({ method: "GET", url: "/leaderboard" });
     expect(leaderboard.json<{ players: PublicProfile[] }>().players).toHaveLength(0);
+  });
+
+  it("creates a Google account only after nickname confirmation and reuses its identity", async () => {
+    const accountStore = new MemoryAccountStore();
+    const { app } = createServer({
+      accountStore,
+      googleTokenVerifier: new FakeGoogleTokenVerifier(),
+      authSecret: "test-auth-secret-with-more-than-32-characters",
+    });
+    apps.push(app);
+    const idToken = "valid-google-token".repeat(10);
+
+    const needsProfile = await app.inject({
+      method: "POST",
+      url: "/auth/google",
+      payload: { idToken },
+    });
+    expect(needsProfile.statusCode).toBe(428);
+    expect(needsProfile.json<{ code: string }>().code).toBe("GOOGLE_REGISTRATION_REQUIRED");
+
+    const registered = await app.inject({
+      method: "POST",
+      url: "/auth/google",
+      payload: { idToken, displayName: "Tango Google", avatarId: "prism" },
+    });
+    expect(registered.statusCode).toBe(200);
+    expect(registered.json<{ account: AccountSummary }>().account.email).toBe("google@example.com");
+
+    const signedInAgain = await app.inject({
+      method: "POST",
+      url: "/auth/google",
+      payload: { idToken },
+    });
+    expect(signedInAgain.statusCode).toBe(200);
+    expect(signedInAgain.json<{ account: AccountSummary }>().account.displayName).toBe("Tango Google");
+
+    const googleToken = signedInAgain.json<{ token: string }>().token;
+    const missingConfirmation = await app.inject({
+      method: "DELETE",
+      url: "/auth/account",
+      headers: { authorization: `Bearer ${googleToken}` },
+      payload: {},
+    });
+    expect(missingConfirmation.statusCode).toBe(400);
+
+    const deleted = await app.inject({
+      method: "DELETE",
+      url: "/auth/account",
+      headers: { authorization: `Bearer ${googleToken}` },
+      payload: { confirmation: "DELETE" },
+    });
+    expect(deleted.statusCode).toBe(204);
+  });
+
+  it("requires the existing password before linking a matching Google email", async () => {
+    const accountStore = new MemoryAccountStore();
+    const { app } = createServer({
+      accountStore,
+      googleTokenVerifier: new FakeGoogleTokenVerifier(),
+      authSecret: "test-auth-secret-with-more-than-32-characters",
+    });
+    apps.push(app);
+    await app.inject({
+      method: "POST",
+      url: "/auth/register",
+      payload: {
+        email: "google@example.com",
+        password: "password123",
+        displayName: "Existing Player",
+        avatarId: "orbit",
+      },
+    });
+    const idToken = "valid-google-token".repeat(10);
+
+    const conflict = await app.inject({
+      method: "POST",
+      url: "/auth/google",
+      payload: { idToken },
+    });
+    expect(conflict.statusCode).toBe(409);
+    expect(conflict.json<{ code: string }>().code).toBe("GOOGLE_LINK_REQUIRED");
+
+    const wrongPassword = await app.inject({
+      method: "POST",
+      url: "/auth/google/link",
+      payload: { idToken, password: "incorrect123" },
+    });
+    expect(wrongPassword.statusCode).toBe(403);
+
+    const linked = await app.inject({
+      method: "POST",
+      url: "/auth/google/link",
+      payload: { idToken, password: "password123" },
+    });
+    expect(linked.statusCode).toBe(200);
+    const token = linked.json<{ token: string }>().token;
+    const methods = await app.inject({
+      method: "GET",
+      url: "/auth/methods",
+      headers: { authorization: `Bearer ${token}` },
+    });
+    expect(methods.json<{ methods: AuthMethods }>().methods).toEqual({
+      password: true,
+      google: true,
+    });
   });
 
   it("allows Android WebView preflight requests for account deletion", async () => {

@@ -43,6 +43,10 @@ import {
   type AdminStore,
 } from "./admin-store.js";
 import {
+  NullGoogleTokenVerifier,
+  type GoogleTokenVerifier,
+} from "./google-auth.js";
+import {
   gameMoveSchema,
   gameResignSchema,
   playerProfileSchema,
@@ -60,6 +64,7 @@ export interface ServerOptions {
   matchmakingWaitStore?: MatchmakingWaitStore;
   economyStore?: EconomyStore;
   adminStore?: AdminStore;
+  googleTokenVerifier?: GoogleTokenVerifier;
   authSecret?: string;
   tokenTtlSeconds?: number;
   requireDatabaseHealth?: boolean;
@@ -106,6 +111,18 @@ const analyticsHeartbeatSchema = z.object({
 });
 
 const deleteAccountSchema = z.object({
+  password: z.string().min(8).max(128).optional(),
+  confirmation: z.literal("DELETE").optional(),
+});
+
+const googleAuthSchema = z.object({
+  idToken: z.string().min(100).max(10_000),
+  displayName: z.string().trim().min(2).max(24).optional(),
+  avatarId: z.string().trim().min(1).max(32).optional().default("orbit"),
+});
+
+const googleLinkSchema = z.object({
+  idToken: z.string().min(100).max(10_000),
   password: z.string().min(8).max(128),
 });
 
@@ -265,6 +282,7 @@ export const createServer = (options: ServerOptions = {}) => {
   const matchmakingWaitStore = options.matchmakingWaitStore ?? new NullMatchmakingWaitStore();
   const economyStore = options.economyStore ?? new NullEconomyStore();
   const adminStore = options.adminStore ?? new NullAdminStore();
+  const googleTokenVerifier = options.googleTokenVerifier ?? new NullGoogleTokenVerifier();
   const metrics = new ServerMetrics();
   const authSecret = options.authSecret ?? "dev-only-color-game-secret-for-local-development";
   const tokenTtlSeconds = options.tokenTtlSeconds ?? 60 * 60 * 24 * 30;
@@ -647,12 +665,120 @@ export const createServer = (options: ServerOptions = {}) => {
     return { token, account: publicAccount(account) };
   });
 
+  app.post("/auth/google", async (request, reply) => {
+    if (!accountStore.enabled) {
+      return reply.code(503).send({ code: "DATABASE_DISABLED" });
+    }
+    if (!googleTokenVerifier.enabled) {
+      return reply.code(503).send({ code: "GOOGLE_AUTH_DISABLED" });
+    }
+    const parsed = googleAuthSchema.safeParse(request.body ?? {});
+    if (!parsed.success) {
+      return reply.code(400).send({ code: "INVALID_REQUEST", details: parsed.error.flatten() });
+    }
+    const identity = await googleTokenVerifier.verify(parsed.data.idToken);
+    if (identity === null) {
+      return reply.code(401).send({ code: "INVALID_GOOGLE_TOKEN" });
+    }
+
+    const linked = await accountStore.getAccountByGoogleSubject(identity.subject);
+    if (linked !== null) {
+      const token = await issueAuthToken(linked);
+      if (token === null) return reply.code(500).send({ code: "SESSION_CREATE_FAILED" });
+      return { token, account: publicAccount(linked) };
+    }
+
+    const existingEmailAccount = await accountStore.getAccountByEmail(identity.email);
+    if (existingEmailAccount !== null) {
+      return reply.code(409).send({
+        code: "GOOGLE_LINK_REQUIRED",
+        email: identity.email,
+        message: "Confirm the existing Tango password to connect Google.",
+      });
+    }
+
+    if (parsed.data.displayName === undefined) {
+      return reply.code(428).send({
+        code: "GOOGLE_REGISTRATION_REQUIRED",
+        email: identity.email,
+        suggestedDisplayName: identity.name?.trim().slice(0, 24) || "",
+      });
+    }
+
+    try {
+      const account = await accountStore.registerGoogle({
+        identity,
+        displayName: parsed.data.displayName,
+        avatarId: parsed.data.avatarId,
+      });
+      const token = await issueAuthToken(account);
+      if (token === null) return reply.code(500).send({ code: "SESSION_CREATE_FAILED" });
+      return { token, account: publicAccount(account) };
+    } catch (error) {
+      app.log.warn({ err: error }, "Google registration failed");
+      return reply.code(409).send({ code: "ACCOUNT_EXISTS" });
+    }
+  });
+
+  app.post("/auth/google/link", async (request, reply) => {
+    if (!accountStore.enabled || !googleTokenVerifier.enabled) {
+      return reply.code(503).send({ code: "GOOGLE_AUTH_DISABLED" });
+    }
+    const parsed = googleLinkSchema.safeParse(request.body ?? {});
+    if (!parsed.success) {
+      return reply.code(400).send({ code: "INVALID_REQUEST", details: parsed.error.flatten() });
+    }
+    const identity = await googleTokenVerifier.verify(parsed.data.idToken);
+    if (identity === null) {
+      return reply.code(401).send({ code: "INVALID_GOOGLE_TOKEN" });
+    }
+    const alreadyLinked = await accountStore.getAccountByGoogleSubject(identity.subject);
+    if (alreadyLinked !== null) {
+      return reply.code(409).send({ code: "GOOGLE_ALREADY_LINKED" });
+    }
+    const account = await accountStore.authenticate(identity.email, parsed.data.password);
+    if (account === null) {
+      return reply.code(403).send({ code: "INVALID_PASSWORD" });
+    }
+    try {
+      await accountStore.linkGoogle(account.id, identity);
+    } catch (error) {
+      app.log.warn({ err: error }, "Google account linking failed");
+      return reply.code(409).send({ code: "GOOGLE_ALREADY_LINKED" });
+    }
+    const token = await issueAuthToken(account);
+    if (token === null) return reply.code(500).send({ code: "SESSION_CREATE_FAILED" });
+    return { token, account: publicAccount(account) };
+  });
+
   app.get("/auth/me", async (request, reply) => {
     const account = await authenticateToken(bearerToken(request.headers.authorization));
     if (account === null) {
       return reply.code(401).send({ code: "UNAUTHORIZED", message: "Sign in is required." });
     }
     return { account: publicAccount(account) };
+  });
+
+  app.get("/auth/methods", async (request, reply) => {
+    const account = await authenticateToken(bearerToken(request.headers.authorization));
+    if (account === null) {
+      return reply.code(401).send({ code: "UNAUTHORIZED" });
+    }
+    return { methods: await accountStore.getAuthMethods(account.id) };
+  });
+
+  app.delete("/auth/google", async (request, reply) => {
+    const account = await authenticateToken(bearerToken(request.headers.authorization));
+    if (account === null) {
+      return reply.code(401).send({ code: "UNAUTHORIZED" });
+    }
+    const methods = await accountStore.getAuthMethods(account.id);
+    if (!methods.google) return reply.code(404).send({ code: "GOOGLE_NOT_LINKED" });
+    if (!methods.password) {
+      return reply.code(409).send({ code: "LAST_AUTH_METHOD" });
+    }
+    await accountStore.unlinkGoogle(account.id);
+    return reply.code(204).send();
   });
 
   app.delete("/auth/account", async (request, reply) => {
@@ -666,9 +792,17 @@ export const createServer = (options: ServerOptions = {}) => {
       return reply.code(400).send({ code: "INVALID_REQUEST", details: parsed.error.flatten() });
     }
 
-    const verified = await accountStore.authenticate(account.email, parsed.data.password);
-    if (verified?.id !== account.id) {
-      return reply.code(403).send({ code: "INVALID_PASSWORD", message: "Password is invalid." });
+    const methods = await accountStore.getAuthMethods(account.id);
+    if (methods.password) {
+      if (parsed.data.password === undefined) {
+        return reply.code(400).send({ code: "PASSWORD_REQUIRED" });
+      }
+      const verified = await accountStore.authenticate(account.email, parsed.data.password);
+      if (verified?.id !== account.id) {
+        return reply.code(403).send({ code: "INVALID_PASSWORD", message: "Password is invalid." });
+      }
+    } else if (parsed.data.confirmation !== "DELETE") {
+      return reply.code(400).send({ code: "DELETE_CONFIRMATION_REQUIRED" });
     }
 
     const activeGameSocket = [...io.sockets.sockets.values()].some((socket) => {

@@ -1,16 +1,21 @@
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   checkInAttendance,
   ApiError,
   clearAuthToken,
   deleteAccount,
+  fetchAuthMethods,
   fetchLeaderboard,
   fetchMatches,
   fetchMe,
   loginAccount,
+  loginWithGoogle,
+  linkGoogleAccount,
   registerAccount,
+  unlinkGoogleAccount,
   type Account,
+  type AuthMethods,
   type MatchHistoryItem,
   type PublicProfile,
 } from "../api";
@@ -22,6 +27,7 @@ import {
   type AccountEconomyTab,
 } from "../components/EconomyAccountPanel";
 import { useI18n } from "../i18n";
+import { GoogleSignInButton } from "../components/GoogleSignInButton";
 
 type AuthMode = "login" | "register";
 
@@ -53,6 +59,10 @@ export function AccountPage({ deletionEntry = false }: { deletionEntry?: boolean
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [accountTab, setAccountTab] = useState<AccountEconomyTab>("tiles");
   const [matchesExpanded, setMatchesExpanded] = useState(false);
+  const [authMethods, setAuthMethods] = useState<AuthMethods>({ password: true, google: false });
+  const [pendingGoogleToken, setPendingGoogleToken] = useState<string | null>(null);
+  const [googleStep, setGoogleStep] = useState<"register" | "link" | null>(null);
+  const [googlePassword, setGooglePassword] = useState("");
 
   useEffect(() => {
     void fetchMe()
@@ -66,13 +76,80 @@ export function AccountPage({ deletionEntry = false }: { deletionEntry?: boolean
   }, [deletionEntry]);
 
   async function refreshAccountData(nextAccount: Account) {
-    const [nextMatches, leaderboard] = await Promise.all([
+    const [nextMatches, leaderboard, methods] = await Promise.all([
       fetchMatches(nextAccount.id),
       fetchLeaderboard().catch(() => [] as PublicProfile[]),
+      fetchAuthMethods().catch(() => ({ password: true, google: false })),
     ]);
     setMatches(nextMatches);
     setLeaderboardRank(findLeaderboardRank(leaderboard, nextAccount.id));
+    setAuthMethods(methods);
   }
+
+  const acceptAccount = useCallback(async (nextAccount: Account) => {
+    const checkedInAccount = await checkInAttendance().catch(() => nextAccount);
+    setAccount(checkedInAccount);
+    setPendingGoogleToken(null);
+    setGoogleStep(null);
+    setGooglePassword("");
+    await refreshAccountData(checkedInAccount);
+    if (deletionEntry) setDeleteOpen(true);
+  }, [deletionEntry]);
+
+  const handleGoogleCredential = useCallback(async (idToken: string) => {
+    setBusy(true);
+    setMessage(null);
+    try {
+      await acceptAccount(await loginWithGoogle({ idToken }));
+    } catch (error) {
+      if (error instanceof ApiError && error.code === "GOOGLE_REGISTRATION_REQUIRED") {
+        const details = error.details as { suggestedDisplayName?: string };
+        setPendingGoogleToken(idToken);
+        setGoogleStep("register");
+        setDisplayName(details.suggestedDisplayName ?? "");
+      } else if (error instanceof ApiError && error.code === "GOOGLE_LINK_REQUIRED") {
+        setPendingGoogleToken(idToken);
+        setGoogleStep("link");
+      } else {
+        setMessage(error instanceof ApiError ? error.code : "GOOGLE_SIGN_IN_FAILED");
+      }
+    } finally {
+      setBusy(false);
+    }
+  }, [acceptAccount]);
+
+  const finishGoogleRegistration = async () => {
+    if (pendingGoogleToken === null) return;
+    setBusy(true);
+    setMessage(null);
+    try {
+      await acceptAccount(await loginWithGoogle({
+        idToken: pendingGoogleToken,
+        displayName,
+        avatarId,
+      }));
+    } catch (error) {
+      setMessage(error instanceof ApiError ? error.code : "GOOGLE_SIGN_IN_FAILED");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const finishGoogleLink = async () => {
+    if (pendingGoogleToken === null) return;
+    setBusy(true);
+    setMessage(null);
+    try {
+      await acceptAccount(await linkGoogleAccount({
+        idToken: pendingGoogleToken,
+        password: googlePassword,
+      }));
+    } catch (error) {
+      setMessage(error instanceof ApiError ? error.code : "GOOGLE_SIGN_IN_FAILED");
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -82,10 +159,7 @@ export function AccountPage({ deletionEntry = false }: { deletionEntry?: boolean
       const nextAccount = mode === "login"
         ? await loginAccount({ email, password })
         : await registerAccount({ email, password, displayName, avatarId });
-      const checkedInAccount = await checkInAttendance().catch(() => nextAccount);
-      setAccount(checkedInAccount);
-      await refreshAccountData(checkedInAccount);
-      if (deletionEntry) setDeleteOpen(true);
+      await acceptAccount(nextAccount);
     } catch (error) {
       setMessage(error instanceof ApiError ? error.code : "계정 요청을 처리하지 못했습니다.");
     } finally {
@@ -98,13 +172,17 @@ export function AccountPage({ deletionEntry = false }: { deletionEntry?: boolean
     setAccount(null);
     setMatches([]);
     setLeaderboardRank(null);
+    setPendingGoogleToken(null);
+    setGoogleStep(null);
   };
 
   const removeAccount = async () => {
     setDeleteBusy(true);
     setMessage(null);
     try {
-      await deleteAccount(deletePassword);
+      await deleteAccount(authMethods.password
+        ? { password: deletePassword }
+        : { confirmation: "DELETE" });
       setDeleteOpen(false);
       setDeletePassword("");
       setAccount(null);
@@ -172,6 +250,44 @@ export function AccountPage({ deletionEntry = false }: { deletionEntry?: boolean
               <button className="primary-action" type="submit" disabled={busy}>
                 {mode === "login" ? t("로그인") : t("계정 만들기")} <span aria-hidden="true">↗</span>
               </button>
+              <div className="auth-divider"><span>{t("또는")}</span></div>
+              <GoogleSignInButton
+                busy={busy}
+                onCredential={(idToken) => void handleGoogleCredential(idToken)}
+                onError={setMessage}
+              />
+              {googleStep === "register" && (
+                <section className="google-auth-followup">
+                  <strong>{t("Tango에서 사용할 닉네임을 정해주세요.")}</strong>
+                  <label className="online-field">
+                    <span>{t("닉네임")}</span>
+                    <input value={displayName} maxLength={24} onChange={(event) => setDisplayName(event.target.value)} />
+                  </label>
+                  <div className="segmented-control two-up">
+                    {(["orbit", "prism"] as const).map((avatar) => (
+                      <button key={avatar} type="button" className={avatarId === avatar ? "active" : ""} onClick={() => setAvatarId(avatar)}>
+                        {avatar === "orbit" ? "Orbit" : "Prism"}
+                      </button>
+                    ))}
+                  </div>
+                  <button className="primary-action" type="button" disabled={busy || displayName.trim().length < 2} onClick={() => void finishGoogleRegistration()}>
+                    {t("Google 계정으로 시작")}
+                  </button>
+                </section>
+              )}
+              {googleStep === "link" && (
+                <section className="google-auth-followup">
+                  <strong>{t("이미 같은 이메일의 Tango 계정이 있습니다.")}</strong>
+                  <p>{t("기존 비밀번호를 확인하면 Google 계정을 안전하게 연결합니다.")}</p>
+                  <label className="online-field">
+                    <span>{t("현재 비밀번호")}</span>
+                    <input type="password" value={googlePassword} autoComplete="current-password" onChange={(event) => setGooglePassword(event.target.value)} />
+                  </label>
+                  <button className="primary-action" type="button" disabled={busy || googlePassword.length < 8} onClick={() => void finishGoogleLink()}>
+                    {t("Google 계정 연결")}
+                  </button>
+                </section>
+              )}
               {message !== null && <p className="online-message">{t(message)}</p>}
             </form>
           ) : (
@@ -255,11 +371,46 @@ export function AccountPage({ deletionEntry = false }: { deletionEntry?: boolean
               <EconomyAccountPanel activeTab={accountTab} />
 
               {accountTab === "benefits" && (
-                <section className="account-security-actions">
-                  <Link className="account-policy-link" to="/privacy">{t("개인정보 처리방침")}</Link>
-                  <button className="secondary-action" type="button" onClick={logout}>{t("로그아웃")}</button>
-                  <button className="danger-action" type="button" onClick={() => setDeleteOpen(true)}>{t("계정 삭제")}</button>
-                </section>
+                <>
+                  <section className="google-connection-card">
+                    <div>
+                      <strong>Google</strong>
+                      <p>{t(authMethods.google ? "Google 계정이 연결되어 있습니다." : "Google 계정을 연결하면 더 간편하게 로그인할 수 있습니다.")}</p>
+                    </div>
+                    {authMethods.google ? (
+                      <button
+                        className="secondary-action"
+                        type="button"
+                        disabled={!authMethods.password}
+                        onClick={() => {
+                          void unlinkGoogleAccount()
+                            .then(() => setAuthMethods({ ...authMethods, google: false }))
+                            .catch((error: unknown) => setMessage(error instanceof ApiError ? error.code : "GOOGLE_SIGN_IN_FAILED"));
+                        }}
+                      >
+                        {t("연결 해제")}
+                      </button>
+                    ) : (
+                      <GoogleSignInButton busy={busy} onCredential={(idToken) => void handleGoogleCredential(idToken)} onError={setMessage} />
+                    )}
+                  </section>
+                  {googleStep === "link" && (
+                    <section className="google-auth-followup">
+                      <label className="online-field">
+                        <span>{t("현재 비밀번호")}</span>
+                        <input type="password" value={googlePassword} autoComplete="current-password" onChange={(event) => setGooglePassword(event.target.value)} />
+                      </label>
+                      <button className="primary-action" type="button" disabled={busy || googlePassword.length < 8} onClick={() => void finishGoogleLink()}>
+                        {t("Google 계정 연결")}
+                      </button>
+                    </section>
+                  )}
+                  <section className="account-security-actions">
+                    <Link className="account-policy-link" to="/privacy">{t("개인정보 처리방침")}</Link>
+                    <button className="secondary-action" type="button" onClick={logout}>{t("로그아웃")}</button>
+                    <button className="danger-action" type="button" onClick={() => setDeleteOpen(true)}>{t("계정 삭제")}</button>
+                  </section>
+                </>
               )}
             </section>
           )}
@@ -271,19 +422,23 @@ export function AccountPage({ deletionEntry = false }: { deletionEntry?: boolean
             <p className="eyebrow">DELETE ACCOUNT</p>
             <h2 id="delete-account-title">{t("계정을 영구 삭제할까요?")}</h2>
             <p>{t("계정, 출석 기록, 컬러 칩 원장과 보유 스킨, 연결된 경기 기록과 리플레이가 삭제되며 복구할 수 없습니다.")}</p>
-            <label className="online-field">
-              <span>{t("현재 비밀번호")}</span>
-              <input
-                value={deletePassword}
-                type="password"
-                autoComplete="current-password"
-                onChange={(event) => setDeletePassword(event.target.value)}
-              />
-            </label>
+            {authMethods.password ? (
+              <label className="online-field">
+                <span>{t("현재 비밀번호")}</span>
+                <input
+                  value={deletePassword}
+                  type="password"
+                  autoComplete="current-password"
+                  onChange={(event) => setDeletePassword(event.target.value)}
+                />
+              </label>
+            ) : (
+              <p>{t("Google 로그인을 다시 사용할 수 없으며 모든 데이터가 즉시 삭제됩니다.")}</p>
+            )}
             {message !== null && <p className="online-message">{t(message)}</p>}
             <div className="result-actions">
               <button className="secondary-action" type="button" onClick={() => setDeleteOpen(false)}>{t("취소")}</button>
-              <button className="danger-action" type="button" disabled={deleteBusy || deletePassword.length < 8} onClick={() => void removeAccount()}>
+              <button className="danger-action" type="button" disabled={deleteBusy || (authMethods.password && deletePassword.length < 8)} onClick={() => void removeAccount()}>
                 {t(deleteBusy ? "삭제 처리 중" : "영구 삭제")}
               </button>
             </div>
