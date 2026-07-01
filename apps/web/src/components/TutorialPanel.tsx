@@ -8,7 +8,7 @@ export const openTutorial = () => {
   window.dispatchEvent(new Event(tutorialOpenEvent));
 };
 
-const tutorialSteps = [
+export const tutorialSteps = [
   {
     title: "세 색상은 모두 공용입니다",
     body: "이 게임에는 내 색과 상대 색이 따로 없습니다. 빨강, 파랑, 초록은 양쪽 플레이어가 모두 사용할 수 있어요.",
@@ -104,7 +104,7 @@ const tutorialCellClass = (index: number, preview: TutorialPreview) => {
   return classes.join(" ");
 };
 
-const tutorialFullBeforeCellClass = (index: number) => {
+export const tutorialFullBeforeCellClass = (index: number) => {
   const classes = ["tutorial-preview-cell"];
   const emptyCell = 12;
   const redCells = [0, 3, 5, 8, 11, 14, 16, 19, 22];
@@ -121,7 +121,7 @@ const tutorialFullBeforeCellClass = (index: number) => {
   return classes.join(" ");
 };
 
-const tutorialFullAfterCellClass = (index: number) => {
+export const tutorialFullAfterCellClass = (index: number) => {
   const classes = ["tutorial-preview-cell"];
   const addColor = (color: "red-tile" | "green-tile", cells: number[]) => {
     if (cells.includes(index)) classes.push(color);

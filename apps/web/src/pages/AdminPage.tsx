@@ -319,6 +319,30 @@ export function AdminPage() {
     }
   };
 
+  const removeCoupon = async (coupon: CouponRecord) => {
+    if (!window.confirm(`${coupon.code} 쿠폰을 삭제할까요?`)) return;
+    setBusy(true);
+    setMessage(null);
+    try {
+      await deleteAdminCoupon(coupon.id);
+      if (editingId === coupon.id) {
+        setEditingId(null);
+        setDraft(emptyDraft());
+      }
+      const [nextCoupons, nextAudit] = await Promise.all([
+        fetchAdminCoupons(),
+        fetchAdminAudit(),
+      ]);
+      setCoupons(nextCoupons);
+      setAudit(nextAudit);
+      setMessage(`${coupon.code} 쿠폰을 삭제했습니다.`);
+    } catch (error) {
+      setMessage(error instanceof ApiError ? error.code : "쿠폰을 삭제하지 못했습니다.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   if (admin === null) {
     return (
       <main className="admin-shell admin-login-shell">
@@ -413,13 +437,14 @@ export function AdminPage() {
                   <small>수령 {coupon.redemptionCount}{coupon.maxRedemptions ? ` / ${coupon.maxRedemptions}` : ""}명</small>
                   <div className="admin-actions">
                     <button type="button" onClick={() => editCoupon(coupon)}>수정</button>
-                    <button className="admin-danger-text" type="button" onClick={() => {
-                      if (!window.confirm(`${coupon.code} 쿠폰을 삭제할까요?`)) return;
-                      void deleteAdminCoupon(coupon.id).then(async () => {
-                        setCoupons(await fetchAdminCoupons());
-                        setAudit(await fetchAdminAudit());
-                      });
-                    }}>삭제</button>
+                    <button
+                      className="admin-danger-text"
+                      type="button"
+                      disabled={busy}
+                      onClick={() => void removeCoupon(coupon)}
+                    >
+                      삭제
+                    </button>
                   </div>
                 </article>
               ))}

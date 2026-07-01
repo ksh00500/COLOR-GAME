@@ -313,11 +313,21 @@ export interface CouponRedemptionResult {
   }>;
 }
 
-const adminRequest = async <T>(path: string, options: RequestInit = {}): Promise<T> => {
+export const requestHeaders = (
+  options: RequestInit,
+  token: string | null = null,
+): Headers => {
   const headers = new Headers(options.headers);
-  headers.set("content-type", "application/json");
-  const token = window.sessionStorage.getItem(adminTokenKey);
+  if (options.body !== undefined && options.body !== null && !headers.has("content-type")) {
+    headers.set("content-type", "application/json");
+  }
   if (token !== null) headers.set("authorization", `Bearer ${token}`);
+  return headers;
+};
+
+const adminRequest = async <T>(path: string, options: RequestInit = {}): Promise<T> => {
+  const token = window.sessionStorage.getItem(adminTokenKey);
+  const headers = requestHeaders(options, token);
   const response = await fetch(`${apiUrl}${path}`, { ...options, headers });
   if (response.status === 401) window.sessionStorage.removeItem(adminTokenKey);
   return parseResponse<T>(response, false);
@@ -328,11 +338,7 @@ const request = async <T>(
   options: RequestInit = {},
 ): Promise<T> => {
   const token = getAuthToken();
-  const headers = new Headers(options.headers);
-  headers.set("content-type", "application/json");
-  if (token !== null) {
-    headers.set("authorization", `Bearer ${token}`);
-  }
+  const headers = requestHeaders(options, token);
 
   const response = await fetch(`${apiUrl}${path}`, {
     ...options,

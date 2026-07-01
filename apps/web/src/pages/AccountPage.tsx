@@ -399,7 +399,7 @@ export function AccountPage({ deletionEntry = false }: { deletionEntry?: boolean
               </nav>
 
               {accountTab === "records" && (
-                <section className="account-tab-section">
+                <section className="account-tab-section account-records">
                   <div className="account-record-heading">
                     <h3>{t("최근 전적")}</h3>
                     <div className="record-mode-tabs" role="tablist" aria-label={t("전적 모드")}>

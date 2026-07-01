@@ -398,7 +398,7 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
 
   const updateProfile = (patch: Partial<PlayerProfile>) => {
     setProfile((current) => {
-      const next = { ...current, ...patch, isGuest: true };
+      const next = { ...current, ...patch, isGuest: current.isGuest };
       saveProfile(next);
       return next;
     });
@@ -655,14 +655,20 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
           </div>
 
           <div className="online-card">
-            <label className="online-field">
-              <span>{t("닉네임")}</span>
-              <input
-                value={profile.nickname}
-                maxLength={24}
-                onChange={(event) => updateProfile({ nickname: event.target.value })}
-              />
-            </label>
+            <section className="private-room-identity" aria-label={t("사용할 플레이어 정보")}>
+              <span className={`avatar ${profile.avatarId}`} aria-hidden="true">
+                {profile.nickname.slice(0, 1).toUpperCase()}
+              </span>
+              <span>
+                <small>{t("사설방 닉네임")}</small>
+                <strong>{profile.nickname}</strong>
+                <small>
+                  {t(profile.isGuest
+                    ? "게스트 닉네임은 이 기기에서 자동으로 정해집니다."
+                    : "Tango 계정의 닉네임을 사용합니다.")}
+                </small>
+              </span>
+            </section>
             <fieldset>
               <legend>{t("아바타")}</legend>
               <div className="segmented-control two-up">
