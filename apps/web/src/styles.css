@@ -689,6 +689,13 @@ p {
   fill: rgba(255,255,255,0.2);
 }
 
+.palette-wood-grain {
+  fill: none;
+  stroke: rgba(111, 65, 20, 0.2);
+  stroke-width: 1.15;
+  stroke-linecap: round;
+}
+
 .palette-hole {
   fill: color-mix(in srgb, var(--walnut-dark) 88%, black);
 }
@@ -705,6 +712,10 @@ p {
 
 .palette-paint.filled {
   opacity: 1;
+}
+
+.palette-paint-highlight {
+  fill: rgba(255,255,255,0.34);
 }
 
 .rank-badge.rainbow {

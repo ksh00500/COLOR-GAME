@@ -16,13 +16,13 @@ export const rainbowRankLimit = 50;
 export const paletteHole = { cx: 25.5, cy: 36, radius: 8.3 } as const;
 
 export const paintSpots = [
-  { cx: 59, cy: 25, rx: 5.7, ry: 4.4, rotate: -8 },
-  { cx: 79, cy: 28, rx: 5.7, ry: 4.4, rotate: 6 },
-  { cx: 44, cy: 38, rx: 5.6, ry: 4.3, rotate: -7 },
-  { cx: 63, cy: 42, rx: 5.7, ry: 4.4, rotate: 5 },
-  { cx: 87, cy: 37, rx: 5.6, ry: 4.3, rotate: 8 },
-  { cx: 48, cy: 56, rx: 5.7, ry: 4.4, rotate: -6 },
-  { cx: 78, cy: 52, rx: 5.7, ry: 4.4, rotate: 7 },
+  { cx: 54, cy: 21, rx: 6.2, ry: 5.2, rotate: -4 },
+  { cx: 71, cy: 24, rx: 6.2, ry: 5, rotate: 8 },
+  { cx: 86, cy: 31, rx: 6, ry: 5, rotate: 14 },
+  { cx: 92, cy: 43, rx: 6.1, ry: 5.1, rotate: 6 },
+  { cx: 86, cy: 55, rx: 6.1, ry: 5.1, rotate: -8 },
+  { cx: 70, cy: 62, rx: 6.2, ry: 5.2, rotate: -4 },
+  { cx: 52, cy: 60, rx: 6.2, ry: 5.2, rotate: 5 },
 ] as const;
 
 export const getRankTier = (rating: number, leaderboardRank?: number | null) => {
@@ -78,7 +78,9 @@ export function PaletteTierIcon({
   isRainbow = false,
 }: PaletteTierIconProps) {
   const visibleCount = Math.max(0, Math.min(filledCount, paletteSteps.length));
-  const rainbowGradientId = `palette-rainbow-${useId().replace(/:/g, "")}`;
+  const iconId = useId().replace(/:/g, "");
+  const rainbowGradientId = `palette-rainbow-${iconId}`;
+  const woodGradientId = `palette-wood-${iconId}`;
 
   return (
     <svg
@@ -88,6 +90,11 @@ export function PaletteTierIcon({
       focusable="false"
     >
       <defs>
+        <linearGradient id={woodGradientId} x1="23" y1="14" x2="91" y2="62" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#edbd68" />
+          <stop offset="52%" stopColor="#d7a149" />
+          <stop offset="100%" stopColor="#c78b35" />
+        </linearGradient>
         <linearGradient id={rainbowGradientId} x1="14" y1="18" x2="100" y2="62" gradientUnits="userSpaceOnUse">
           <stop offset="0%" stopColor="#b84d69" />
           <stop offset="17%" stopColor="#d88a2d" />
@@ -104,9 +111,16 @@ export function PaletteTierIcon({
       />
       <path
         className="palette-wood"
-        style={isRainbow ? { fill: `url(#${rainbowGradientId})` } : undefined}
+        style={{ fill: `url(#${isRainbow ? rainbowGradientId : woodGradientId})` }}
         d="M18.3 55.6C8.6 46.2 10.2 30.4 21.2 20.5 35.1 8.2 61.4 8.8 82.5 17.3c15.9 6.5 21.7 19.4 14.1 29.7-4.9 6.7-13.6 7.7-21.6 8.4-8.9.8-12.1 2.8-17.5 8.5-9.3 9.8-27.3 3.2-39.2-8.3Z"
       />
+      {!isRainbow && (
+        <g className="palette-wood-grain" aria-hidden="true">
+          <path d="M31 18.8c15.8-5.1 36.6-2.8 53.9 4.5" />
+          <path d="M18.7 47.6c18.4 8.6 40.3 5.6 62.7 3.1" />
+          <path d="M30.2 60.6c11.4 4 21.1 2.5 29.4-3.7" />
+        </g>
+      )}
       {isRainbow && (
         <>
           <path
@@ -126,16 +140,27 @@ export function PaletteTierIcon({
         const step = paletteSteps[index]!;
         const filled = index < visibleCount;
         return (
-          <ellipse
-            key={step.label}
-            className={`palette-paint${filled ? " filled" : ""}`}
-            cx={spot.cx}
-            cy={spot.cy}
-            rx={spot.rx}
-            ry={spot.ry}
-            fill={filled ? step.color : "transparent"}
-            transform={`rotate(${spot.rotate} ${spot.cx} ${spot.cy})`}
-          />
+          <g key={step.label}>
+            <ellipse
+              className={`palette-paint${filled ? " filled" : ""}`}
+              cx={spot.cx}
+              cy={spot.cy}
+              rx={spot.rx}
+              ry={spot.ry}
+              fill={filled ? step.color : "transparent"}
+              transform={`rotate(${spot.rotate} ${spot.cx} ${spot.cy})`}
+            />
+            {filled && (
+              <ellipse
+                className="palette-paint-highlight"
+                cx={spot.cx - 1.6}
+                cy={spot.cy - 1.5}
+                rx={spot.rx * 0.34}
+                ry={spot.ry * 0.26}
+                transform={`rotate(${spot.rotate} ${spot.cx} ${spot.cy})`}
+              />
+            )}
+          </g>
         );
       })}
     </svg>

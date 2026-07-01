@@ -2,6 +2,18 @@ import { describe, expect, it } from "vitest";
 import { paintSpots, paletteHole } from "./RankBadge";
 
 describe("palette tier icon", () => {
+  it("follows the outer palette curve from red to violet", () => {
+    expect(paintSpots.map(({ cx, cy }) => [cx, cy])).toEqual([
+      [54, 21],
+      [71, 24],
+      [86, 31],
+      [92, 43],
+      [86, 55],
+      [70, 62],
+      [52, 60],
+    ]);
+  });
+
   it("keeps every paint spot away from the finger hole", () => {
     for (const spot of paintSpots) {
       const centerDistance = Math.hypot(
