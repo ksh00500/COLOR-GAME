@@ -5,6 +5,7 @@ import { createGameHistoryStoreFromEnv } from "./history-store.js";
 import { createMatchmakingWaitStoreFromEnv } from "./matchmaking-wait-store.js";
 import { createEconomyStoreFromEnv } from "./economy-store.js";
 import { createAdminStoreFromEnv } from "./admin-store.js";
+import { createGoogleTokenVerifierFromEnv } from "./google-auth.js";
 import { createServer, type ServerOptions } from "./server.js";
 
 const port = Number.parseInt(process.env.PORT ?? "8080", 10);
@@ -21,6 +22,7 @@ const analyticsStore = createAnalyticsStoreFromEnv();
 const matchmakingWaitStore = createMatchmakingWaitStoreFromEnv();
 const economyStore = createEconomyStoreFromEnv();
 const adminStore = createAdminStoreFromEnv();
+const googleTokenVerifier = createGoogleTokenVerifierFromEnv();
 
 if (databaseRequired && !historyStore.enabled) {
   console.error("DATABASE_REQUIRED=true but DATABASE_URL is not set.");
@@ -41,6 +43,7 @@ const serverOptions: ServerOptions = {
   matchmakingWaitStore,
   economyStore,
   adminStore,
+  googleTokenVerifier,
   authSecret,
   requireDatabaseHealth,
 };

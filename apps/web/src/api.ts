@@ -16,6 +16,11 @@ export interface Account {
   createdAt: string;
 }
 
+export interface AuthMethods {
+  password: boolean;
+  google: boolean;
+}
+
 export interface PublicProfile {
   id: string;
   displayName: string;
@@ -296,10 +301,13 @@ const request = async <T>(
   return parseResponse<T>(response);
 };
 
-export const deleteAccount = async (password: string): Promise<void> => {
+export const deleteAccount = async (input: {
+  password?: string;
+  confirmation?: "DELETE";
+}): Promise<void> => {
   await request<void>("/auth/account", {
     method: "DELETE",
-    body: JSON.stringify({ password }),
+    body: JSON.stringify(input),
   });
   clearAuthToken();
 };
@@ -328,6 +336,41 @@ export const loginAccount = async (input: {
   });
   saveAuthToken(data.token);
   return data.account;
+};
+
+const saveAccountResponse = (data: { token: string; account: Account }): Account => {
+  saveAuthToken(data.token);
+  return data.account;
+};
+
+export const loginWithGoogle = async (input: {
+  idToken: string;
+  displayName?: string;
+  avatarId?: string;
+}): Promise<Account> => {
+  const data = await request<{ token: string; account: Account }>("/auth/google", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  return saveAccountResponse(data);
+};
+
+export const linkGoogleAccount = async (input: {
+  idToken: string;
+  password: string;
+}): Promise<Account> => {
+  const data = await request<{ token: string; account: Account }>("/auth/google/link", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  return saveAccountResponse(data);
+};
+
+export const fetchAuthMethods = async (): Promise<AuthMethods> =>
+  (await request<{ methods: AuthMethods }>("/auth/methods")).methods;
+
+export const unlinkGoogleAccount = async (): Promise<void> => {
+  await request<void>("/auth/google", { method: "DELETE" });
 };
 
 export const fetchMe = async (): Promise<Account> => {

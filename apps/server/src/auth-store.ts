@@ -53,6 +53,16 @@ export interface AuthTokenPayload {
   exp: number;
 }
 
+export interface GoogleIdentity {
+  subject: string;
+  email: string;
+}
+
+export interface AuthMethods {
+  password: boolean;
+  google: boolean;
+}
+
 export interface AccountStore {
   readonly enabled: boolean;
   close(): Promise<void>;
@@ -63,6 +73,16 @@ export interface AccountStore {
     avatarId: string;
   }): Promise<AccountSummary>;
   authenticate(email: string, password: string): Promise<AccountSummary | null>;
+  getAccountByEmail(email: string): Promise<AccountSummary | null>;
+  getAccountByGoogleSubject(subject: string): Promise<AccountSummary | null>;
+  registerGoogle(input: {
+    identity: GoogleIdentity;
+    displayName: string;
+    avatarId: string;
+  }): Promise<AccountSummary>;
+  linkGoogle(accountId: string, identity: GoogleIdentity): Promise<void>;
+  unlinkGoogle(accountId: string): Promise<boolean>;
+  getAuthMethods(accountId: string): Promise<AuthMethods>;
   getAccount(accountId: string): Promise<AccountSummary | null>;
   getAccountForSession(accountId: string, sessionId: string): Promise<AccountSummary | null>;
   rotateSession(accountId: string): Promise<string | null>;
@@ -87,6 +107,30 @@ export class NullAccountStore implements AccountStore {
 
   async authenticate(): Promise<AccountSummary | null> {
     return null;
+  }
+
+  async getAccountByEmail(): Promise<AccountSummary | null> {
+    return null;
+  }
+
+  async getAccountByGoogleSubject(): Promise<AccountSummary | null> {
+    return null;
+  }
+
+  async registerGoogle(): Promise<AccountSummary> {
+    throw new Error("Account store is disabled.");
+  }
+
+  async linkGoogle(): Promise<void> {
+    throw new Error("Account store is disabled.");
+  }
+
+  async unlinkGoogle(): Promise<boolean> {
+    return false;
+  }
+
+  async getAuthMethods(): Promise<AuthMethods> {
+    return { password: false, google: false };
   }
 
   async getAccount(): Promise<AccountSummary | null> {
@@ -136,7 +180,7 @@ interface AccountRow {
   email: string;
   display_name: string;
   avatar_id: string;
-  password_hash: string;
+  password_hash: string | null;
   rating: number;
   games_played: number;
   ranked_wins: number;
@@ -283,9 +327,112 @@ export class PostgresAccountStore implements AccountStore {
     );
     const row = result.rows[0];
     if (row === undefined) return null;
+    if (row.password_hash === null) return null;
 
     const ok = await verifyPassword(password, row.password_hash);
     return ok ? toAccountSummary(row) : null;
+  }
+
+  async getAccountByEmail(email: string): Promise<AccountSummary | null> {
+    const result = await this.pool.query<AccountRow>(
+      "select * from accounts where email = $1 and suspended_at is null",
+      [normalizeEmail(email)],
+    );
+    const row = result.rows[0];
+    return row === undefined ? null : toAccountSummary(row);
+  }
+
+  async getAccountByGoogleSubject(subject: string): Promise<AccountSummary | null> {
+    const result = await this.pool.query<AccountRow>(
+      `select a.*
+       from accounts a
+       join account_identities i on i.account_id = a.id
+       where i.provider = 'google' and i.provider_subject = $1
+         and a.suspended_at is null`,
+      [subject],
+    );
+    const row = result.rows[0];
+    return row === undefined ? null : toAccountSummary(row);
+  }
+
+  async registerGoogle(input: {
+    identity: GoogleIdentity;
+    displayName: string;
+    avatarId: string;
+  }): Promise<AccountSummary> {
+    const client = await this.pool.connect();
+    try {
+      await client.query("begin");
+      const accountId = randomUUID();
+      const result = await client.query<AccountRow>(
+        `insert into accounts (id, email, display_name, avatar_id, password_hash)
+         values ($1, $2, $3, $4, null)
+         returning *`,
+        [
+          accountId,
+          normalizeEmail(input.identity.email),
+          input.displayName.trim(),
+          input.avatarId,
+        ],
+      );
+      await client.query(
+        `insert into account_identities (
+           id, account_id, provider, provider_subject, provider_email
+         ) values ($1, $2, 'google', $3, $4)`,
+        [
+          randomUUID(),
+          accountId,
+          input.identity.subject,
+          normalizeEmail(input.identity.email),
+        ],
+      );
+      await client.query("commit");
+      const row = result.rows[0];
+      if (row === undefined) throw new Error("Account registration failed.");
+      return toAccountSummary(row);
+    } catch (error) {
+      await client.query("rollback");
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  async linkGoogle(accountId: string, identity: GoogleIdentity): Promise<void> {
+    await this.pool.query(
+      `insert into account_identities (
+         id, account_id, provider, provider_subject, provider_email
+       ) values ($1, $2, 'google', $3, $4)`,
+      [
+        randomUUID(),
+        accountId,
+        identity.subject,
+        normalizeEmail(identity.email),
+      ],
+    );
+  }
+
+  async unlinkGoogle(accountId: string): Promise<boolean> {
+    const result = await this.pool.query(
+      "delete from account_identities where account_id = $1 and provider = 'google'",
+      [accountId],
+    );
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async getAuthMethods(accountId: string): Promise<AuthMethods> {
+    const result = await this.pool.query<{ password: boolean; google: boolean }>(
+      `select
+         (a.password_hash is not null) as password,
+         exists (
+           select 1 from account_identities i
+           where i.account_id = a.id and i.provider = 'google'
+         ) as google
+       from accounts a
+       where a.id = $1`,
+      [accountId],
+    );
+    return result.rows[0] ?? { password: false, google: false };
   }
 
   async getAccount(accountId: string): Promise<AccountSummary | null> {
