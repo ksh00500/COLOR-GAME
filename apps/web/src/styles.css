@@ -7623,6 +7623,429 @@ kbd {
   }
 }
 
+/* Mobile portrait composition: quieter surfaces, clearer hierarchy */
+@media (max-width: 640px) {
+  .app-frame {
+    padding-top: 56px;
+  }
+
+  .app-sidebar {
+    min-height: 56px;
+    padding: max(0.45rem, var(--safe-area-top)) 0.65rem 0.45rem;
+    border-bottom: 1px solid color-mix(in srgb, var(--app-line) 72%, transparent);
+    background: color-mix(in srgb, var(--app-sidebar) 97%, transparent);
+    box-shadow: none;
+  }
+
+  .sidebar-brand,
+  .sidebar-brand .brand-mark {
+    width: 38px;
+    height: 38px;
+  }
+
+  .mobile-header-actions {
+    gap: 0.1rem;
+  }
+
+  .mobile-header-actions button {
+    min-height: 36px;
+    padding: 0.35rem 0.62rem;
+    border-color: transparent;
+    border-radius: 10px;
+    background: transparent;
+    font-size: 0.69rem;
+  }
+
+  .mobile-header-actions button.active {
+    color: var(--app-inverted);
+    background: var(--app-accent);
+  }
+
+  .app-sidebar .sidebar-menu {
+    gap: 0;
+    padding:
+      0.2rem
+      max(0.35rem, var(--safe-area-right))
+      max(0.2rem, var(--safe-area-bottom))
+      max(0.35rem, var(--safe-area-left));
+    border-color: color-mix(in srgb, var(--app-line) 76%, transparent);
+    background: color-mix(in srgb, var(--app-sidebar) 98%, transparent);
+    box-shadow: 0 -8px 22px color-mix(in srgb, var(--app-page-deep) 14%, transparent);
+  }
+
+  .app-sidebar .sidebar-nav button,
+  .app-sidebar .sidebar-bottom button {
+    position: relative;
+    min-height: 50px;
+    border-radius: 10px;
+    color: var(--app-ink-soft);
+    font-size: 0.67rem;
+    font-weight: 780;
+  }
+
+  .app-sidebar .sidebar-nav button.active,
+  .app-sidebar .sidebar-bottom button.active {
+    color: var(--app-ink);
+    background: color-mix(in srgb, var(--app-accent) 9%, transparent);
+  }
+
+  .app-sidebar .sidebar-nav button.active::after,
+  .app-sidebar .sidebar-bottom button.active::after {
+    position: absolute;
+    right: 28%;
+    bottom: 4px;
+    left: 28%;
+    height: 2px;
+    border-radius: 999px;
+    background: var(--app-accent);
+    content: "";
+  }
+
+  .home-stage {
+    width: min(calc(100% - 1.15rem), 520px);
+    gap: 0.45rem;
+    padding: 0.65rem 0 5rem;
+  }
+
+  .home-intro {
+    gap: 0.15rem;
+  }
+
+  .home-intro .eyebrow {
+    font-size: 0.58rem;
+    letter-spacing: 0.25em;
+  }
+
+  .home-intro h1 {
+    max-width: 350px;
+    font-size: clamp(1.7rem, 8vw, 2rem);
+    line-height: 1.02;
+    letter-spacing: -0.065em;
+  }
+
+  .home-intro > p:last-child {
+    max-width: 320px;
+    font-size: 0.7rem;
+    line-height: 1.35;
+  }
+
+  .home-play-layout {
+    gap: 0.45rem;
+  }
+
+  .home-play-layout .home-board-card {
+    width: min(40vw, 154px);
+  }
+
+  .home-play-panel {
+    gap: 0.5rem;
+    padding: 0.65rem 0.15rem 0;
+    border: 0;
+    border-top: 1px solid var(--app-line);
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .home-play-panel-heading {
+    padding-inline: 0.25rem;
+  }
+
+  .home-play-panel-heading .eyebrow {
+    display: none;
+  }
+
+  .home-play-panel-heading h2 {
+    font-size: 1rem;
+    letter-spacing: -0.035em;
+  }
+
+  .home-play-panel .home-utility-links {
+    gap: 0.65rem;
+  }
+
+  .home-play-panel .home-utility-links button {
+    color: var(--app-ink-soft);
+    font-size: 0.64rem;
+    font-weight: 720;
+  }
+
+  .home-quick-configs {
+    gap: 0.3rem;
+  }
+
+  .home-quick-configs .quick-config {
+    min-height: 46px;
+    padding: 0.25rem;
+    border-radius: 12px;
+  }
+
+  .home-quick-configs .quick-config > span {
+    padding-left: 0.35rem;
+    font-size: 0.64rem;
+  }
+
+  .home-quick-configs .quick-config button {
+    min-height: 36px;
+    padding: 0.25rem;
+    border-radius: 9px;
+    font-size: 0.69rem;
+  }
+
+  .home-quick-configs .quick-config button small {
+    font-size: 0.48rem;
+  }
+
+  .home-play-panel .home-mode-actions {
+    gap: 0.35rem;
+  }
+
+  .home-play-panel .home-mode-actions .home-mode {
+    position: relative;
+    min-height: 58px;
+    padding: 0.55rem 2rem 0.5rem 0.65rem;
+    border-radius: 12px;
+    text-align: left;
+  }
+
+  .home-play-panel .home-mode-actions .home-mode::after {
+    position: absolute;
+    top: 50%;
+    right: 0.7rem;
+    color: var(--app-ink-soft);
+    content: "›";
+    font-size: 1.15rem;
+    transform: translateY(-50%);
+  }
+
+  .home-play-panel .home-mode-actions .home-mode small {
+    display: none;
+  }
+
+  .home-play-panel .home-mode-actions .home-mode strong {
+    font-size: 0.83rem;
+  }
+
+  .home-play-panel .home-mode-actions .home-mode span {
+    font-size: 0.6rem;
+  }
+
+  .home-dashboard {
+    gap: 0.45rem;
+  }
+
+  .home-dashboard .home-account-card,
+  .home-dashboard .visitor-strip,
+  .home-dashboard .home-quests {
+    border-radius: 14px;
+    box-shadow: none;
+  }
+
+  .store-shell,
+  .account-shell,
+  .patch-notes-page {
+    width: min(calc(100% - 1.15rem), 520px);
+    padding: 0.85rem 0 5rem;
+  }
+
+  .store-hero {
+    gap: 0.55rem;
+  }
+
+  .store-hero h1,
+  .account-shell .online-copy h1,
+  .patch-notes-page .online-copy h1 {
+    font-size: clamp(1.75rem, 8vw, 2rem);
+    letter-spacing: -0.06em;
+  }
+
+  .store-hero > div:first-child > p:last-child,
+  .account-shell .online-copy p:last-child,
+  .patch-notes-page .online-copy p:last-child {
+    font-size: 0.72rem;
+    line-height: 1.45;
+  }
+
+  .chip-wallet {
+    min-width: 92px;
+    padding: 0.45rem 0.55rem;
+    border: 0;
+    border-radius: 12px;
+    background: var(--app-panel-strong);
+    box-shadow: none;
+  }
+
+  .store-tabs,
+  .rarity-tabs,
+  .account-tabs {
+    gap: 0;
+    padding: 0;
+    border: 0;
+    border-bottom: 1px solid var(--app-line);
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .store-tabs button,
+  .rarity-tabs button,
+  .account-tabs button {
+    position: relative;
+    min-height: 42px;
+    border-radius: 0;
+    font-size: 0.68rem;
+  }
+
+  .store-tabs button.active,
+  .rarity-tabs button.active,
+  .account-tabs button.active {
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .store-tabs button.active::after,
+  .rarity-tabs button.active::after,
+  .account-tabs button.active::after {
+    position: absolute;
+    right: 16%;
+    bottom: -1px;
+    left: 16%;
+    height: 2px;
+    border-radius: 999px;
+    background: var(--app-accent);
+    content: "";
+  }
+
+  .store-section,
+  .store-empty,
+  .collection-section,
+  .palette-box-card,
+  .locked-pack-card {
+    border-radius: 16px;
+    box-shadow: none;
+  }
+
+  .store-empty {
+    min-height: 130px;
+    padding: 1.1rem;
+  }
+
+  .weekly-store-section {
+    padding: 0.75rem 0;
+    border: 0;
+    background: transparent;
+  }
+
+  .cosmetic-card {
+    border-radius: 14px;
+    box-shadow: none;
+  }
+
+  .account-shell {
+    gap: 0.65rem;
+  }
+
+  .account-shell .online-copy {
+    gap: 0.15rem;
+  }
+
+  .account-shell .online-card {
+    padding: 0.85rem;
+    border-color: color-mix(in srgb, var(--app-line) 80%, transparent);
+    border-radius: 16px;
+    box-shadow: none;
+  }
+
+  .account-form {
+    gap: 0.7rem;
+  }
+
+  .account-form .segmented-control {
+    min-height: 44px;
+    border-radius: 12px;
+  }
+
+  .online-field {
+    gap: 0.3rem;
+  }
+
+  .online-field input {
+    min-height: 44px;
+    border-radius: 11px;
+  }
+
+  .account-form .primary-action {
+    min-height: 46px;
+    border-radius: 11px;
+  }
+
+  .patch-notes-page {
+    gap: 0.55rem;
+  }
+
+  .patch-notes-page .online-copy {
+    gap: 0.15rem;
+    padding-inline: 0.15rem;
+  }
+
+  .patch-release-list {
+    gap: 0;
+    border-top: 1px solid var(--app-line);
+  }
+
+  .patch-release-card {
+    gap: 0.35rem;
+    padding: 1rem 0.25rem;
+    border: 0;
+    border-bottom: 1px solid var(--app-line);
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .patch-release-card:hover {
+    transform: none;
+    background: color-mix(in srgb, var(--app-accent) 5%, transparent);
+    box-shadow: none;
+  }
+
+  .patch-release-version {
+    font-size: 0.72rem;
+  }
+
+  .patch-release-date {
+    font-size: 0.65rem;
+  }
+
+  .patch-release-card strong {
+    font-size: 1.05rem;
+    letter-spacing: -0.035em;
+  }
+
+  .patch-release-card small {
+    font-size: 0.73rem;
+    line-height: 1.45;
+  }
+
+  .patch-release-card i {
+    margin-top: 0.1rem;
+    font-size: 0.66rem;
+  }
+}
+
+@media (max-width: 340px) {
+  .home-play-layout .home-board-card {
+    width: 138px;
+  }
+
+  .home-quick-configs .quick-config > span {
+    display: none;
+  }
+
+  .mobile-header-actions button {
+    padding-inline: 0.48rem;
+  }
+}
+
 @media (max-width: 900px) {
   .admin-shell > :not(.admin-mobile-notice) {
     display: none;
@@ -8054,6 +8477,13 @@ kbd {
   }
 }
 
+@media (max-width: 340px) {
+  html,
+  body {
+    min-width: 0;
+  }
+}
+
 /* Exact cosmetic rendering, daily check-in, and balanced mobile content */
 .tile-skin-preview-fill {
   background-size: 100% 100%;
@@ -8475,5 +8905,12 @@ kbd {
 
   .match-history article > a {
     grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 340px) {
+  html,
+  body {
+    min-width: 0;
   }
 }
