@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import {
   ApiError,
   fetchEconomy,
+  getAuthToken,
+  getCachedEconomy,
   openPaletteBox,
   purchaseCosmetic,
   type CosmeticItem,
@@ -29,8 +31,14 @@ type CollectionRarity = CosmeticRarity | "all";
 
 export function StorePage() {
   const { t, locale, formatNumber, formatDate } = useI18n();
-  const [economy, setEconomy] = useState<EconomyOverview | null>(null);
-  const [loading, setLoading] = useState(true);
+  const rarityLabel = (value: CosmeticRarity) =>
+    locale === "ko" ? compactRarityLabels[value] : t(value);
+  const [economy, setEconomy] = useState<EconomyOverview | null>(
+    () => getAuthToken() === null ? null : getCachedEconomy(),
+  );
+  const [loading, setLoading] = useState(
+    () => getAuthToken() !== null && getCachedEconomy() === null,
+  );
   const [busyId, setBusyId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [outcome, setOutcome] = useState<CosmeticOutcome | null>(null);
@@ -43,7 +51,12 @@ export function StorePage() {
   );
 
   useEffect(() => {
-    void fetchEconomy()
+    if (getAuthToken() === null) {
+      setLoading(false);
+      return;
+    }
+
+    void fetchEconomy({ force: true })
       .then(setEconomy)
       .catch((error) => setMessage(error instanceof ApiError ? error.code : "상점을 불러오지 못했습니다."))
       .finally(() => setLoading(false));
@@ -124,11 +137,19 @@ export function StorePage() {
           <div className="chip-wallet" aria-label={t("컬러 칩 잔액")}>
             <span aria-hidden="true">◆</span>
             <small>{t("컬러 칩")}</small>
-            <strong>{formatNumber(economy?.wallet.colorChips ?? 0)}</strong>
+            <strong>{economy === null ? "—" : formatNumber(economy.wallet.colorChips)}</strong>
           </div>
         </header>
 
-        {loading && <section className="store-empty">{t("상점을 불러오는 중입니다.")}</section>}
+        {loading && (
+          <section className="route-loading store-route-loading" aria-label={t("상점을 불러오는 중입니다.")} aria-busy="true">
+            <span className="route-loading-title" />
+            <span className="route-loading-line" />
+            <div className="route-loading-grid">
+              <span /><span /><span /><span />
+            </div>
+          </section>
+        )}
         {!loading && economy === null && (
           <section className="store-empty">
             <h2>{t("로그인하고 상점을 이용하세요.")}</h2>
@@ -174,7 +195,7 @@ export function StorePage() {
                       return (
                         <section className={`store-rarity-row rarity-${entry}`} key={entry}>
                           <div className="store-rarity-heading">
-                            <strong>{t(entry)}</strong>
+                            <strong>{rarityLabel(entry)}</strong>
                             <small>{items.length}</small>
                           </div>
                           <div className="cosmetic-grid">
@@ -196,8 +217,8 @@ export function StorePage() {
                           className={`${rarity === entry ? "active" : ""} rarity-${entry}`}
                           onClick={() => setRarity(entry)}
                         >
-                          <span className="rarity-label-full">{t(entry)}</span>
-                          <span className="rarity-label-compact">{compactRarityLabels[entry]}</span>
+                          <span className="rarity-label-full">{rarityLabel(entry)}</span>
+                          <span className="rarity-label-compact">{rarityLabel(entry)}</span>
                           <small>{economy.weeklyStore.items.filter((item) => item.rarity === entry).length}</small>
                         </button>
                       ))}
@@ -235,7 +256,7 @@ export function StorePage() {
                       className={collectionRarity === entry ? "active" : ""}
                       onClick={() => setCollectionRarity(entry)}
                     >
-                      {t(entry === "all" ? "모두" : entry)}
+                      {entry === "all" ? t("모두") : rarityLabel(entry)}
                       <small>
                         {economy.catalog.filter((item) => entry === "all" || item.rarity === entry).length}
                       </small>
@@ -257,7 +278,7 @@ export function StorePage() {
                           label={localizedCosmeticName(item, locale)}
                         />
                         <span>
-                          <small>{t(item.rarity)}</small>
+                          <small>{rarityLabel(item.rarity)}</small>
                           <strong>{localizedCosmeticName(item, locale)}</strong>
                         </span>
                         <b>{item.owned ? `✓ ${t("보유 중")}` : `🔒 ${t("미보유")}`}</b>

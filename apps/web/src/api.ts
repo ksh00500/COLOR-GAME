@@ -175,10 +175,22 @@ export interface CosmeticOutcome {
   overview: EconomyOverview;
 }
 
+let accountCache: Account | null = null;
+let accountRequest: Promise<Account> | null = null;
+let economyCache: EconomyOverview | null = null;
+let economyRequest: Promise<EconomyOverview> | null = null;
+
 export const getAuthToken = (): string | null =>
   window.localStorage.getItem(tokenKey);
 
+export const getCachedAccount = (): Account | null => accountCache;
+export const getCachedEconomy = (): EconomyOverview | null => economyCache;
+
 export const saveAuthToken = (token: string): void => {
+  if (window.localStorage.getItem(tokenKey) !== token) {
+    accountCache = null;
+    economyCache = null;
+  }
   window.localStorage.setItem(tokenKey, token);
   window.dispatchEvent(new Event(authChangedEvent));
 };
@@ -186,6 +198,10 @@ export const saveAuthToken = (token: string): void => {
 export const clearAuthToken = (): void => {
   const hadToken = window.localStorage.getItem(tokenKey) !== null;
   window.localStorage.removeItem(tokenKey);
+  accountCache = null;
+  accountRequest = null;
+  economyCache = null;
+  economyRequest = null;
   if (hadToken) window.dispatchEvent(new Event(authChangedEvent));
 };
 
@@ -323,6 +339,7 @@ export const registerAccount = async (input: {
     body: JSON.stringify(input),
   });
   saveAuthToken(data.token);
+  accountCache = data.account;
   return data.account;
 };
 
@@ -335,11 +352,13 @@ export const loginAccount = async (input: {
     body: JSON.stringify(input),
   });
   saveAuthToken(data.token);
+  accountCache = data.account;
   return data.account;
 };
 
 const saveAccountResponse = (data: { token: string; account: Account }): Account => {
   saveAuthToken(data.token);
+  accountCache = data.account;
   return data.account;
 };
 
@@ -373,9 +392,21 @@ export const unlinkGoogleAccount = async (): Promise<void> => {
   await request<void>("/auth/google", { method: "DELETE" });
 };
 
-export const fetchMe = async (): Promise<Account> => {
-  const data = await request<{ account: Account }>("/auth/me");
-  return data.account;
+export const fetchMe = async (
+  options: { force?: boolean } = {},
+): Promise<Account> => {
+  if (!options.force && accountCache !== null) return accountCache;
+  if (accountRequest !== null) return accountRequest;
+
+  accountRequest = request<{ account: Account }>("/auth/me")
+    .then((data) => {
+      accountCache = data.account;
+      return data.account;
+    })
+    .finally(() => {
+      accountRequest = null;
+    });
+  return accountRequest;
 };
 
 export const fetchLeaderboard = async (): Promise<PublicProfile[]> => {
@@ -396,6 +427,7 @@ export const checkInAttendance = async (): Promise<Account> => {
     method: "POST",
     body: JSON.stringify({ timeZone }),
   });
+  accountCache = data.account;
   return data.account;
 };
 
@@ -425,22 +457,37 @@ export const fetchVisitorCounts = async (): Promise<VisitorCounts> => {
 const browserTimeZone = (): string =>
   Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
 
-export const fetchEconomy = async (): Promise<EconomyOverview> => {
+export const fetchEconomy = async (
+  options: { force?: boolean } = {},
+): Promise<EconomyOverview> => {
+  if (!options.force && economyCache !== null) return economyCache;
+  if (economyRequest !== null) return economyRequest;
+
   const query = new URLSearchParams({ timeZone: browserTimeZone() });
-  const data = await request<{ economy: EconomyOverview }>(`/economy/overview?${query}`);
-  return data.economy;
+  economyRequest = request<{ economy: EconomyOverview }>(`/economy/overview?${query}`)
+    .then((data) => {
+      economyCache = data.economy;
+      return data.economy;
+    })
+    .finally(() => {
+      economyRequest = null;
+    });
+  return economyRequest;
 };
 
 export const claimEconomyQuest = async (
   quest: "welcome" | "attendance" | "attendance-streak" | "first-online-win",
 ): Promise<{ economy: EconomyOverview; account?: Account }> => {
-  return request<{ economy: EconomyOverview; account?: Account }>(
+  const result = await request<{ economy: EconomyOverview; account?: Account }>(
     `/economy/quests/${quest}/claim`,
     {
       method: "POST",
       body: JSON.stringify({ timeZone: browserTimeZone() }),
     },
   );
+  economyCache = result.economy;
+  if (result.account !== undefined) accountCache = result.account;
+  return result;
 };
 
 export const purchaseCosmetic = async (cosmeticId: string): Promise<EconomyOverview> => {
@@ -451,6 +498,7 @@ export const purchaseCosmetic = async (cosmeticId: string): Promise<EconomyOverv
       body: JSON.stringify({ timeZone: browserTimeZone() }),
     },
   );
+  economyCache = data.economy;
   return data.economy;
 };
 
@@ -459,6 +507,7 @@ export const openPaletteBox = async (): Promise<CosmeticOutcome> => {
     method: "POST",
     body: JSON.stringify({ timeZone: browserTimeZone() }),
   });
+  economyCache = data.outcome.overview;
   return data.outcome;
 };
 
@@ -469,6 +518,7 @@ export const combineCosmeticFragments = async (
     method: "POST",
     body: JSON.stringify({ rarity, timeZone: browserTimeZone() }),
   });
+  economyCache = data.outcome.overview;
   return data.outcome;
 };
 
@@ -484,6 +534,7 @@ export const equipTileColor = async (
       body: JSON.stringify({ cosmeticId, allowSimilar, timeZone: browserTimeZone() }),
     },
   );
+  economyCache = data.economy;
   return data.economy;
 };
 
@@ -497,16 +548,20 @@ export const resetTileColor = async (
       body: JSON.stringify({ timeZone: browserTimeZone() }),
     },
   );
+  economyCache = data.economy;
   return data.economy;
 };
 
 export const redeemCoupon = async (
   code: string,
-): Promise<{ redemption: CouponRedemptionResult; economy: EconomyOverview }> =>
-  request("/coupons/redeem", {
+): Promise<{ redemption: CouponRedemptionResult; economy: EconomyOverview }> => {
+  const result = await request<{ redemption: CouponRedemptionResult; economy: EconomyOverview }>("/coupons/redeem", {
     method: "POST",
     body: JSON.stringify({ code }),
   });
+  economyCache = result.economy;
+  return result;
+};
 
 export const hasAdminToken = (): boolean =>
   window.sessionStorage.getItem(adminTokenKey) !== null;

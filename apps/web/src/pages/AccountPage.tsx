@@ -6,6 +6,8 @@ import {
   clearAuthToken,
   deleteAccount,
   fetchAuthMethods,
+  getAuthToken,
+  getCachedAccount,
   fetchLeaderboard,
   fetchMatches,
   fetchMe,
@@ -44,7 +46,12 @@ const findLeaderboardRank = (players: PublicProfile[], accountId: string): numbe
 export function AccountPage({ deletionEntry = false }: { deletionEntry?: boolean }) {
   const { t, formatNumber } = useI18n();
   const [mode, setMode] = useState<AuthMode>("login");
-  const [account, setAccount] = useState<Account | null>(null);
+  const [account, setAccount] = useState<Account | null>(
+    () => getAuthToken() === null ? null : getCachedAccount(),
+  );
+  const [authChecking, setAuthChecking] = useState(
+    () => getAuthToken() !== null && getCachedAccount() === null,
+  );
   const [matches, setMatches] = useState<MatchHistoryItem[]>([]);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -65,14 +72,20 @@ export function AccountPage({ deletionEntry = false }: { deletionEntry?: boolean
   const [googlePassword, setGooglePassword] = useState("");
 
   useEffect(() => {
-    void fetchMe()
+    if (getAuthToken() === null) {
+      setAuthChecking(false);
+      return;
+    }
+
+    void fetchMe({ force: true })
       .then(async (storedAccount) => {
         const nextAccount = await checkInAttendance().catch(() => storedAccount);
         setAccount(nextAccount);
         await refreshAccountData(nextAccount);
         if (deletionEntry) setDeleteOpen(true);
       })
-      .catch(() => undefined);
+      .catch(() => setAccount(null))
+      .finally(() => setAuthChecking(false));
   }, [deletionEntry]);
 
   async function refreshAccountData(nextAccount: Account) {
@@ -87,6 +100,7 @@ export function AccountPage({ deletionEntry = false }: { deletionEntry?: boolean
   }
 
   const acceptAccount = useCallback(async (nextAccount: Account) => {
+    setAuthChecking(false);
     const checkedInAccount = await checkInAttendance().catch(() => nextAccount);
     setAccount(checkedInAccount);
     setPendingGoogleToken(null);
@@ -169,6 +183,7 @@ export function AccountPage({ deletionEntry = false }: { deletionEntry?: boolean
 
   const logout = () => {
     clearAuthToken();
+    setAuthChecking(false);
     setAccount(null);
     setMatches([]);
     setLeaderboardRank(null);
@@ -203,16 +218,24 @@ export function AccountPage({ deletionEntry = false }: { deletionEntry?: boolean
       <section className="online-shell account-shell app-content-shell" aria-labelledby="account-title">
         <div className="online-copy">
           <p className="eyebrow">PLAYER ACCOUNT</p>
-          <h1 id="account-title">{t(deletionEntry ? "Tango 계정 삭제" : account === null ? "Tango 계정" : "마이 Tango")}</h1>
+          <h1 id="account-title">{t(deletionEntry ? "Tango 계정 삭제" : authChecking || account !== null ? "마이 Tango" : "Tango 계정")}</h1>
           <p>{t(deletionEntry
             ? "로그인한 뒤 비밀번호를 확인하면 계정과 연결된 데이터를 삭제할 수 있습니다."
-            : account === null
+            : !authChecking && account === null
               ? "로그인하고 전적과 보상을 안전하게 저장하세요."
               : "전적·스킨·보상을 한곳에서 관리하세요.")}</p>
         </div>
 
         <div className="online-card">
-          {account === null ? (
+          {authChecking ? (
+            <section className="route-loading account-route-loading" aria-label={t("계정 정보를 불러오는 중입니다.")} aria-busy="true">
+              <span className="route-loading-title" />
+              <span className="route-loading-line" />
+              <div className="route-loading-grid">
+                <span /><span /><span />
+              </div>
+            </section>
+          ) : account === null ? (
             <form className="account-form" onSubmit={submit}>
               <div className="segmented-control two-up">
                 <button type="button" className={mode === "login" ? "active" : ""} onClick={() => setMode("login")}>{t("로그인")}</button>

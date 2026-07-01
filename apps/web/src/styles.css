@@ -7626,7 +7626,7 @@ kbd {
 /* Mobile portrait composition: quieter surfaces, clearer hierarchy */
 @media (max-width: 640px) {
   .app-frame {
-    padding-top: 56px;
+    padding-top: 0;
   }
 
   .app-sidebar {
@@ -7703,12 +7703,12 @@ kbd {
 
   .home-stage {
     width: min(calc(100% - 1.15rem), 520px);
-    gap: 0.45rem;
-    padding: 0.65rem 0 5rem;
+    gap: 0.9rem;
+    padding: 0.95rem 0 5rem;
   }
 
   .home-intro {
-    gap: 0.15rem;
+    gap: 0.3rem;
   }
 
   .home-intro .eyebrow {
@@ -7717,29 +7717,29 @@ kbd {
   }
 
   .home-intro h1 {
-    max-width: 350px;
-    font-size: clamp(1.7rem, 8vw, 2rem);
-    line-height: 1.02;
-    letter-spacing: -0.065em;
+    max-width: 330px;
+    font-size: clamp(1.62rem, 7.4vw, 1.88rem);
+    line-height: 1.1;
+    letter-spacing: -0.055em;
   }
 
   .home-intro > p:last-child {
     max-width: 320px;
-    font-size: 0.7rem;
-    line-height: 1.35;
+    font-size: 0.73rem;
+    line-height: 1.45;
   }
 
   .home-play-layout {
-    gap: 0.45rem;
+    gap: 0.85rem;
   }
 
   .home-play-layout .home-board-card {
-    width: min(40vw, 154px);
+    width: min(44vw, 168px);
   }
 
   .home-play-panel {
-    gap: 0.5rem;
-    padding: 0.65rem 0.15rem 0;
+    gap: 0.72rem;
+    padding: 0.85rem 0.15rem 0;
     border: 0;
     border-top: 1px solid var(--app-line);
     border-radius: 0;
@@ -7771,12 +7771,12 @@ kbd {
   }
 
   .home-quick-configs {
-    gap: 0.3rem;
+    gap: 0.55rem;
   }
 
   .home-quick-configs .quick-config {
-    min-height: 46px;
-    padding: 0.25rem;
+    min-height: 52px;
+    padding: 0.32rem;
     border-radius: 12px;
   }
 
@@ -7797,13 +7797,13 @@ kbd {
   }
 
   .home-play-panel .home-mode-actions {
-    gap: 0.35rem;
+    gap: 0.5rem;
   }
 
   .home-play-panel .home-mode-actions .home-mode {
     position: relative;
-    min-height: 58px;
-    padding: 0.55rem 2rem 0.5rem 0.65rem;
+    min-height: 66px;
+    padding: 0.68rem 2rem 0.62rem 0.72rem;
     border-radius: 12px;
     text-align: left;
   }
@@ -7845,11 +7845,11 @@ kbd {
   .account-shell,
   .patch-notes-page {
     width: min(calc(100% - 1.15rem), 520px);
-    padding: 0.85rem 0 5rem;
+    padding: 1.05rem 0 5rem;
   }
 
   .store-hero {
-    gap: 0.55rem;
+    gap: 0.8rem;
   }
 
   .store-hero h1,
@@ -7878,7 +7878,7 @@ kbd {
   .store-tabs,
   .rarity-tabs,
   .account-tabs {
-    gap: 0;
+    gap: 0.18rem;
     padding: 0;
     border: 0;
     border-bottom: 1px solid var(--app-line);
@@ -7890,7 +7890,7 @@ kbd {
   .rarity-tabs button,
   .account-tabs button {
     position: relative;
-    min-height: 42px;
+    min-height: 46px;
     border-radius: 0;
     font-size: 0.68rem;
   }
@@ -7930,7 +7930,7 @@ kbd {
   }
 
   .weekly-store-section {
-    padding: 0.75rem 0;
+    padding: 1rem 0;
     border: 0;
     background: transparent;
   }
@@ -8881,6 +8881,100 @@ kbd {
 @media (max-width: 340px) {
   .collection-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Stable route loading states: never flash signed-out or empty-store cards. */
+.route-loading {
+  display: grid;
+  min-height: 180px;
+  align-content: start;
+  gap: 0.75rem;
+  padding: 1rem 0;
+}
+
+.route-loading > span,
+.route-loading-grid > span {
+  display: block;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--app-ink-soft) 11%, transparent);
+}
+
+.route-loading-title {
+  width: min(220px, 48%);
+  height: 22px;
+}
+
+.route-loading-line {
+  width: min(390px, 76%);
+  height: 12px;
+}
+
+.route-loading-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.route-loading-grid > span {
+  height: 112px;
+  border-radius: 14px;
+}
+
+.account-route-loading .route-loading-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media (max-width: 640px) {
+  .collection-section {
+    gap: 1.05rem;
+    padding: 0.85rem;
+  }
+
+  .collection-filters {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 0.3rem;
+  }
+
+  .collection-filters button {
+    min-width: 0;
+    min-height: 38px;
+    gap: 0.16rem;
+    padding-inline: 0.12rem;
+    font-size: 0.66rem;
+    white-space: nowrap;
+  }
+
+  .collection-filters small {
+    min-width: 17px;
+    height: 17px;
+  }
+
+  .store-section-heading {
+    gap: 0.75rem;
+  }
+
+  .store-section-heading h2 {
+    line-height: 1.12;
+  }
+
+  .route-loading {
+    min-height: 150px;
+    padding: 0.8rem 0.15rem;
+  }
+
+  .route-loading-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.55rem;
+  }
+
+  .route-loading-grid > span {
+    height: 88px;
+  }
+
+  .account-route-loading .route-loading-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
