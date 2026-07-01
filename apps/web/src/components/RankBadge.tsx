@@ -16,13 +16,13 @@ export const rainbowRankLimit = 50;
 export const paletteHole = { cx: 25.5, cy: 36, radius: 8.3 } as const;
 
 export const paintSpots = [
-  { cx: 53, cy: 26, rx: 7.4, ry: 5.8, rotate: -12 },
-  { cx: 70, cy: 26, rx: 7.6, ry: 5.7, rotate: 13 },
-  { cx: 85, cy: 37, rx: 7.2, ry: 5.4, rotate: 16 },
-  { cx: 73, cy: 50, rx: 7.4, ry: 5.7, rotate: -8 },
-  { cx: 58, cy: 53, rx: 7.4, ry: 5.8, rotate: 7 },
-  { cx: 42, cy: 55, rx: 7.6, ry: 5.8, rotate: -14 },
-  { cx: 52, cy: 64, rx: 7.1, ry: 5.4, rotate: -6 },
+  { cx: 51, cy: 26, rx: 6.6, ry: 5.1, rotate: -8 },
+  { cx: 68, cy: 25, rx: 6.7, ry: 5.1, rotate: 5 },
+  { cx: 87, cy: 29, rx: 6.6, ry: 5, rotate: 10 },
+  { cx: 60, cy: 43, rx: 6.7, ry: 5.1, rotate: -5 },
+  { cx: 82, cy: 43, rx: 6.7, ry: 5.1, rotate: 7 },
+  { cx: 58, cy: 58, rx: 6.7, ry: 5.1, rotate: -7 },
+  { cx: 80, cy: 59, rx: 6.7, ry: 5.1, rotate: 6 },
 ] as const;
 
 export const getRankTier = (rating: number, leaderboardRank?: number | null) => {
