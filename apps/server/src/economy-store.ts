@@ -24,6 +24,11 @@ export type QuestKey =
   | "attendance_streak"
   | "online_matches"
   | "first_online_win"
+  | "daily_complete"
+  | "weekly_attendance"
+  | "weekly_matches"
+  | "weekly_wins"
+  | "weekly_complete"
   | "reward_ad";
 export type OfferStatus = "upcoming" | "available" | "ended";
 
@@ -50,8 +55,10 @@ export interface EconomyCatalogItem {
 
 export interface EconomyQuest {
   key: QuestKey;
+  period: "once" | "daily" | "weekly";
   cycleKey: string;
   rewardChips: number;
+  rewardBoxTickets: number;
   claimed: boolean;
   claimable: boolean;
   progress: number;
@@ -138,6 +145,11 @@ export interface EconomyStore {
     questKey: "attendance_streak" | "first_online_win",
     attendanceStreak?: number,
   ): Promise<EconomyOverview>;
+  claimProgressQuest(
+    accountId: string,
+    questKey: "daily_complete" | "weekly_attendance" | "weekly_matches" | "weekly_wins" | "weekly_complete",
+    attendanceStreak?: number,
+  ): Promise<EconomyOverview>;
   purchaseWeeklyCosmetic(
     accountId: string,
     cosmeticId: string,
@@ -172,7 +184,7 @@ const weeklyCounts: Record<CosmeticRarity, number> = {
   epic: 3,
   legendary: 1,
 };
-export const boxPrice = 120;
+export const boxPrice = 100;
 export const fragmentRequirement = 4;
 export const probabilityVersion = "20260629-v3";
 export const boxOutcomes: EconomyOverview["box"]["outcomes"] = [
@@ -237,9 +249,10 @@ interface LoadoutRow {
 }
 
 interface QuestRow {
-  quest_key: "welcome" | "attendance" | "attendance_streak" | "first_online_win";
+  quest_key: Exclude<QuestKey, "online_matches" | "reward_ad">;
   cycle_key: string;
   reward_chips: number;
+  reward_box_tickets: number;
   progress: number;
   goal: number;
   status: "unlocked" | "claimed";
@@ -437,6 +450,7 @@ export class NullEconomyStore implements EconomyStore {
   async claimWelcome(): Promise<EconomyOverview> { throw new Error("DATABASE_DISABLED"); }
   async claimAttendance(): Promise<EconomyOverview> { throw new Error("DATABASE_DISABLED"); }
   async claimUnlockedQuest(): Promise<EconomyOverview> { throw new Error("DATABASE_DISABLED"); }
+  async claimProgressQuest(): Promise<EconomyOverview> { throw new Error("DATABASE_DISABLED"); }
   async purchaseWeeklyCosmetic(): Promise<EconomyOverview> { throw new Error("DATABASE_DISABLED"); }
   async openBox(): Promise<BoxOutcome> { throw new Error("DATABASE_DISABLED"); }
   async combineFragments(): Promise<BoxOutcome> { throw new Error("DATABASE_DISABLED"); }
@@ -642,6 +656,10 @@ export class PostgresEconomyStore implements EconomyStore {
       questResult,
       matchCount,
       adCount,
+      todayAttendance,
+      weeklyAttendance,
+      weeklyMatches,
+      weeklyWins,
       products,
     ] = await Promise.all([
       client.query<WalletRow>(`select * from economy_wallets where account_id = $1`, [accountId]),
@@ -694,7 +712,7 @@ export class PostgresEconomyStore implements EconomyStore {
         [accountId],
       ),
       client.query<QuestRow>(
-        `select quest_key, cycle_key, reward_chips, progress, goal, status
+        `select quest_key, cycle_key, reward_chips, reward_box_tickets, progress, goal, status
          from economy_quest_unlocks
          where account_id = $1
          order by case status when 'unlocked' then 0 else 1 end, unlocked_at`,
@@ -710,6 +728,26 @@ export class PostgresEconomyStore implements EconomyStore {
          where account_id = $1 and day_key = $2 and status = 'verified'`,
         [accountId, dayKey],
       ),
+      client.query<{ count: string }>(
+        `select count(*)::text as count from attendance_days
+         where account_id = $1 and attended_on = $2::date`,
+        [accountId, dayKey],
+      ),
+      client.query<{ count: string }>(
+        `select count(*)::text as count from attendance_days
+         where account_id = $1 and attended_on >= $2::date and attended_on < $3::date`,
+        [accountId, week.weekKey, seoulDayKey(week.endsAt)],
+      ),
+      client.query<{ count: string }>(
+        `select count(*)::text as count from economy_match_rewards
+         where account_id = $1 and day_key >= $2 and day_key < $3`,
+        [accountId, week.weekKey, seoulDayKey(week.endsAt)],
+      ),
+      client.query<{ count: string }>(
+        `select count(*)::text as count from economy_match_rewards
+         where account_id = $1 and day_key >= $2 and day_key < $3 and won`,
+        [accountId, week.weekKey, seoulDayKey(week.endsAt)],
+      ),
       client.query<{ id: "founder_pack" | "premium_pack"; reference_price_krw: number; bonus_chips: number }>(
         `select id, reference_price_krw, bonus_chips from monetization_products where active`,
       ),
@@ -720,13 +758,37 @@ export class PostgresEconomyStore implements EconomyStore {
     const wallet = walletResult.rows[0] ?? { color_chips: 0, lifetime_earned: 0, lifetime_spent: 0 };
     const matchProgress = Number.parseInt(matchCount.rows[0]?.count ?? "0", 10);
     const adProgress = Number.parseInt(adCount.rows[0]?.count ?? "0", 10);
+    const attendedToday = Number.parseInt(todayAttendance.rows[0]?.count ?? "0", 10) > 0;
+    const weeklyAttendanceProgress = Number.parseInt(weeklyAttendance.rows[0]?.count ?? "0", 10);
+    const weeklyMatchProgress = Number.parseInt(weeklyMatches.rows[0]?.count ?? "0", 10);
+    const weeklyWinProgress = Number.parseInt(weeklyWins.rows[0]?.count ?? "0", 10);
     const quests = questResult.rows;
     const currentAttendance = quests.find(
       (quest) => quest.quest_key === "attendance" && quest.cycle_key === dayKey,
     );
     const welcome = quests.find((quest) => quest.quest_key === "welcome");
     const streak = quests.find((quest) => quest.quest_key === "attendance_streak" && quest.status === "unlocked");
-    const firstWin = quests.find((quest) => quest.quest_key === "first_online_win" && quest.status === "unlocked");
+    const firstWin = quests.find(
+      (quest) => quest.quest_key === "first_online_win" && quest.cycle_key === dayKey,
+    );
+    const dailyComplete = quests.find(
+      (quest) => quest.quest_key === "daily_complete" && quest.cycle_key === dayKey,
+    );
+    const weeklyAttendanceQuest = quests.find(
+      (quest) => quest.quest_key === "weekly_attendance" && quest.cycle_key === week.weekKey,
+    );
+    const weeklyMatchesQuest = quests.find(
+      (quest) => quest.quest_key === "weekly_matches" && quest.cycle_key === week.weekKey,
+    );
+    const weeklyWinsQuest = quests.find(
+      (quest) => quest.quest_key === "weekly_wins" && quest.cycle_key === week.weekKey,
+    );
+    const weeklyComplete = quests.find(
+      (quest) => quest.quest_key === "weekly_complete" && quest.cycle_key === week.weekKey,
+    );
+    const dailyObjectivesComplete = attendedToday && matchProgress >= 5 && firstWin !== undefined;
+    const weeklyObjectivesComplete =
+      weeklyAttendanceProgress >= 5 && weeklyMatchProgress >= 15 && weeklyWinProgress >= 5;
     const config = configResult.rows[0];
     const now = new Date();
     const startsAt = config?.founder_sale_starts_at ?? null;
@@ -768,8 +830,10 @@ export class PostgresEconomyStore implements EconomyStore {
       quests: [
         {
           key: "welcome",
+          period: "once",
           cycleKey: "once",
           rewardChips: 100,
+          rewardBoxTickets: 0,
           claimed: welcome?.status === "claimed",
           claimable: welcome?.status === "unlocked",
           progress: 1,
@@ -777,8 +841,10 @@ export class PostgresEconomyStore implements EconomyStore {
         },
         {
           key: "attendance",
+          period: "daily",
           cycleKey: dayKey,
           rewardChips: 5,
+          rewardBoxTickets: 0,
           claimed: currentAttendance?.status === "claimed",
           claimable: currentAttendance === undefined,
           progress: currentAttendance?.status === "claimed" ? 1 : 0,
@@ -786,8 +852,10 @@ export class PostgresEconomyStore implements EconomyStore {
         },
         {
           key: "attendance_streak",
+          period: "daily",
           cycleKey: streak?.cycle_key ?? `progress:${dayKey}`,
           rewardChips: 20,
+          rewardBoxTickets: 0,
           claimed: false,
           claimable: streak !== undefined,
           progress: streak === undefined ? attendanceStreak % 7 : 7,
@@ -795,8 +863,10 @@ export class PostgresEconomyStore implements EconomyStore {
         },
         {
           key: "online_matches",
+          period: "daily",
           cycleKey: dayKey,
           rewardChips: 4,
+          rewardBoxTickets: 0,
           claimed: matchProgress >= 5,
           claimable: false,
           progress: Math.min(matchProgress, 5),
@@ -804,17 +874,80 @@ export class PostgresEconomyStore implements EconomyStore {
         },
         {
           key: "first_online_win",
+          period: "daily",
           cycleKey: firstWin?.cycle_key ?? dayKey,
           rewardChips: 8,
-          claimed: false,
-          claimable: firstWin !== undefined,
+          rewardBoxTickets: 0,
+          claimed: firstWin?.status === "claimed",
+          claimable: firstWin?.status === "unlocked",
           progress: firstWin === undefined ? 0 : 1,
           goal: 1,
         },
         {
+          key: "daily_complete",
+          period: "daily",
+          cycleKey: dayKey,
+          rewardChips: 0,
+          rewardBoxTickets: 1,
+          claimed: dailyComplete?.status === "claimed",
+          claimable: dailyObjectivesComplete && dailyComplete?.status !== "claimed",
+          progress: [attendedToday, matchProgress >= 5, firstWin !== undefined].filter(Boolean).length,
+          goal: 3,
+        },
+        {
+          key: "weekly_attendance",
+          period: "weekly",
+          cycleKey: week.weekKey,
+          rewardChips: 50,
+          rewardBoxTickets: 0,
+          claimed: weeklyAttendanceQuest?.status === "claimed",
+          claimable: weeklyAttendanceProgress >= 5 && weeklyAttendanceQuest?.status !== "claimed",
+          progress: Math.min(weeklyAttendanceProgress, 5),
+          goal: 5,
+        },
+        {
+          key: "weekly_matches",
+          period: "weekly",
+          cycleKey: week.weekKey,
+          rewardChips: 100,
+          rewardBoxTickets: 0,
+          claimed: weeklyMatchesQuest?.status === "claimed",
+          claimable: weeklyMatchProgress >= 15 && weeklyMatchesQuest?.status !== "claimed",
+          progress: Math.min(weeklyMatchProgress, 15),
+          goal: 15,
+        },
+        {
+          key: "weekly_wins",
+          period: "weekly",
+          cycleKey: week.weekKey,
+          rewardChips: 150,
+          rewardBoxTickets: 0,
+          claimed: weeklyWinsQuest?.status === "claimed",
+          claimable: weeklyWinProgress >= 5 && weeklyWinsQuest?.status !== "claimed",
+          progress: Math.min(weeklyWinProgress, 5),
+          goal: 5,
+        },
+        {
+          key: "weekly_complete",
+          period: "weekly",
+          cycleKey: week.weekKey,
+          rewardChips: 0,
+          rewardBoxTickets: 1,
+          claimed: weeklyComplete?.status === "claimed",
+          claimable: weeklyObjectivesComplete && weeklyComplete?.status !== "claimed",
+          progress: [
+            weeklyAttendanceProgress >= 5,
+            weeklyMatchProgress >= 15,
+            weeklyWinProgress >= 5,
+          ].filter(Boolean).length,
+          goal: 3,
+        },
+        {
           key: "reward_ad",
+          period: "daily",
           cycleKey: dayKey,
           rewardChips: 12,
+          rewardBoxTickets: 0,
           claimed: adProgress >= 3,
           claimable: false,
           progress: Math.min(adProgress, 3),
@@ -872,22 +1005,32 @@ export class PostgresEconomyStore implements EconomyStore {
     questKey: QuestRow["quest_key"],
     cycleKey: string,
   ): Promise<void> {
-    const result = await client.query<{ reward_chips: number }>(
+    const result = await client.query<{ reward_chips: number; reward_box_tickets: number }>(
       `update economy_quest_unlocks set status = 'claimed', claimed_at = now()
        where account_id = $1 and quest_key = $2 and cycle_key = $3 and status = 'unlocked'
-       returning reward_chips`,
+       returning reward_chips, reward_box_tickets`,
       [accountId, questKey, cycleKey],
     );
-    const reward = result.rows[0]?.reward_chips;
+    const reward = result.rows[0];
     if (reward === undefined) throw new Error("QUEST_ALREADY_CLAIMED");
-    await this.credit(
-      client,
-      accountId,
-      reward,
-      `quest_${questKey}`,
-      `quest:${questKey}:${cycleKey}`,
-      { cycleKey },
-    );
+    if (reward.reward_chips > 0) {
+      await this.credit(
+        client,
+        accountId,
+        reward.reward_chips,
+        `quest_${questKey}`,
+        `quest:${questKey}:${cycleKey}`,
+        { cycleKey },
+      );
+    }
+    if (reward.reward_box_tickets > 0) {
+      await client.query(
+        `update account_palette_box_tickets
+         set quantity = quantity + $2, updated_at = now()
+         where account_id = $1`,
+        [accountId, reward.reward_box_tickets],
+      );
+    }
   }
 
   async claimWelcome(accountId: string, attendanceStreak = 0): Promise<EconomyOverview> {
@@ -964,6 +1107,46 @@ export class PostgresEconomyStore implements EconomyStore {
       const cycleKey = pending.rows[0]?.cycle_key;
       if (cycleKey === undefined) throw new Error("QUEST_NOT_CLAIMABLE");
       await this.claimQuestRow(client, accountId, questKey, cycleKey);
+      await client.query("commit");
+    } catch (error) {
+      await client.query("rollback");
+      throw error;
+    } finally {
+      client.release();
+    }
+    return this.getOverview(accountId, attendanceStreak);
+  }
+
+  async claimProgressQuest(
+    accountId: string,
+    questKey: "daily_complete" | "weekly_attendance" | "weekly_matches" | "weekly_wins" | "weekly_complete",
+    attendanceStreak = 0,
+  ): Promise<EconomyOverview> {
+    const overview = await this.getOverview(accountId, attendanceStreak);
+    const quest = overview.quests.find((entry) => entry.key === questKey);
+    if (quest === undefined || !quest.claimable) throw new Error("QUEST_NOT_CLAIMABLE");
+
+    const client = await this.pool.connect();
+    try {
+      await client.query("begin");
+      await this.ensureAccount(client, accountId);
+      await this.lockWallet(client, accountId);
+      await client.query(
+        `insert into economy_quest_unlocks (
+           account_id, quest_key, cycle_key, reward_chips, reward_box_tickets, progress, goal
+         ) values ($1, $2, $3, $4, $5, $6, $7)
+         on conflict (account_id, quest_key, cycle_key) do nothing`,
+        [
+          accountId,
+          questKey,
+          quest.cycleKey,
+          quest.rewardChips,
+          quest.rewardBoxTickets,
+          quest.goal,
+          quest.goal,
+        ],
+      );
+      await this.claimQuestRow(client, accountId, questKey, quest.cycleKey);
       await client.query("commit");
     } catch (error) {
       await client.query("rollback");

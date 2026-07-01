@@ -110,7 +110,10 @@ const tutorialFullBeforeCellClass = (index: number) => {
   const redCells = [0, 3, 5, 8, 11, 14, 16, 19, 22];
   const greenCells = [2, 7, 10, 13, 15, 18, 21, 24];
 
-  if (index === emptyCell) return classes.join(" ");
+  if (index === emptyCell) {
+    classes.push("blue-tile", "placing");
+    return classes.join(" ");
+  }
   if (redCells.includes(index)) classes.push("red-tile");
   else if (greenCells.includes(index)) classes.push("green-tile");
   else classes.push("blue-tile");
@@ -214,7 +217,7 @@ export function TutorialPanel() {
               {step.preview === "full" ? (
                 <div className="tutorial-preview-compare">
                   <div>
-                    <span>{t("가득 찬 직전")}</span>
+                    <span>{t("가득 차기 직전")}</span>
                     <div className="tutorial-preview-board mini before-full">
                       {Array.from({ length: 25 }, (_, index) => (
                         <i key={index} className={tutorialFullBeforeCellClass(index)} />

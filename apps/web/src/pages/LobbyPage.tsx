@@ -10,6 +10,24 @@ import { useVisitorAnalytics } from "../visitorAnalytics";
 import { useI18n } from "../i18n";
 
 type FirstPlayer = "human" | "ai" | "random";
+const aiSettingsKey = "tango-ai-settings-v1";
+
+const readAiSettings = (): { difficulty: AiDifficulty; firstPlayer: FirstPlayer } => {
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(aiSettingsKey) ?? "{}") as {
+      difficulty?: AiDifficulty;
+      firstPlayer?: FirstPlayer;
+    };
+    return {
+      difficulty: parsed.difficulty === "normal" ? "normal" : "easy",
+      firstPlayer: parsed.firstPlayer === "ai" || parsed.firstPlayer === "random"
+        ? parsed.firstPlayer
+        : "human",
+    };
+  } catch {
+    return { difficulty: "easy", firstPlayer: "human" };
+  }
+};
 
 const modes = [
   {
@@ -49,8 +67,8 @@ const modes = [
 export function LobbyPage() {
   const navigate = useNavigate();
   const { t, formatNumber } = useI18n();
-  const [difficulty, setDifficulty] = useState<AiDifficulty>("easy");
-  const [firstPlayer, setFirstPlayer] = useState<FirstPlayer>("human");
+  const [difficulty, setDifficulty] = useState<AiDifficulty>(() => readAiSettings().difficulty);
+  const [firstPlayer, setFirstPlayer] = useState<FirstPlayer>(() => readAiSettings().firstPlayer);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const visitorCounts = useVisitorAnalytics();
   const signedIn = getAuthToken() !== null;
@@ -61,6 +79,14 @@ export function LobbyPage() {
       void fetchEconomy().then(setEconomy).catch(() => undefined);
     }
   }, [signedIn]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(aiSettingsKey, JSON.stringify({ difficulty, firstPlayer }));
+    } catch {
+      // The game remains usable when browser storage is unavailable.
+    }
+  }, [difficulty, firstPlayer]);
 
   const startGame = () => {
     navigate(`/game?difficulty=${difficulty}&first=${firstPlayer}`);
@@ -171,7 +197,7 @@ export function LobbyPage() {
                 <strong>{signedIn ? t("전적과 출석을 확인하세요") : t("로그인하고 랭크 기록을 저장하세요")}</strong>
               </div>
               <button type="button" onClick={() => navigate("/account")}>
-                {signedIn ? t("마이 Tango") : t("로그인")} <span aria-hidden="true">↗</span>
+                {signedIn ? t("마이 페이지") : t("로그인")} <span aria-hidden="true">↗</span>
               </button>
             </section>
 

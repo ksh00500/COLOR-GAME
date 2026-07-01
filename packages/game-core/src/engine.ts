@@ -102,6 +102,8 @@ export const createInitialGame = (
 
   return {
     id: options.id ?? `game-${now}`,
+    startedAt: now,
+    finishedAt: null,
     status: "playing",
     mode: options.mode ?? "ai",
     board: createEmptyBoard(config.boardSize),
@@ -288,6 +290,7 @@ export const expireTurn = (state: GameState, now = Date.now()): GameState => {
   const winner = getOtherPlayer(state, state.currentPlayerId);
   return {
     ...state,
+    finishedAt: now,
     status: "finished",
     currentPlayerId: null,
     winnerId: winner.id,
@@ -385,6 +388,7 @@ export const placeTile = (state: GameState, input: MoveInput): MoveResult => {
       move,
       state: {
         ...state,
+        finishedAt: createdAt,
         board: nextBoard,
         players,
         status: "finished",
@@ -413,7 +417,11 @@ export const placeTile = (state: GameState, input: MoveInput): MoveResult => {
   };
 };
 
-export const resignGame = (state: GameState, playerId: string): GameState => {
+export const resignGame = (
+  state: GameState,
+  playerId: string,
+  now = Date.now(),
+): GameState => {
   if (state.status !== "playing") {
     return state;
   }
@@ -421,6 +429,7 @@ export const resignGame = (state: GameState, playerId: string): GameState => {
   const winner = getOtherPlayer(state, playerId);
   return {
     ...state,
+    finishedAt: now,
     status: "finished",
     currentPlayerId: null,
     winnerId: winner.id,

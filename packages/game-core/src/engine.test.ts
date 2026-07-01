@@ -7,6 +7,7 @@ import {
   findScoringLines,
   getValidMoves,
   placeTile,
+  resignGame,
 } from "./engine";
 
 const noTimerConfig: GameConfig = {
@@ -209,6 +210,17 @@ describe("scoring and removal", () => {
 });
 
 describe("game completion", () => {
+  it("records immutable start and finish timestamps", () => {
+    const state = createInitialGame(DEFAULT_GAME_CONFIG, { now: 1_000 });
+    expect(state.startedAt).toBe(1_000);
+    expect(state.finishedAt).toBeNull();
+
+    const expired = expireTurn(state, 61_000);
+    expect(expired.startedAt).toBe(1_000);
+    expect(expired.finishedAt).toBe(61_000);
+    expect(expireTurn(expired, 91_000).finishedAt).toBe(61_000);
+  });
+
   it("finishes immediately when a player reaches the target", () => {
     const state = gameWithBoard(
       boardFrom([
@@ -233,6 +245,7 @@ describe("game completion", () => {
     expect(result.state.status).toBe("finished");
     expect(result.state.winnerId).toBe("player1");
     expect(result.state.result).toBe("target-score");
+    expect(result.state.finishedAt).toBe(2_000);
   });
 
   it("clears the placed color and keeps playing when the board fills without scoring", () => {
@@ -289,6 +302,17 @@ describe("game completion", () => {
     expect(expired.status).toBe("finished");
     expect(expired.result).toBe("timeout");
     expect(expired.winnerId).toBe("player2");
+    expect(expired.finishedAt).toBe(61_000);
+  });
+
+  it("freezes the finish timestamp when a player resigns", () => {
+    const state = createInitialGame(DEFAULT_GAME_CONFIG, { now: 1_000 });
+    const resigned = resignGame(state, "player1", 12_345);
+
+    expect(resigned.status).toBe("finished");
+    expect(resigned.result).toBe("resignation");
+    expect(resigned.winnerId).toBe("player2");
+    expect(resigned.finishedAt).toBe(12_345);
   });
 
   it("rejects moves after the game is finished", () => {

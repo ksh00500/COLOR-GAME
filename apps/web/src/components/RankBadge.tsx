@@ -20,7 +20,7 @@ const paintSpots = [
   { cx: 73, cy: 50, rx: 7.4, ry: 5.7, rotate: -8 },
   { cx: 58, cy: 53, rx: 7.4, ry: 5.8, rotate: 7 },
   { cx: 42, cy: 55, rx: 7.6, ry: 5.8, rotate: -14 },
-  { cx: 31, cy: 46, rx: 7.1, ry: 5.4, rotate: 10 },
+  { cx: 42, cy: 63, rx: 7.1, ry: 5.4, rotate: -10 },
 ] as const;
 
 export const getRankTier = (rating: number, leaderboardRank?: number | null) => {

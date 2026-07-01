@@ -48,6 +48,7 @@ import {
 } from "./google-auth.js";
 import {
   gameMoveSchema,
+  gameRematchSchema,
   gameResignSchema,
   playerProfileSchema,
   roomCreateSchema,
@@ -126,6 +127,10 @@ const googleLinkSchema = z.object({
   password: z.string().min(8).max(128),
 });
 
+const profileUpdateSchema = z.object({
+  displayName: z.string().trim().min(2).max(24),
+});
+
 const attendanceCheckInSchema = z.object({
   timeZone: z.string().trim().max(120).optional(),
 });
@@ -148,6 +153,16 @@ const tileLoadoutParamsSchema = z.object({
 
 const fragmentCombineSchema = z.object({
   rarity: z.enum(["common", "rare", "epic", "legendary"]),
+});
+
+const progressQuestParamsSchema = z.object({
+  quest: z.enum([
+    "daily-complete",
+    "weekly-attendance",
+    "weekly-matches",
+    "weekly-wins",
+    "weekly-complete",
+  ]),
 });
 
 const couponRewardSchema = z.discriminatedUnion("type", [
@@ -267,6 +282,30 @@ const publicAccount = (account: AccountSummary) => ({
   rankedWins: account.rankedWins,
   rankedLosses: account.rankedLosses,
   rankedDraws: account.rankedDraws,
+  casualWins: account.casualWins,
+  casualLosses: account.casualLosses,
+  casualDraws: account.casualDraws,
+  matchStats: {
+    casual: {
+      wins: account.casualWins,
+      losses: account.casualLosses,
+      draws: account.casualDraws,
+    },
+    ranked: {
+      wins: account.rankedWins,
+      losses: account.rankedLosses,
+      draws: account.rankedDraws,
+    },
+    all: {
+      wins: account.casualWins + account.rankedWins,
+      losses: account.casualLosses + account.rankedLosses,
+      draws: account.casualDraws + account.rankedDraws,
+    },
+  },
+  displayNameChangedAt: account.displayNameChangedAt,
+  displayNameChangeAvailableAt: account.displayNameChangedAt === null
+    ? null
+    : new Date(new Date(account.displayNameChangedAt).getTime() + 14 * 86_400_000).toISOString(),
   attendanceStreak: account.attendanceStreak,
   longestAttendanceStreak: account.longestAttendanceStreak,
   lastAttendanceDate: account.lastAttendanceDate,
@@ -303,7 +342,7 @@ export const createServer = (options: ServerOptions = {}) => {
 
   void app.register(cors, {
     origin: options.corsOrigin ?? true,
-    methods: ["GET", "HEAD", "POST", "PUT", "DELETE", "OPTIONS"],
+    methods: ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   });
 
   const recordFinishedRoom = async (room: RoomSnapshot): Promise<void> => {
@@ -759,6 +798,32 @@ export const createServer = (options: ServerOptions = {}) => {
     return { account: publicAccount(account) };
   });
 
+  app.patch("/auth/profile", async (request, reply) => {
+    const account = await authenticateToken(bearerToken(request.headers.authorization));
+    if (account === null || !accountStore.enabled) {
+      return reply.code(401).send({ code: "UNAUTHORIZED" });
+    }
+    const parsed = profileUpdateSchema.safeParse(request.body ?? {});
+    if (!parsed.success) {
+      return reply.code(400).send({ code: "INVALID_REQUEST", details: parsed.error.flatten() });
+    }
+    if (parsed.data.displayName === account.displayName) {
+      return { account: publicAccount(account) };
+    }
+    const availableAt = account.displayNameChangedAt === null
+      ? null
+      : new Date(new Date(account.displayNameChangedAt).getTime() + 14 * 86_400_000);
+    if (availableAt !== null && availableAt.getTime() > Date.now()) {
+      return reply.code(409).send({
+        code: "NICKNAME_CHANGE_COOLDOWN",
+        availableAt: availableAt.toISOString(),
+      });
+    }
+    const updated = await accountStore.updateDisplayName(account.id, parsed.data.displayName);
+    if (updated === null) return reply.code(404).send({ code: "PROFILE_NOT_FOUND" });
+    return { account: publicAccount(updated) };
+  });
+
   app.get("/auth/methods", async (request, reply) => {
     const account = await authenticateToken(bearerToken(request.headers.authorization));
     if (account === null) {
@@ -1054,8 +1119,19 @@ export const createServer = (options: ServerOptions = {}) => {
     }
 
     const params = z.object({ accountId: z.string().min(1) }).parse(request.params);
-    const query = z.object({ limit: z.coerce.number().int().min(1).max(100).default(20) }).parse(request.query);
-    return { matches: await accountStore.getMatchHistory(params.accountId, query.limit) };
+    const query = z.object({
+      limit: z.coerce.number().int().min(1).max(100).default(20),
+      offset: z.coerce.number().int().min(0).max(10_000).default(0),
+      mode: z.enum(["casual", "ranked"]).nullable().optional(),
+    }).parse(request.query);
+    return {
+      matches: await accountStore.getMatchHistory(
+        params.accountId,
+        query.limit,
+        query.mode ?? null,
+        query.offset,
+      ),
+    };
   });
 
   app.post("/attendance/check-in", async (request, reply) => {
@@ -1198,6 +1274,36 @@ export const createServer = (options: ServerOptions = {}) => {
         economy: await economyStore.claimUnlockedQuest(
           account.id,
           "first_online_win",
+          account.attendanceStreak,
+        ),
+      };
+    } catch (error) {
+      const mapped = economyErrorStatus(error);
+      return reply.code(mapped.status).send({ code: mapped.code });
+    }
+  });
+
+  app.post("/economy/quests/progress/:quest/claim", async (request, reply) => {
+    const account = await authenticateToken(bearerToken(request.headers.authorization));
+    if (account === null || !economyStore.enabled) {
+      return reply.code(401).send({ code: "UNAUTHORIZED" });
+    }
+    const params = progressQuestParamsSchema.safeParse(request.params);
+    const body = economyTimeZoneSchema.safeParse(request.body ?? {});
+    if (!params.success || !body.success) {
+      return reply.code(400).send({ code: "INVALID_REQUEST" });
+    }
+    const questKey = params.data.quest.replaceAll("-", "_") as
+      | "daily_complete"
+      | "weekly_attendance"
+      | "weekly_matches"
+      | "weekly_wins"
+      | "weekly_complete";
+    try {
+      return {
+        economy: await economyStore.claimProgressQuest(
+          account.id,
+          questKey,
           account.attendanceStreak,
         ),
       };
@@ -1589,6 +1695,40 @@ export const createServer = (options: ServerOptions = {}) => {
       callback?.({ ok: true, room: result.value });
     });
 
+    socket.on("game:rematch:request", (payload, callback?: (response: unknown) => void) => {
+      const parsed = gameRematchSchema.safeParse(payload ?? {});
+      if (!parsed.success) {
+        callback?.({ ok: false, error: parsed.error.flatten() });
+        return;
+      }
+      if (rejectPlayerMismatch(parsed.data.playerId, callback)) return;
+      const result = roomService.requestRematch(parsed.data.code, parsed.data.playerId);
+      if (!result.ok) {
+        callback?.({ ok: false, error: toClientError(result.error) });
+        return;
+      }
+      persistRoomLater(result.value, "Failed to persist rematch state");
+      io.to(result.value.code).emit("game:state", result.value);
+      callback?.({ ok: true, room: result.value });
+    });
+
+    socket.on("game:rematch:decline", (payload, callback?: (response: unknown) => void) => {
+      const parsed = gameRematchSchema.safeParse(payload ?? {});
+      if (!parsed.success) {
+        callback?.({ ok: false, error: parsed.error.flatten() });
+        return;
+      }
+      if (rejectPlayerMismatch(parsed.data.playerId, callback)) return;
+      const result = roomService.declineRematch(parsed.data.code, parsed.data.playerId);
+      if (!result.ok) {
+        callback?.({ ok: false, error: toClientError(result.error) });
+        return;
+      }
+      persistRoomLater(result.value, "Failed to persist declined rematch");
+      io.to(result.value.code).emit("game:state", result.value);
+      callback?.({ ok: true, room: result.value });
+    });
+
     socket.on("game:reconnect", (payload, callback?: (response: unknown) => void) => {
       const parsed = z
         .object({ code: z.string().toUpperCase(), playerId: z.string().min(1) })
@@ -1699,6 +1839,10 @@ export const createServer = (options: ServerOptions = {}) => {
       persistFinishedRoomLater(room, null, "Failed to persist expired room");
       io.to(room.code).emit("game:state", room);
       io.to(room.code).emit("game:finished", room.game);
+    }
+    for (const room of roomService.expireRematchRequests()) {
+      persistRoomLater(room, "Failed to persist expired rematch");
+      io.to(room.code).emit("game:state", room);
     }
   }, 1_000);
 

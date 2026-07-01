@@ -63,6 +63,10 @@ class MemoryAccountStore implements AccountStore {
       rankedWins: 0,
       rankedLosses: 0,
       rankedDraws: 0,
+      casualWins: 0,
+      casualLosses: 0,
+      casualDraws: 0,
+      displayNameChangedAt: null,
       attendanceStreak: 0,
       longestAttendanceStreak: 0,
       lastAttendanceDate: null,
@@ -112,6 +116,10 @@ class MemoryAccountStore implements AccountStore {
       rankedWins: 0,
       rankedLosses: 0,
       rankedDraws: 0,
+      casualWins: 0,
+      casualLosses: 0,
+      casualDraws: 0,
+      displayNameChangedAt: null,
       attendanceStreak: 0,
       longestAttendanceStreak: 0,
       lastAttendanceDate: null,
@@ -155,6 +163,18 @@ class MemoryAccountStore implements AccountStore {
     const account = this.accounts.get(accountId);
     if (account === undefined || account.activeSessionId !== sessionId) return null;
     return account;
+  }
+
+  async updateDisplayName(accountId: string, displayName: string): Promise<AccountSummary | null> {
+    const account = this.accounts.get(accountId);
+    if (account === undefined) return null;
+    const updated = {
+      ...account,
+      displayName,
+      displayNameChangedAt: new Date().toISOString(),
+    };
+    this.accounts.set(accountId, updated);
+    return updated;
   }
 
   async rotateSession(accountId: string): Promise<string | null> {
@@ -369,6 +389,47 @@ describe("auth routes", () => {
       headers: { authorization: `Bearer ${secondToken}` },
     });
     expect(currentSession.statusCode).toBe(200);
+  });
+
+  it("allows a nickname change and enforces the 14 day cooldown", async () => {
+    const accountStore = new MemoryAccountStore();
+    const { app } = createServer({
+      accountStore,
+      authSecret: "test-auth-secret-with-more-than-32-characters",
+    });
+    apps.push(app);
+
+    const registered = await app.inject({
+      method: "POST",
+      url: "/auth/register",
+      payload: {
+        email: "nickname@example.com",
+        password: "password123",
+        displayName: "First Name",
+        avatarId: "orbit",
+      },
+    });
+    const token = registered.json<{ token: string }>().token;
+
+    const changed = await app.inject({
+      method: "PATCH",
+      url: "/auth/profile",
+      headers: { authorization: `Bearer ${token}` },
+      payload: { displayName: "Second Name" },
+    });
+    expect(changed.statusCode).toBe(200);
+    expect(changed.json<{ account: AccountSummary }>().account.displayName).toBe("Second Name");
+
+    const blocked = await app.inject({
+      method: "PATCH",
+      url: "/auth/profile",
+      headers: { authorization: `Bearer ${token}` },
+      payload: { displayName: "Third Name" },
+    });
+    expect(blocked.statusCode).toBe(409);
+    const body = blocked.json<{ code: string; availableAt: string }>();
+    expect(body.code).toBe("NICKNAME_CHANGE_COOLDOWN");
+    expect(new Date(body.availableAt).getTime()).toBeGreaterThan(Date.now() + 13 * 86_400_000);
   });
 
   it("requires password confirmation and permanently deletes an account", async () => {

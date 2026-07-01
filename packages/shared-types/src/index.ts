@@ -92,6 +92,8 @@ export interface Move {
 
 export interface GameState {
   id: string;
+  startedAt?: number;
+  finishedAt?: number | null;
   status: GameStatus;
   mode: GameMode;
   board: Board;
@@ -167,6 +169,10 @@ export interface RoomSnapshot {
   config?: GameConfig;
   createdAt: number;
   updatedAt: number;
+  rematch?: {
+    requestedPlayerIds: PlayerId[];
+    expiresAt: number | null;
+  } | null;
 }
 
 export interface GameReplay {

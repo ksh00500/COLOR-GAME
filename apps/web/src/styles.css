@@ -4721,86 +4721,11 @@ kbd {
   position: relative;
 }
 
-.coach-mark-layer {
-  position: absolute;
-  inset: 0;
-  z-index: 12;
-  pointer-events: none;
-}
-
-.coach-mark {
-  position: absolute;
-  display: grid;
-  gap: 0.18rem;
-  max-width: 230px;
-  padding: 0.75rem 0.85rem;
-  border: 1px solid color-mix(in srgb, var(--green-light) 48%, var(--app-line));
-  border-radius: 14px;
-  color: var(--app-ink);
-  background: color-mix(in srgb, var(--app-panel-strong) 92%, transparent);
-  box-shadow: 0 16px 36px rgba(0,0,0,0.26), 0 0 0 5px color-mix(in srgb, var(--green-light) 9%, transparent);
-  text-align: left;
-  pointer-events: auto;
-  cursor: pointer;
-  animation: coach-pop 280ms ease both, coach-pulse 1.8s ease-in-out infinite;
-}
-
-.coach-mark strong {
-  font-size: 0.82rem;
-  font-weight: 950;
-}
-
-.coach-mark span {
-  color: var(--app-ink-soft);
-  font-size: 0.7rem;
-  font-weight: 800;
-  line-height: 1.45;
-  word-break: keep-all;
-}
-
-.coach-rules {
-  top: 4.4rem;
-  right: 1.6rem;
-}
-
-.coach-board {
-  left: clamp(1rem, 25vw, 28rem);
-  top: 24%;
-}
-
-.coach-colors {
-  right: clamp(1rem, 7vw, 8rem);
-  bottom: 20%;
-}
-
-@keyframes coach-pop {
-  from { opacity: 0; transform: translateY(8px) scale(0.96); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
-}
-
-@keyframes coach-pulse {
-  0%, 100% { box-shadow: 0 16px 36px rgba(0,0,0,0.26), 0 0 0 5px color-mix(in srgb, var(--green-light) 8%, transparent); }
-  50% { box-shadow: 0 16px 36px rgba(0,0,0,0.26), 0 0 0 9px color-mix(in srgb, var(--green-light) 15%, transparent); }
-}
-
 @media (max-width: 980px) {
   .home-account-card {
     grid-template-columns: 1fr;
   }
 
-  .coach-mark {
-    max-width: 190px;
-  }
-
-  .coach-board {
-    left: 1rem;
-    top: 22%;
-  }
-
-  .coach-colors {
-    right: 1rem;
-    bottom: 12%;
-  }
 }
 
 .tutorial-panel {
@@ -5330,8 +5255,7 @@ kbd {
   }
 
   .patch-notes-confirm {
-    position: sticky;
-    bottom: -0.85rem;
+    position: static;
     min-height: 46px;
     margin-top: 0.7rem;
   }
@@ -5504,25 +5428,6 @@ kbd {
     border-radius: 18px;
   }
 
-  .coach-mark-layer {
-    position: fixed;
-    inset: 0;
-    z-index: 70;
-  }
-
-  .coach-mark,
-  .coach-rules,
-  .coach-board,
-  .coach-colors {
-    position: fixed;
-    top: auto;
-    right: max(0.75rem, var(--safe-area-right));
-    bottom: calc(94px + var(--safe-area-bottom));
-    left: max(0.75rem, var(--safe-area-left));
-    width: auto;
-    max-width: none;
-    padding: 0.65rem 0.75rem;
-  }
 }
 
 /* Store, wallet, quests and cosmetic inventory */
@@ -8481,6 +8386,262 @@ kbd {
   html,
   body {
     min-width: 0;
+  }
+}
+
+/* v1.2.1 navigation, records, quests and reward feedback */
+.record-mode-tabs,
+.quest-period-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.35rem;
+  padding: 0.3rem;
+  border: 1px solid var(--app-line);
+  border-radius: 12px;
+  background: var(--app-panel-muted);
+}
+
+.quest-period-tabs {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.record-mode-tabs button,
+.quest-period-tabs button {
+  min-height: 36px;
+  border: 0;
+  border-radius: 9px;
+  color: var(--app-ink-soft);
+  background: transparent;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.record-mode-tabs button.active,
+.quest-period-tabs button.active {
+  color: var(--app-ink);
+  background: var(--app-panel-strong);
+  box-shadow: 0 3px 12px color-mix(in srgb, var(--app-page-deep) 20%, transparent);
+}
+
+.nickname-change-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 0.8fr);
+  gap: 1rem;
+  align-items: center;
+  padding: 1rem;
+  border: 1px solid var(--app-line);
+  border-radius: 14px;
+  background: var(--app-panel-muted);
+}
+
+.nickname-change-card p {
+  margin: 0.25rem 0 0;
+  color: var(--app-ink-soft);
+  font-size: 0.78rem;
+}
+
+.nickname-change-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.5rem;
+}
+
+.nickname-change-form input {
+  min-width: 0;
+  min-height: 42px;
+  border: 1px solid var(--app-line);
+  border-radius: 10px;
+  color: var(--app-ink);
+  background: var(--app-panel-strong);
+}
+
+.store-purchase-panel,
+.coupon-result-panel {
+  width: min(calc(100% - 1.5rem), 500px);
+  justify-items: center;
+  text-align: center;
+}
+
+.purchase-tile-preview {
+  width: 96px;
+}
+
+.coupon-reward-grid {
+  display: grid;
+  width: 100%;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.coupon-reward-grid article {
+  display: grid;
+  justify-items: center;
+  gap: 0.45rem;
+  padding: 0.75rem;
+  border: 1px solid var(--app-line);
+  border-radius: 12px;
+  background: var(--app-panel-muted);
+}
+
+.coupon-reward-grid .tile-skin-preview,
+.coupon-reward-icon {
+  width: 58px;
+  height: 58px;
+}
+
+.coupon-reward-icon {
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  color: white;
+  background: linear-gradient(145deg, var(--burgundy-light), var(--burgundy));
+  font-size: 1.5rem;
+}
+
+.rematch-waiting {
+  margin: 0;
+  padding: 0.65rem;
+  border-radius: 10px;
+  color: var(--app-ink);
+  background: var(--app-panel-muted);
+  text-align: center;
+  font-weight: 800;
+}
+
+.result-actions.single {
+  grid-template-columns: 1fr;
+}
+
+.home-mode.burgundy {
+  border-color: color-mix(in srgb, var(--burgundy) 48%, var(--app-line));
+  background: linear-gradient(145deg, color-mix(in srgb, var(--burgundy) 18%, var(--app-panel-strong)), var(--app-panel-muted));
+}
+
+.home-mode.navy {
+  border-color: color-mix(in srgb, var(--navy) 48%, var(--app-line));
+  background: linear-gradient(145deg, color-mix(in srgb, var(--navy) 18%, var(--app-panel-strong)), var(--app-panel-muted));
+}
+
+.home-mode.green {
+  border-color: color-mix(in srgb, var(--green) 48%, var(--app-line));
+  background: linear-gradient(145deg, color-mix(in srgb, var(--green) 18%, var(--app-panel-strong)), var(--app-panel-muted));
+}
+
+.home-mode.bronze {
+  border-color: color-mix(in srgb, var(--bronze) 48%, var(--app-line));
+  background: linear-gradient(145deg, color-mix(in srgb, var(--bronze) 18%, var(--app-panel-strong)), var(--app-panel-muted));
+}
+
+.home-mode:hover {
+  filter: saturate(1.12);
+  transform: translateY(-2px);
+}
+
+@media (max-width: 700px) {
+  .nickname-change-card {
+    grid-template-columns: 1fr;
+  }
+
+  .account-record-heading {
+    gap: 0.8rem;
+    padding-inline: 0.15rem;
+  }
+
+  .match-history {
+    gap: 0.7rem;
+  }
+
+  .match-history article {
+    gap: 0.7rem;
+    padding: 0.85rem 0.7rem;
+    border: 1px solid var(--app-line);
+    border-radius: 13px;
+    background: var(--app-panel-muted);
+  }
+
+  .match-history article > a {
+    padding-top: 0.55rem;
+    border-top: 1px solid var(--app-line);
+  }
+
+  .coupon-reward-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .app-frame {
+    padding-top: calc(58px + var(--safe-area-top));
+  }
+
+  .app-sidebar {
+    position: fixed;
+    top: 0;
+    right: 0;
+    left: 0;
+    z-index: 80;
+    width: 100%;
+    height: calc(58px + var(--safe-area-top));
+    min-height: 0;
+  }
+
+  :root[data-theme="light"] .mobile-header-actions button.active {
+    border-color: color-mix(in srgb, var(--burgundy) 36%, var(--app-line));
+    color: #2f2a24;
+    background: color-mix(in srgb, var(--burgundy) 16%, #fffaf1);
+  }
+
+  .mobile-header-actions button {
+    font-size: 0.66rem;
+    white-space: nowrap;
+  }
+
+  .app-content-shell,
+  .store-shell,
+  .account-shell,
+  .patch-notes-page {
+    padding-top: 1.15rem;
+  }
+
+  .profile-stats {
+    gap: 0.55rem;
+  }
+
+  .profile-stats span {
+    min-height: 70px;
+    padding: 0.65rem 0.45rem;
+  }
+
+  .profile-stats small {
+    font-size: 0.62rem;
+  }
+
+  .profile-stats strong {
+    font-size: 1rem;
+  }
+
+  .account-tabs button {
+    padding-inline: 0.18rem;
+    font-size: 0.64rem;
+  }
+
+  .record-mode-tabs button,
+  .quest-period-tabs button {
+    font-size: 0.7rem;
+  }
+
+  .home-play-panel .home-mode-actions .home-mode {
+    min-height: 72px;
+  }
+
+  .home-play-panel .home-mode-actions .home-mode strong {
+    font-size: 0.9rem;
+  }
+
+  .floating-replay-link {
+    right: max(0.75rem, var(--safe-area-right));
+    bottom: calc(78px + var(--safe-area-bottom));
+    z-index: 130;
   }
 }
 

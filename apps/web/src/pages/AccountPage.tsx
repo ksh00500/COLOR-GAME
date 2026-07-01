@@ -16,6 +16,7 @@ import {
   linkGoogleAccount,
   registerAccount,
   unlinkGoogleAccount,
+  updateDisplayName,
   type Account,
   type AuthMethods,
   type MatchHistoryItem,
@@ -33,14 +34,34 @@ import { GoogleSignInButton } from "../components/GoogleSignInButton";
 
 type AuthMode = "login" | "register";
 
-const matchOutcome = (match: MatchHistoryItem, accountId: string): string => {
-  if (match.winnerAccountId === null) return "무승부";
-  return match.winnerAccountId === accountId ? "승리" : "패배";
-};
-
 const findLeaderboardRank = (players: PublicProfile[], accountId: string): number | null => {
   const index = players.findIndex((player) => player.id === accountId);
   return index === -1 ? null : index + 1;
+};
+
+const statsForAccount = (
+  account: Account,
+  mode: "all" | "casual" | "ranked",
+): { wins: number; losses: number; draws: number } => {
+  const current = account.matchStats?.[mode];
+  if (current !== undefined) return current;
+  const ranked = {
+    wins: account.rankedWins ?? 0,
+    losses: account.rankedLosses ?? 0,
+    draws: account.rankedDraws ?? 0,
+  };
+  const casual = {
+    wins: account.casualWins ?? 0,
+    losses: account.casualLosses ?? 0,
+    draws: account.casualDraws ?? 0,
+  };
+  if (mode === "ranked") return ranked;
+  if (mode === "casual") return casual;
+  return {
+    wins: ranked.wins + casual.wins,
+    losses: ranked.losses + casual.losses,
+    draws: ranked.draws + casual.draws,
+  };
 };
 
 export function AccountPage({ deletionEntry = false }: { deletionEntry?: boolean }) {
@@ -66,10 +87,16 @@ export function AccountPage({ deletionEntry = false }: { deletionEntry?: boolean
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [accountTab, setAccountTab] = useState<AccountEconomyTab>("tiles");
   const [matchesExpanded, setMatchesExpanded] = useState(false);
+  const [recordMode, setRecordMode] = useState<"all" | "casual" | "ranked">("all");
+  const [nicknameDraft, setNicknameDraft] = useState("");
+  const [nicknameBusy, setNicknameBusy] = useState(false);
   const [authMethods, setAuthMethods] = useState<AuthMethods>({ password: true, google: false });
   const [pendingGoogleToken, setPendingGoogleToken] = useState<string | null>(null);
   const [googleStep, setGoogleStep] = useState<"register" | "link" | null>(null);
   const [googlePassword, setGooglePassword] = useState("");
+  const allMatchStats = account === null
+    ? { wins: 0, losses: 0, draws: 0 }
+    : statsForAccount(account, "all");
 
   useEffect(() => {
     if (getAuthToken() === null) {
@@ -81,6 +108,7 @@ export function AccountPage({ deletionEntry = false }: { deletionEntry?: boolean
       .then(async (storedAccount) => {
         const nextAccount = await checkInAttendance().catch(() => storedAccount);
         setAccount(nextAccount);
+        setNicknameDraft(nextAccount.displayName);
         await refreshAccountData(nextAccount);
         if (deletionEntry) setDeleteOpen(true);
       })
@@ -103,6 +131,7 @@ export function AccountPage({ deletionEntry = false }: { deletionEntry?: boolean
     setAuthChecking(false);
     const checkedInAccount = await checkInAttendance().catch(() => nextAccount);
     setAccount(checkedInAccount);
+    setNicknameDraft(checkedInAccount.displayName);
     setPendingGoogleToken(null);
     setGoogleStep(null);
     setGooglePassword("");
@@ -211,6 +240,21 @@ export function AccountPage({ deletionEntry = false }: { deletionEntry?: boolean
     }
   };
 
+  const changeNickname = async () => {
+    setNicknameBusy(true);
+    setMessage(null);
+    try {
+      const updated = await updateDisplayName(nicknameDraft);
+      setAccount(updated);
+      setNicknameDraft(updated.displayName);
+      setMessage("닉네임을 변경했습니다.");
+    } catch (error) {
+      setMessage(error instanceof ApiError ? error.code : "닉네임을 변경하지 못했습니다.");
+    } finally {
+      setNicknameBusy(false);
+    }
+  };
+
   return (
     <main className="online-page app-frame">
       <AppSidebar onSettings={() => setSettingsOpen(true)} />
@@ -218,7 +262,7 @@ export function AccountPage({ deletionEntry = false }: { deletionEntry?: boolean
       <section className="online-shell account-shell app-content-shell" aria-labelledby="account-title">
         <div className="online-copy">
           <p className="eyebrow">PLAYER ACCOUNT</p>
-          <h1 id="account-title">{t(deletionEntry ? "Tango 계정 삭제" : authChecking || account !== null ? "마이 Tango" : "Tango 계정")}</h1>
+          <h1 id="account-title">{t(deletionEntry ? "Tango 계정 삭제" : authChecking || account !== null ? "마이 페이지" : "Tango 계정")}</h1>
           <p>{t(deletionEntry
             ? "로그인한 뒤 비밀번호를 확인하면 계정과 연결된 데이터를 삭제할 수 있습니다."
             : !authChecking && account === null
@@ -322,10 +366,17 @@ export function AccountPage({ deletionEntry = false }: { deletionEntry?: boolean
               </div>
               <div className="profile-stats">
                 <span><small>{t("레이팅")}</small><strong>{formatNumber(account.rating)}</strong></span>
-                <span><small>{t("경기")}</small><strong>{formatNumber(account.gamesPlayed)}</strong></span>
-                <span><small>{t("승")}</small><strong>{formatNumber(account.rankedWins)}</strong></span>
-                <span><small>{t("패")}</small><strong>{formatNumber(account.rankedLosses)}</strong></span>
-                <span><small>{t("무")}</small><strong>{formatNumber(account.rankedDraws)}</strong></span>
+                <span>
+                  <small>{t("경기")}</small>
+                  <strong>{formatNumber(
+                    allMatchStats.wins
+                    + allMatchStats.losses
+                    + allMatchStats.draws,
+                  )}</strong>
+                </span>
+                <span><small>{t("승")}</small><strong>{formatNumber(allMatchStats.wins)}</strong></span>
+                <span><small>{t("패")}</small><strong>{formatNumber(allMatchStats.losses)}</strong></span>
+                <span><small>{t("무")}</small><strong>{formatNumber(allMatchStats.draws)}</strong></span>
                 <span><small>{t("연속 출석")}</small><strong>{t("{days}일", { days: formatNumber(account.attendanceStreak) })}</strong></span>
                 <span><small>{t("최장 출석")}</small><strong>{t("{days}일", { days: formatNumber(account.longestAttendanceStreak) })}</strong></span>
               </div>
@@ -351,24 +402,42 @@ export function AccountPage({ deletionEntry = false }: { deletionEntry?: boolean
                 <section className="account-tab-section">
                   <div className="account-record-heading">
                     <h3>{t("최근 전적")}</h3>
+                    <div className="record-mode-tabs" role="tablist" aria-label={t("전적 모드")}>
+                      {([
+                        ["all", "전체"],
+                        ["casual", "일반"],
+                        ["ranked", "경쟁"],
+                      ] as const).map(([key, label]) => (
+                        <button
+                          key={key}
+                          type="button"
+                          className={recordMode === key ? "active" : ""}
+                          onClick={() => {
+                            setRecordMode(key);
+                            setMatchesExpanded(false);
+                          }}
+                        >
+                          {t(label)}
+                        </button>
+                      ))}
+                    </div>
                     <div className="record-outcome-summary" aria-label={t("경쟁전 승패무")}>
-                      <span className="win"><small>{t("승")}</small><strong>{formatNumber(account.rankedWins)}</strong></span>
-                      <span className="loss"><small>{t("패")}</small><strong>{formatNumber(account.rankedLosses)}</strong></span>
-                      <span className="draw"><small>{t("무")}</small><strong>{formatNumber(account.rankedDraws)}</strong></span>
+                      <span className="win"><small>{t("승")}</small><strong>{formatNumber(statsForAccount(account, recordMode).wins)}</strong></span>
+                      <span className="loss"><small>{t("패")}</small><strong>{formatNumber(statsForAccount(account, recordMode).losses)}</strong></span>
+                      <span className="draw"><small>{t("무")}</small><strong>{formatNumber(statsForAccount(account, recordMode).draws)}</strong></span>
                     </div>
                   </div>
-                  {matches.length === 0 ? (
+                  {matches.filter((match) => recordMode === "all" || match.mode === recordMode).length === 0 ? (
                     <p className="online-message">{t("아직 기록된 경기가 없습니다.")}</p>
                   ) : (
                     <>
                       <div className="match-history">
-                        {matches.slice(0, matchesExpanded ? matches.length : 5).map((match) => {
-                          const outcomeLabel = matchOutcome(match, account.id);
-                          const outcomeClass = outcomeLabel === "승리"
-                            ? "win"
-                            : outcomeLabel === "패배"
-                              ? "loss"
-                              : "draw";
+                        {matches
+                          .filter((match) => recordMode === "all" || match.mode === recordMode)
+                          .slice(0, matchesExpanded ? matches.length : 5)
+                          .map((match) => {
+                          const outcomeLabel = match.outcome === "win" ? "승리" : match.outcome === "loss" ? "패배" : "무승부";
+                          const outcomeClass = match.outcome;
                           return (
                             <article className={`match-history-${outcomeClass}`} key={match.gameId}>
                               <b className={`match-outcome-badge ${outcomeClass}`}>{t(outcomeLabel)}</b>
@@ -381,7 +450,7 @@ export function AccountPage({ deletionEntry = false }: { deletionEntry?: boolean
                           );
                         })}
                       </div>
-                      {matches.length > 5 && (
+                      {matches.filter((match) => recordMode === "all" || match.mode === recordMode).length > 5 && (
                         <button className="history-more-button" type="button" onClick={() => setMatchesExpanded(!matchesExpanded)}>
                           {t(matchesExpanded ? "접기" : "더보기")}
                         </button>
@@ -395,6 +464,38 @@ export function AccountPage({ deletionEntry = false }: { deletionEntry?: boolean
 
               {accountTab === "benefits" && (
                 <>
+                  <section className="nickname-change-card">
+                    <div>
+                      <strong>{t("닉네임 변경")}</strong>
+                      <p>{account.displayNameChangeAvailableAt === null || new Date(account.displayNameChangeAvailableAt) <= new Date()
+                        ? t("닉네임을 변경할 수 있습니다.")
+                        : t("{date}부터 다시 변경할 수 있습니다.", {
+                            date: new Date(account.displayNameChangeAvailableAt).toLocaleDateString(),
+                          })}</p>
+                    </div>
+                    <div className="nickname-change-form">
+                      <input
+                        value={nicknameDraft}
+                        minLength={2}
+                        maxLength={24}
+                        onChange={(event) => setNicknameDraft(event.target.value)}
+                      />
+                      <button
+                        className="secondary-action"
+                        type="button"
+                        disabled={
+                          nicknameBusy
+                          || nicknameDraft.trim().length < 2
+                          || nicknameDraft.trim() === account.displayName
+                          || (account.displayNameChangeAvailableAt !== null
+                            && new Date(account.displayNameChangeAvailableAt) > new Date())
+                        }
+                        onClick={() => void changeNickname()}
+                      >
+                        {t("변경")}
+                      </button>
+                    </div>
+                  </section>
                   <section className="google-connection-card">
                     <div>
                       <strong>Google</strong>

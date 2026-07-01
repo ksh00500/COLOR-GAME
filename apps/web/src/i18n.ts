@@ -319,6 +319,7 @@ const messages: Record<string, Message> = {
   "예시 상황": { en: "Example situation", ja: "例の状況", es: "Situación de ejemplo", "pt-BR": "Situação de exemplo" },
   "승리 조건": { en: "Win condition", ja: "勝利条件", es: "Condición de victoria", "pt-BR": "Condição de vitória" },
   "가득 찬 직전": { en: "Before full clear", ja: "満杯直前", es: "Antes de limpiar", "pt-BR": "Antes da limpeza" },
+  "가득 차기 직전": { en: "Just before the board fills", ja: "満杯になる直前", es: "Justo antes de llenarse", "pt-BR": "Pouco antes de encher" },
   "마지막 색 제거 후": { en: "After last color clears", ja: "最後の色を除去後", es: "Tras quitar el último color", "pt-BR": "Após remover a última cor" },
   "튜토리얼 진행도": { en: "Tutorial progress", ja: "チュートリアル進捗", es: "Progreso del tutorial", "pt-BR": "Progresso do tutorial" },
   "튜토리얼": { en: "Tutorial", ja: "チュートリアル", es: "Tutorial", "pt-BR": "Tutorial" },
@@ -594,6 +595,17 @@ const messages: Record<string, Message> = {
   "수집한 정보는 로그인, 온라인 대전, 전적과 리더보드, 출석·퀘스트·쿠폰 보상, 상점·스킨 소유권과 부정 수령 방지, 서비스 안정성 확인에 사용합니다.": { en: "We use the information for sign-in, online play, records, attendance, quests and coupon rewards, ownership, abuse prevention, and service reliability.", ja: "ログイン、オンライン対戦、戦績、出席・クエスト・クーポン報酬、所有権、不正防止、安定運用に使用します。", es: "Usamos la información para acceso, juego, recompensas, propiedad, prevención de abuso y estabilidad.", "pt-BR": "Usamos os dados para login, partidas, recompensas, propriedade, prevenção de abuso e estabilidade." },
   "계정 정보는 회원 탈퇴 전까지 보관합니다. 계정을 삭제하면 계정 정보, 출석 기록, 경제 원장, 보유 스킨·파편·상자 기록, 계정과 연결된 경기 기록과 리플레이가 삭제되며 복구할 수 없습니다. 계정과 연결되지 않은 익명 게스트 식별자, 집계형 매칭 시간과 익명 방문 통계는 서비스 운영과 부정 이용 방지 목적으로 남을 수 있습니다.": { en: "Account data is kept until deletion. Deleting an account permanently removes attendance, economy ledger, cosmetics, fragments, box records, linked matches, and replays. Unlinked anonymous guest identifiers and aggregate statistics may remain for operations and abuse prevention.", ja: "アカウント削除時、出席、経済台帳、スキン、欠片、ボックス記録、対戦、リプレイは完全に削除されます。未連携の匿名識別子と集計統計は運営・不正防止のため残る場合があります。", es: "Al eliminar la cuenta se borran de forma permanente asistencia, economía, aspectos, fragmentos, cajas, partidas y repeticiones. Los identificadores anónimos no vinculados y estadísticas agregadas pueden conservarse para operar y prevenir abusos.", "pt-BR": "Ao excluir a conta, presença, economia, skins, fragmentos, caixas, partidas e replays são removidos permanentemente. Identificadores anônimos não vinculados e estatísticas agregadas podem permanecer para operação e prevenção de abuso." },
   "PREMIUM_REQUIRED": { en: "Custom room settings require Premium.", ja: "カスタムルーム設定にはプレミアムが必要です。", es: "Los ajustes personalizados requieren Premium.", "pt-BR": "Configurações personalizadas exigem Premium." },
+  "마이 페이지": { en: "My Page", ja: "マイページ", es: "Mi página", "pt-BR": "Minha página" },
+  "상대의 시간이 끝났습니다.": { en: "Your opponent ran out of time.", ja: "相手の持ち時間が終了しました。", es: "Se agotó el tiempo del rival.", "pt-BR": "O tempo do adversário acabou." },
+  "제한 시간이 끝났습니다.": { en: "You ran out of time.", ja: "制限時間が終了しました。", es: "Se agotó tu tiempo.", "pt-BR": "Seu tempo acabou." },
+  "상대가 대전을 종료했습니다.": { en: "Your opponent resigned.", ja: "相手が投了しました。", es: "El rival abandonó.", "pt-BR": "O adversário desistiu." },
+  "대전을 종료했습니다.": { en: "You resigned from the match.", ja: "対戦を終了しました。", es: "Abandonaste la partida.", "pt-BR": "Você desistiu da partida." },
+  "보드가 가득 찼습니다.": { en: "The board is full.", ja: "ボードがいっぱいです。", es: "El tablero está lleno.", "pt-BR": "O tabuleiro está cheio." },
+  "마지막 연결이 목표 점수를 완성했습니다.": { en: "The final connection completed the target score.", ja: "最後の連結で目標スコアに到達しました。", es: "La última conexión completó la puntuación objetivo.", "pt-BR": "A última conexão completou a pontuação-alvo." },
+  "상대의 재경기 동의를 기다리는 중입니다.": { en: "Waiting for your opponent to accept the rematch.", ja: "相手の再戦同意を待っています。", es: "Esperando que el rival acepte la revancha.", "pt-BR": "Aguardando o adversário aceitar a revanche." },
+  "재경기": { en: "Rematch", ja: "再戦", es: "Revancha", "pt-BR": "Revanche" },
+  "요청 완료": { en: "Requested", ja: "リクエスト済み", es: "Solicitado", "pt-BR": "Solicitado" },
+  "NICKNAME_CHANGE_COOLDOWN": { en: "You can change your nickname once every 14 days.", ja: "ニックネームは14日ごとに変更できます。", es: "Puedes cambiar el apodo cada 14 días.", "pt-BR": "Você pode mudar o apelido a cada 14 dias." },
 };
 
 export const hasTranslation = (key: string): boolean => messages[key] !== undefined;

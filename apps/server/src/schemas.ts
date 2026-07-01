@@ -47,5 +47,10 @@ export const gameResignSchema = z.object({
   playerId: z.string().min(1),
 });
 
+export const gameRematchSchema = z.object({
+  code: roomCodeSchema,
+  playerId: z.string().min(1),
+});
+
 export type PlayerProfileInput = z.input<typeof playerProfileSchema>;
 

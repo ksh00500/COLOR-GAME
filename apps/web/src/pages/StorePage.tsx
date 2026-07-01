@@ -42,6 +42,7 @@ export function StorePage() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [outcome, setOutcome] = useState<CosmeticOutcome | null>(null);
+  const [purchaseCandidate, setPurchaseCandidate] = useState<CosmeticItem | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [storeTab, setStoreTab] = useState<StoreTab>("weekly");
   const [rarity, setRarity] = useState<CosmeticRarity>("common");
@@ -75,6 +76,7 @@ export function StorePage() {
     setMessage(null);
     try {
       setEconomy(await purchaseCosmetic(item.id));
+      setPurchaseCandidate(null);
       setMessage(t("{name} 스킨을 구매했습니다.", {
         name: localizedCosmeticName(item, locale),
       }));
@@ -115,7 +117,7 @@ export function StorePage() {
         className={item.owned ? "secondary-action" : "primary-action"}
         type="button"
         disabled={item.owned || busyId !== null}
-        onClick={() => void buy(item)}
+        onClick={() => setPurchaseCandidate(item)}
       >
         {item.owned
           ? t("보유 중")
@@ -374,6 +376,34 @@ export function StorePage() {
               && outcome.overview.wallet.colorChips < outcome.overview.box.priceChips)
           }
         />
+      )}
+      {purchaseCandidate !== null && economy !== null && (
+        <div className="modal-backdrop" role="presentation" onMouseDown={() => setPurchaseCandidate(null)}>
+          <section className="confirm-panel store-purchase-panel" role="dialog" aria-modal="true" aria-labelledby="purchase-title" onMouseDown={(event) => event.stopPropagation()}>
+            <p className="eyebrow">CONFIRM PURCHASE</p>
+            <TileSkinPreview
+              item={purchaseCandidate}
+              className="purchase-tile-preview"
+              label={localizedCosmeticName(purchaseCandidate, locale)}
+            />
+            <h2 id="purchase-title">{localizedCosmeticName(purchaseCandidate, locale)}</h2>
+            <p>{t("{chips}칩을 사용해 이 타일을 구매할까요?", {
+              chips: formatNumber(purchaseCandidate.chipPrice),
+            })}</p>
+            <small>{t("보유 칩 {chips}", { chips: formatNumber(economy.wallet.colorChips) })}</small>
+            <div className="confirm-actions">
+              <button className="secondary-action" type="button" onClick={() => setPurchaseCandidate(null)}>{t("취소")}</button>
+              <button
+                className="primary-action"
+                type="button"
+                disabled={busyId !== null || economy.wallet.colorChips < purchaseCandidate.chipPrice}
+                onClick={() => void buy(purchaseCandidate)}
+              >
+                {t("구매 확정")}
+              </button>
+            </div>
+          </section>
+        </div>
       )}
       <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </main>

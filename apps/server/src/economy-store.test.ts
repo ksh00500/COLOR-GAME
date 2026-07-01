@@ -5,6 +5,7 @@ import type { RoomSnapshot } from "@color-game/shared-types";
 import {
   boxOutcomeForRoll,
   boxOutcomes,
+  boxPrice,
   canRewardOnlineMatch,
   hexToOklab,
   isRewardEligibleRoom,
@@ -55,6 +56,10 @@ const roomAtTurn = (turnNumber: number, mode: RoomSnapshot["mode"] = "casual"): 
 });
 
 describe("economy policy", () => {
+  it("uses the v1.2.1 palette box price", () => {
+    expect(boxPrice).toBe(100);
+  });
+
   it("uses Korean midnight for daily keys", () => {
     expect(seoulDayKey(new Date("2026-06-28T14:59:59.999Z"))).toBe("2026-06-28");
     expect(seoulDayKey(new Date("2026-06-28T15:00:00.000Z"))).toBe("2026-06-29");
@@ -183,5 +188,19 @@ describe("economy policy", () => {
     expect(migration).toContain("first_equipped_at timestamptz");
     expect(migration).toContain("tile-tango-spectrum");
     expect(migration).toContain("정적으로 겹쳐진");
+  });
+
+  it("migrates v1.2.1 quest tickets, match outcomes, and catalog prices", () => {
+    const migrationPath = fileURLToPath(
+      new URL("../db/migrations/012_v121_profiles_quests_matches.sql", import.meta.url),
+    );
+    const migration = readFileSync(migrationPath, "utf8");
+    expect(migration).toContain("reward_box_tickets");
+    expect(migration).toContain("winner_player_slot");
+    expect(migration).toContain("display_name_changed_at");
+    expect(migration).toContain("when 'common' then 300");
+    expect(migration).toContain("when 'rare' then 600");
+    expect(migration).toContain("when 'epic' then 1500");
+    expect(migration).toContain("when 'legendary' then 5000");
   });
 });

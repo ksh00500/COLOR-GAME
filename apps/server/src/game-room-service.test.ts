@@ -122,6 +122,18 @@ describe("GameRoomService", () => {
     expect(room.players[0].accountId).toBe("account-1");
     expect(room.players[1]?.accountId).toBe("account-2");
     expect(room.game?.mode).toBe("ranked");
+    expect(room.game?.config.turnTimeLimitSeconds).toBe(60);
+  });
+
+  it("uses a 30 second turn timer for casual matchmaking", () => {
+    const { service } = createDeterministicService();
+    const room = service.createMatchedRoom(
+      profile("CasualOne"),
+      profile("CasualTwo"),
+      "casual",
+    );
+
+    expect(room.game?.config.turnTimeLimitSeconds).toBe(30);
   });
 
   it("uses game-core to enforce turns and award server-side scores", () => {
@@ -218,6 +230,59 @@ describe("GameRoomService", () => {
     expect(resigned.value.status).toBe("finished");
     expect(resigned.value.game?.result).toBe("resignation");
     expect(resigned.value.game?.winnerId).toBe(hostId);
+  });
+
+  it("starts a casual rematch only after both players agree and alternates first player", () => {
+    const { service, advance } = createDeterministicService();
+    const room = service.createMatchedRoom(profile("One"), profile("Two"), "casual");
+    const firstId = room.players[0].id;
+    const secondId = room.players[1]?.id;
+    if (secondId === undefined) throw new Error("second player missing");
+
+    const finished = service.resign(room.code, secondId);
+    expect(finished.ok).toBe(true);
+    if (!finished.ok) return;
+    const firstRequest = service.requestRematch(room.code, firstId);
+    expect(firstRequest.ok).toBe(true);
+    if (!firstRequest.ok) return;
+    expect(firstRequest.value.status).toBe("finished");
+    expect(firstRequest.value.rematch?.requestedPlayerIds).toEqual([firstId]);
+
+    advance(1_000);
+    const secondRequest = service.requestRematch(room.code, secondId);
+    expect(secondRequest.ok).toBe(true);
+    if (!secondRequest.ok) return;
+    expect(secondRequest.value.status).toBe("playing");
+    expect(secondRequest.value.hostPlayerId).toBe(secondId);
+    expect(secondRequest.value.game?.currentPlayerId).toBe(secondId);
+    expect(secondRequest.value.rematch).toBeNull();
+  });
+
+  it("expires an unanswered casual rematch request after 20 seconds", () => {
+    const { service, advance } = createDeterministicService();
+    const room = service.createMatchedRoom(profile("One"), profile("Two"), "casual");
+    const firstId = room.players[0].id;
+    const secondId = room.players[1]?.id;
+    if (secondId === undefined) throw new Error("second player missing");
+    service.resign(room.code, secondId);
+    service.requestRematch(room.code, firstId);
+
+    advance(20_001);
+    const changed = service.expireRematchRequests();
+    expect(changed).toHaveLength(1);
+    expect(changed[0]?.rematch).toBeNull();
+  });
+
+  it("does not offer rematches for ranked games", () => {
+    const { service } = createDeterministicService();
+    const room = service.createMatchedRoom(profile("One"), profile("Two"), "ranked");
+    const secondId = room.players[1]?.id;
+    if (secondId === undefined) throw new Error("second player missing");
+    service.resign(room.code, secondId);
+
+    const result = service.requestRematch(room.code, room.players[0].id);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.code).toBe("REMATCH_NOT_AVAILABLE");
   });
 
   it("rejects game actions from players outside the room", () => {

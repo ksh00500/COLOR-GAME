@@ -10,6 +10,16 @@ export interface Account {
   rankedWins: number;
   rankedLosses: number;
   rankedDraws: number;
+  casualWins: number;
+  casualLosses: number;
+  casualDraws: number;
+  matchStats: Record<"all" | "casual" | "ranked", {
+    wins: number;
+    losses: number;
+    draws: number;
+  }>;
+  displayNameChangedAt: string | null;
+  displayNameChangeAvailableAt: string | null;
   attendanceStreak: number;
   longestAttendanceStreak: number;
   lastAttendanceDate: string | null;
@@ -39,6 +49,7 @@ export interface MatchHistoryItem {
   opponentName: string;
   result: string | null;
   winnerAccountId: string | null;
+  outcome: "win" | "loss" | "draw";
   ratingBefore: Record<string, number>;
   ratingAfter: Record<string, number>;
   turnNumber: number;
@@ -120,9 +131,22 @@ export interface EconomyOverview {
   loadout: Partial<Record<TileLoadoutSlot, string>>;
   upcomingCategories: Array<Exclude<CosmeticCategory, "tile_color">>;
   quests: Array<{
-    key: "welcome" | "attendance" | "attendance_streak" | "online_matches" | "first_online_win" | "reward_ad";
+    key:
+      | "welcome"
+      | "attendance"
+      | "attendance_streak"
+      | "online_matches"
+      | "first_online_win"
+      | "daily_complete"
+      | "weekly_attendance"
+      | "weekly_matches"
+      | "weekly_wins"
+      | "weekly_complete"
+      | "reward_ad";
+    period: "once" | "daily" | "weekly";
     cycleKey: string;
     rewardChips: number;
+    rewardBoxTickets: number;
     claimed: boolean;
     claimable: boolean;
     progress: number;
@@ -409,14 +433,29 @@ export const fetchMe = async (
   return accountRequest;
 };
 
+export const updateDisplayName = async (displayName: string): Promise<Account> => {
+  const data = await request<{ account: Account }>("/auth/profile", {
+    method: "PATCH",
+    body: JSON.stringify({ displayName }),
+  });
+  accountCache = data.account;
+  return data.account;
+};
+
 export const fetchLeaderboard = async (): Promise<PublicProfile[]> => {
   const data = await request<{ players: PublicProfile[] }>("/leaderboard?limit=50");
   return data.players;
 };
 
-export const fetchMatches = async (accountId: string): Promise<MatchHistoryItem[]> => {
+export const fetchMatches = async (
+  accountId: string,
+  mode?: "casual" | "ranked",
+  offset = 0,
+): Promise<MatchHistoryItem[]> => {
+  const query = new URLSearchParams({ limit: "50", offset: String(offset) });
+  if (mode !== undefined) query.set("mode", mode);
   const data = await request<{ matches: MatchHistoryItem[] }>(
-    `/profiles/${encodeURIComponent(accountId)}/matches?limit=20`,
+    `/profiles/${encodeURIComponent(accountId)}/matches?${query}`,
   );
   return data.matches;
 };
@@ -476,10 +515,22 @@ export const fetchEconomy = async (
 };
 
 export const claimEconomyQuest = async (
-  quest: "welcome" | "attendance" | "attendance-streak" | "first-online-win",
+  quest:
+    | "welcome"
+    | "attendance"
+    | "attendance-streak"
+    | "first-online-win"
+    | "daily-complete"
+    | "weekly-attendance"
+    | "weekly-matches"
+    | "weekly-wins"
+    | "weekly-complete",
 ): Promise<{ economy: EconomyOverview; account?: Account }> => {
+  const progressQuest = quest === "daily-complete" || quest.startsWith("weekly-");
   const result = await request<{ economy: EconomyOverview; account?: Account }>(
-    `/economy/quests/${quest}/claim`,
+    progressQuest
+      ? `/economy/quests/progress/${quest}/claim`
+      : `/economy/quests/${quest}/claim`,
     {
       method: "POST",
       body: JSON.stringify({ timeZone: browserTimeZone() }),

@@ -9,6 +9,7 @@ import {
   type CosmeticItem,
   type CosmeticOutcome,
   type CosmeticRarity,
+  type CouponRedemptionResult,
   type EconomyOverview,
   type TileLoadoutSlot,
 } from "../api";
@@ -39,7 +40,7 @@ export function EconomyAccountPanel({ activeTab }: { activeTab: AccountEconomyTa
   const [outcome, setOutcome] = useState<CosmeticOutcome | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<TileLoadoutSlot>("colorA");
   const [couponCode, setCouponCode] = useState("");
-  const [couponResult, setCouponResult] = useState<string | null>(null);
+  const [couponResult, setCouponResult] = useState<CouponRedemptionResult | null>(null);
   const [ledgerExpanded, setLedgerExpanded] = useState(false);
   const [similarWarning, setSimilarWarning] = useState<{
     slot: TileLoadoutSlot;
@@ -111,19 +112,7 @@ export function EconomyAccountPanel({ activeTab }: { activeTab: AccountEconomyTa
     try {
       const result = await redeemCoupon(couponCode);
       applyEconomy(result.economy);
-      const rewards = result.redemption.rewards.map((reward) => {
-        if (reward.cosmeticName) {
-          return reward.convertedToFragment
-            ? `${reward.cosmeticName} (보유 중 · 파편 1개로 전환)`
-            : reward.cosmeticName;
-        }
-        if (reward.type === "color_chips") return `컬러 칩 ${reward.amount ?? 0}개`;
-        if (reward.type === "palette_box_ticket") return `팔레트 상자 ${reward.amount ?? 0}개`;
-        if (reward.type === "fragments") return `${t(reward.rarity ?? "common")} 파편 ${reward.amount ?? 0}개`;
-        if (reward.type === "entitlement") return "영구 프리미엄";
-        return reward.type;
-      });
-      setCouponResult(`${result.redemption.coupon.name}: ${rewards.join(", ")}`);
+      setCouponResult(result.redemption);
       setCouponCode("");
     } catch (error) {
       setMessage(error instanceof ApiError ? error.code : "쿠폰을 사용할 수 없습니다.");
@@ -322,7 +311,6 @@ export function EconomyAccountPanel({ activeTab }: { activeTab: AccountEconomyTa
                 {busy === "coupon" ? t("처리 중") : t("등록")}
               </button>
             </form>
-            {couponResult && <strong className="coupon-success">{couponResult}</strong>}
           </section>
         </>
       )}
@@ -334,6 +322,42 @@ export function EconomyAccountPanel({ activeTab }: { activeTab: AccountEconomyTa
           source="combine"
           onClose={() => setOutcome(null)}
         />
+      )}
+      {couponResult !== null && (
+        <div className="modal-backdrop" role="presentation" onMouseDown={() => setCouponResult(null)}>
+          <section className="confirm-panel coupon-result-panel" role="dialog" aria-modal="true" aria-labelledby="coupon-result-title" onMouseDown={(event) => event.stopPropagation()}>
+            <p className="eyebrow">COUPON REWARD</p>
+            <h2 id="coupon-result-title">{couponResult.coupon.name}</h2>
+            <p>{t("쿠폰 보상을 받았습니다.")}</p>
+            <div className="coupon-reward-grid">
+              {couponResult.rewards.map((reward, index) => {
+                const item = reward.cosmeticId
+                  ? economy.catalog.find((candidate) => candidate.id === reward.cosmeticId)
+                  : null;
+                const label = reward.cosmeticName
+                  ?? (reward.type === "color_chips"
+                    ? `${t("컬러 칩")} ${reward.amount ?? 0}`
+                    : reward.type === "palette_box_ticket"
+                      ? `${t("팔레트 상자")} ${reward.amount ?? 0}`
+                      : reward.type === "fragments"
+                        ? `${t(reward.rarity ?? "common")} ${t("파편")} ${reward.amount ?? 0}`
+                        : t("영구 프리미엄"));
+                return (
+                  <article key={`${reward.type}-${reward.cosmeticId ?? index}`}>
+                    {item
+                      ? <TileSkinPreview item={item} label={localizedCosmeticName(item, locale)} />
+                      : <span className={`coupon-reward-icon reward-${reward.type}`} aria-hidden="true">
+                          {reward.type === "color_chips" ? "◆" : reward.type === "palette_box_ticket" ? "◇" : reward.type === "fragments" ? "✦" : "★"}
+                        </span>}
+                    <strong>{label}</strong>
+                    {reward.convertedToFragment && <small>{t("보유 중 · 파편으로 전환")}</small>}
+                  </article>
+                );
+              })}
+            </div>
+            <button className="primary-action" type="button" onClick={() => setCouponResult(null)}>{t("확인했어요")}</button>
+          </section>
+        </div>
       )}
 
       {similarWarning && (

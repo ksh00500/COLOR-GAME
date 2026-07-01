@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { useI18n } from "../i18n";
 
-const latestPatchVersion = "20260630-v1.1.2";
+const latestPatchVersion = "20260701-v1.2.1";
 const patchNotesKey = `tango-patch-notes-seen-${latestPatchVersion}`;
 const patchNotesOpenEvent = "tango:open-patch-notes";
 
@@ -26,6 +26,44 @@ export interface PatchNoteRelease {
 export const patchNoteReleases: PatchNoteRelease[] = [
   {
     version: latestPatchVersion,
+    title: "대전 기록과 모바일 경험 개선",
+    date: "2026-07-01",
+    summary: "전적 판정, 재경기, 퀘스트와 상점 경제를 바로잡고 모바일 화면과 게임 종료 흐름을 다듬은 통합 패치입니다.",
+    entries: [
+      {
+        tag: "MATCH",
+        title: "정확한 승패무와 멈추는 경기 시간",
+        body: "게스트 상대 결과를 포함한 승패무 기록을 바로잡고 일반·경쟁 통계를 분리했습니다. 경기 시간은 종료 순간에 멈춥니다.",
+      },
+      {
+        tag: "REMATCH",
+        title: "일반게임 재경기와 탈주 방지",
+        body: "일반게임은 두 플레이어가 동의하면 같은 상대와 재경기할 수 있습니다. 온라인 대전 중 이동할 때는 기권 확인을 거칩니다.",
+      },
+      {
+        tag: "QUEST",
+        title: "일간·주간 퀘스트",
+        body: "일간 퀘스트 완료 상자와 주간 출석·경기·승리 보상을 추가하고 첫 승리 수령 상태를 수정했습니다.",
+      },
+      {
+        tag: "ACCOUNT",
+        title: "닉네임 변경과 전적 화면",
+        body: "닉네임을 14일마다 변경할 수 있으며 전적을 전체·일반·경쟁으로 나눠 확인할 수 있습니다.",
+      },
+      {
+        tag: "STORE",
+        title: "상점 경제와 구매 확인",
+        body: "팔레트 상자와 등급별 스킨 가격을 조정하고 구매 확인 및 쿠폰 보상 결과 화면을 추가했습니다.",
+      },
+      {
+        tag: "UI",
+        title: "모바일 가독성과 안내 개선",
+        body: "화이트 모드 메뉴, 상단 바, 플레이 버튼, 튜토리얼, 패치노트와 결과 화면의 모바일 배치를 개선했습니다.",
+      },
+    ],
+  },
+  {
+    version: "20260630-v1.1.2",
     title: "컬러 칩 경제와 타일 스킨",
     date: "2026-06-30",
     summary: "무료 컬러 칩 경제, 36종 타일 스킨, 출석 팝업과 웹·모바일 화면 개선을 함께 담은 패치입니다.",

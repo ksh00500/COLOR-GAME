@@ -14,7 +14,7 @@ import { HelpPanel } from "../components/HelpPanel";
 import { PlayerCard } from "../components/PlayerCard";
 import { ResultPanel } from "../components/ResultPanel";
 import { SettingsPanel } from "../components/SettingsPanel";
-import { fetchEconomy, getAuthToken } from "../api";
+import { fetchEconomy, fetchMe, getAuthToken, getCachedAccount } from "../api";
 import { playOpponentTurnCue } from "../audio";
 import { shareUrl } from "../share";
 import { nativeBackEvent, publicAppUrl } from "../nativeApp";
@@ -167,6 +167,7 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
   const [matchStartedAt, setMatchStartedAt] = useState(0);
   const animatedMoveKey = useRef<string | null>(null);
   const previousBoardRef = useRef<Board | null>(null);
+  const pendingNavigationRef = useRef<string | null>(null);
 
   const game = room?.game ?? null;
   const roomPlayer = room?.players.find((player) => player?.id === playerId) ?? null;
@@ -185,6 +186,21 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
 
   useEffect(() => {
     if (getAuthToken() === null) return;
+    const cachedAccount = getCachedAccount();
+    if (cachedAccount !== null) {
+      setProfile({
+        nickname: cachedAccount.displayName,
+        avatarId: cachedAccount.avatarId,
+        isGuest: false,
+      });
+    }
+    void fetchMe().then((account) => {
+      setProfile({
+        nickname: account.displayName,
+        avatarId: account.avatarId,
+        isGuest: false,
+      });
+    }).catch(() => undefined);
     void fetchEconomy()
       .then((economy) => setHasPremium(
         economy.entitlements.includes("premium") || economy.entitlements.includes("founder"),
@@ -200,6 +216,26 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
     };
     window.addEventListener(nativeBackEvent, handleNativeBack);
     return () => window.removeEventListener(nativeBackEvent, handleNativeBack);
+  }, [game?.status]);
+
+  useEffect(() => {
+    if (game?.status !== "playing") return undefined;
+    const warnBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    const guardBrowserBack = () => {
+      window.history.pushState({ tangoMatchGuard: true }, "", window.location.href);
+      pendingNavigationRef.current = "/";
+      setResignOpen(true);
+    };
+    window.history.pushState({ tangoMatchGuard: true }, "", window.location.href);
+    window.addEventListener("beforeunload", warnBeforeUnload);
+    window.addEventListener("popstate", guardBrowserBack);
+    return () => {
+      window.removeEventListener("beforeunload", warnBeforeUnload);
+      window.removeEventListener("popstate", guardBrowserBack);
+    };
   }, [game?.status]);
 
   const clearEffectTimers = useCallback(() => {
@@ -489,7 +525,42 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
         return;
       }
       applyRoom(response.room);
+      const destination = pendingNavigationRef.current;
+      pendingNavigationRef.current = null;
+      if (destination !== null) navigate(destination, { replace: true });
     });
+  };
+
+  const guardNavigation = (path: string): boolean => {
+    if (game?.status !== "playing") return true;
+    pendingNavigationRef.current = path;
+    setResignOpen(true);
+    return false;
+  };
+
+  const closeResignDialog = () => {
+    pendingNavigationRef.current = null;
+    setResignOpen(false);
+  };
+
+  const requestRematch = () => {
+    const socket = socketRef.current;
+    if (socket === null || room === null || playerId === null || room.mode !== "casual") return;
+    socket.emit("game:rematch:request", { code: room.code, playerId }, (response: RoomAck) => {
+      if (!response.ok || response.room === undefined) {
+        setMessage(describeError(response.error));
+        return;
+      }
+      applyRoom(response.room);
+    });
+  };
+
+  const leaveFinishedMatch = () => {
+    const socket = socketRef.current;
+    if (room?.mode === "casual" && socket !== null && playerId !== null) {
+      socket.emit("game:rematch:decline", { code: room.code, playerId });
+    }
+    navigate("/");
   };
 
   const shareRoomLink = async (kind: "invite" | "spectate") => {
@@ -718,14 +789,16 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
 
   return (
     <main className="game-page app-frame">
-      <AppSidebar onSettings={() => setSettingsOpen(true)} />
+      <AppSidebar onSettings={() => setSettingsOpen(true)} onNavigate={guardNavigation} />
 
       {message !== null && <p className="online-toast" role="alert">{t(message)}</p>}
       {shareNotice !== null && <p className="online-toast share-toast" role="status">{t(shareNotice)}</p>}
 
       <section className="game-shell">
         <header className="game-topbar">
-          <button className="icon-button labeled" type="button" onClick={() => navigate("/")}>
+          <button className="icon-button labeled" type="button" onClick={() => {
+            if (guardNavigation("/")) navigate("/");
+          }}>
             <span>←</span><small>{t("로비")}</small>
           </button>
           <div className="match-label">
@@ -803,13 +876,13 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
       </section>
 
       {resignOpen && (
-        <div className="modal-backdrop" role="presentation" onMouseDown={() => setResignOpen(false)}>
+        <div className="modal-backdrop" role="presentation" onMouseDown={closeResignDialog}>
           <section className="confirm-panel" role="dialog" aria-modal="true" aria-labelledby="resign-title" onMouseDown={(event) => event.stopPropagation()}>
             <p className="eyebrow">CONFIRM RESIGNATION</p>
             <h2 id="resign-title">{t("게임을 포기하시겠습니까?")}</h2>
             <p>{t("현재 온라인 대전은 패배로 종료됩니다.")}</p>
             <div className="result-actions">
-              <button className="secondary-action" type="button" onClick={() => setResignOpen(false)}>{t("계속하기")}</button>
+              <button className="secondary-action" type="button" onClick={closeResignDialog}>{t("계속하기")}</button>
               <button className="danger-action" type="button" onClick={resignOnline}>{t("기권하기")}</button>
             </div>
           </section>
@@ -847,11 +920,20 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
       <HelpPanel open={helpOpen} onClose={() => setHelpOpen(false)} />
       <ResultPanel
         game={game}
-        elapsedSeconds={Math.max(0, Math.floor((now - matchStartedAt) / 1_000))}
+        elapsedSeconds={Math.max(
+          0,
+          Math.floor(((game.finishedAt ?? now) - (game.startedAt ?? matchStartedAt)) / 1_000),
+        )}
         perspectivePlayerId={me.id}
-        rematchLabel={t("새 방 만들기")}
-        onRematch={() => navigate("/private")}
-        onLobby={() => navigate("/")}
+        rematchLabel={room.mode === "casual" ? t("재경기") : t("새 방 만들기")}
+        showRematch={room.mode !== "ranked"}
+        rematchPending={room.mode === "casual" && (room.rematch?.requestedPlayerIds.includes(me.id) ?? false)}
+        rematchSeconds={room.mode === "casual" && room.rematch?.expiresAt
+          ? Math.max(0, Math.ceil((room.rematch.expiresAt - now) / 1_000))
+          : null}
+        lobbyLabel={room.mode === "ranked" ? t("확인") : t("메인으로")}
+        onRematch={room.mode === "casual" ? requestRematch : () => navigate("/private")}
+        onLobby={leaveFinishedMatch}
       />
       {game.status === "finished" && (
         <button className="floating-replay-link" type="button" onClick={() => navigate(`/replay/${encodeURIComponent(game.id)}`)}>

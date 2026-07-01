@@ -4,38 +4,44 @@ import { BrandMark } from "./BrandMark";
 
 interface AppSidebarProps {
   onSettings: () => void;
+  onNavigate?: (path: string) => boolean | void;
 }
 
-export function AppSidebar({ onSettings }: AppSidebarProps) {
+export function AppSidebar({ onSettings, onNavigate }: AppSidebarProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useI18n();
   const active = (path: string) =>
     path === "/" ? location.pathname === "/" : location.pathname.startsWith(path);
 
+  const go = (path: string) => {
+    if (onNavigate?.(path) === false) return;
+    navigate(path);
+  };
+
   return (
     <aside className="app-sidebar" aria-label={t("주요 메뉴")}>
-      <button className="sidebar-brand" type="button" onClick={() => navigate("/")}>
+      <button className="sidebar-brand" type="button" onClick={() => go("/")}>
         <BrandMark />
       </button>
       <nav className="mobile-header-actions" aria-label={t("주요 메뉴")}>
-        <button className={active("/store") ? "active" : ""} type="button" onClick={() => navigate("/store")}>{t("상점")}</button>
-        <button className={active("/account") ? "active" : ""} type="button" onClick={() => navigate("/account")}>{t("마이")}</button>
+        <button className={active("/store") ? "active" : ""} type="button" onClick={() => go("/store")}>{t("상점")}</button>
+        <button className={active("/account") ? "active" : ""} type="button" onClick={() => go("/account")}>{t("마이 페이지")}</button>
         <button type="button" onClick={onSettings}>{t("설정")}</button>
       </nav>
       <div className="sidebar-menu">
         <nav className="sidebar-nav">
-          <button className={active("/") ? "active" : ""} type="button" onClick={() => navigate("/")}>{t("플레이")}</button>
-          <button className="mobile-nav-detail" type="button" onClick={() => navigate("/matchmaking?mode=casual")}>{t("일반")}</button>
-          <button className="mobile-nav-detail" type="button" onClick={() => navigate("/matchmaking?mode=ranked")}>{t("경쟁")}</button>
-          <button className="mobile-nav-detail" type="button" onClick={() => navigate("/private")}>{t("사설방")}</button>
-          <button className="mobile-nav-promoted" type="button" onClick={() => navigate("/store")}>{t("상점")}</button>
-          <button className={active("/leaderboard") ? "active" : ""} type="button" onClick={() => navigate("/leaderboard")}>{t("리더보드")}</button>
-          <button className="mobile-nav-promoted" type="button" onClick={() => navigate("/account")}>{t("마이")}</button>
-          <button className={active("/patch-notes") ? "active" : ""} type="button" onClick={() => navigate("/patch-notes")}>{t("패치노트")}</button>
+          <button className={active("/") ? "active" : ""} type="button" onClick={() => go("/")}>{t("플레이")}</button>
+          <button className="mobile-nav-detail" type="button" onClick={() => go("/matchmaking?mode=casual")}>{t("일반")}</button>
+          <button className="mobile-nav-detail" type="button" onClick={() => go("/matchmaking?mode=ranked")}>{t("경쟁")}</button>
+          <button className="mobile-nav-detail" type="button" onClick={() => go("/private")}>{t("사설방")}</button>
+          <button className="mobile-nav-promoted" type="button" onClick={() => go("/store")}>{t("상점")}</button>
+          <button className={active("/leaderboard") ? "active" : ""} type="button" onClick={() => go("/leaderboard")}>{t("리더보드")}</button>
+          <button className="mobile-nav-promoted" type="button" onClick={() => go("/account")}>{t("마이 페이지")}</button>
+          <button className={active("/patch-notes") ? "active" : ""} type="button" onClick={() => go("/patch-notes")}>{t("패치노트")}</button>
         </nav>
         <div className="sidebar-bottom">
-          <button className={active("/privacy") ? "active" : ""} type="button" onClick={() => navigate("/privacy")}>{t("개인정보")}</button>
+          <button className={active("/privacy") ? "active" : ""} type="button" onClick={() => go("/privacy")}>{t("개인정보")}</button>
           <button className="mobile-nav-promoted" type="button" onClick={onSettings}>{t("설정")}</button>
         </div>
       </div>

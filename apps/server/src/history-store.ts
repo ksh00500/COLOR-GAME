@@ -319,8 +319,10 @@ export class PostgresGameHistoryStore implements GameHistoryStore {
     const game = room.game;
     if (game === null) return;
 
-    const startedAt = game.turnTimer?.startedAt ?? room.updatedAt;
-    const finishedAt = game.status === "finished" ? room.updatedAt : null;
+    const startedAt = game.startedAt ?? room.createdAt;
+    const finishedAt = game.status === "finished"
+      ? game.finishedAt ?? room.updatedAt
+      : null;
 
     await client.query(
       `

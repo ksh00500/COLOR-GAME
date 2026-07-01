@@ -17,6 +17,10 @@ export interface AccountSummary {
   rankedWins: number;
   rankedLosses: number;
   rankedDraws: number;
+  casualWins: number;
+  casualLosses: number;
+  casualDraws: number;
+  displayNameChangedAt: string | null;
   attendanceStreak: number;
   longestAttendanceStreak: number;
   lastAttendanceDate: string | null;
@@ -41,6 +45,7 @@ export interface MatchHistoryItem {
   opponentName: string;
   result: string | null;
   winnerAccountId: string | null;
+  outcome: "win" | "loss" | "draw";
   ratingBefore: Record<string, number>;
   ratingAfter: Record<string, number>;
   turnNumber: number;
@@ -85,11 +90,17 @@ export interface AccountStore {
   getAuthMethods(accountId: string): Promise<AuthMethods>;
   getAccount(accountId: string): Promise<AccountSummary | null>;
   getAccountForSession(accountId: string, sessionId: string): Promise<AccountSummary | null>;
+  updateDisplayName(accountId: string, displayName: string): Promise<AccountSummary | null>;
   rotateSession(accountId: string): Promise<string | null>;
   deleteAccount(accountId: string): Promise<boolean>;
   getPublicProfile(accountId: string): Promise<PublicProfile | null>;
   getLeaderboard(limit: number): Promise<PublicProfile[]>;
-  getMatchHistory(accountId: string, limit: number): Promise<MatchHistoryItem[]>;
+  getMatchHistory(
+    accountId: string,
+    limit: number,
+    mode?: "casual" | "ranked" | null,
+    offset?: number,
+  ): Promise<MatchHistoryItem[]>;
   checkInAttendance(accountId: string, attendedOn: string): Promise<AccountSummary | null>;
   recordFinishedRoom(room: RoomSnapshot): Promise<void>;
 }
@@ -141,6 +152,10 @@ export class NullAccountStore implements AccountStore {
     return null;
   }
 
+  async updateDisplayName(): Promise<AccountSummary | null> {
+    return null;
+  }
+
   async rotateSession(): Promise<string | null> {
     return null;
   }
@@ -186,6 +201,10 @@ interface AccountRow {
   ranked_wins: number;
   ranked_losses: number;
   ranked_draws: number;
+  casual_wins: number;
+  casual_losses: number;
+  casual_draws: number;
+  display_name_changed_at: Date | null;
   attendance_streak: number;
   longest_attendance_streak: number;
   last_attendance_date: string | null;
@@ -202,6 +221,7 @@ interface MatchRow {
   player_one_nickname: string;
   player_two_nickname: string;
   winner_account_id: string | null;
+  winner_player_slot: 1 | 2 | null;
   result: string | null;
   rating_before: Record<string, number>;
   rating_after: Record<string, number>;
@@ -221,6 +241,10 @@ const toAccountSummary = (row: AccountRow): AccountSummary => ({
   rankedWins: row.ranked_wins,
   rankedLosses: row.ranked_losses,
   rankedDraws: row.ranked_draws,
+  casualWins: row.casual_wins,
+  casualLosses: row.casual_losses,
+  casualDraws: row.casual_draws,
+  displayNameChangedAt: row.display_name_changed_at?.toISOString() ?? null,
   attendanceStreak: row.attendance_streak,
   longestAttendanceStreak: row.longest_attendance_streak,
   lastAttendanceDate: row.last_attendance_date,
@@ -453,6 +477,21 @@ export class PostgresAccountStore implements AccountStore {
     return row === undefined ? null : toAccountSummary(row);
   }
 
+  async updateDisplayName(
+    accountId: string,
+    displayName: string,
+  ): Promise<AccountSummary | null> {
+    const result = await this.pool.query<AccountRow>(
+      `update accounts
+       set display_name = $2, display_name_changed_at = now(), updated_at = now()
+       where id = $1
+       returning *`,
+      [accountId, displayName.trim()],
+    );
+    const row = result.rows[0];
+    return row === undefined ? null : toAccountSummary(row);
+  }
+
   async rotateSession(accountId: string): Promise<string | null> {
     const sessionId = randomUUID();
     const result = await this.pool.query<AccountRow>(
@@ -520,33 +559,48 @@ export class PostgresAccountStore implements AccountStore {
     return result.rows.map(toPublicProfile);
   }
 
-  async getMatchHistory(accountId: string, limit: number): Promise<MatchHistoryItem[]> {
+  async getMatchHistory(
+    accountId: string,
+    limit: number,
+    mode: "casual" | "ranked" | null = null,
+    offset = 0,
+  ): Promise<MatchHistoryItem[]> {
     const result = await this.pool.query<MatchRow>(
       `
         select *
         from match_results
-        where player_one_account_id = $1 or player_two_account_id = $1
+        where (player_one_account_id = $1 or player_two_account_id = $1)
+          and ($2::text is null or mode = $2)
         order by finished_at desc
-        limit $2
+        limit $3 offset $4
       `,
-      [accountId, limit],
+      [accountId, mode, limit, offset],
     );
 
-    return result.rows.map((row) => ({
-      gameId: row.game_id,
-      roomCode: row.room_code,
-      mode: row.mode,
-      opponentName:
-        row.player_one_account_id === accountId
-          ? row.player_two_nickname
-          : row.player_one_nickname,
-      result: row.result,
-      winnerAccountId: row.winner_account_id,
-      ratingBefore: row.rating_before,
-      ratingAfter: row.rating_after,
-      turnNumber: row.turn_number,
-      finishedAt: row.finished_at.toISOString(),
-    }));
+    return result.rows.map((row) => {
+      const accountSlot = row.player_one_account_id === accountId ? 1 : 2;
+      const outcome = row.result === "draw" || row.winner_player_slot === null
+        ? "draw"
+        : row.winner_player_slot === accountSlot
+          ? "win"
+          : "loss";
+      return {
+        gameId: row.game_id,
+        roomCode: row.room_code,
+        mode: row.mode,
+        opponentName:
+          accountSlot === 1
+            ? row.player_two_nickname
+            : row.player_one_nickname,
+        result: row.result,
+        winnerAccountId: row.winner_account_id,
+        outcome,
+        ratingBefore: row.rating_before,
+        ratingAfter: row.rating_after,
+        turnNumber: row.turn_number,
+        finishedAt: row.finished_at.toISOString(),
+      };
+    });
   }
 
   async checkInAttendance(accountId: string, attendedOn: string): Promise<AccountSummary | null> {
@@ -615,6 +669,13 @@ export class PostgresAccountStore implements AccountStore {
     const secondAccountId = accountIdFor(second);
     const winner = game.players.find((player) => player.id === game.winnerId);
     const winnerAccountId = winner === undefined ? null : accountIdFor(winner);
+    const winnerPlayerSlot = game.winnerId === null
+      ? null
+      : game.winnerId === first.id
+        ? 1
+        : game.winnerId === second.id
+          ? 2
+          : null;
 
     const client = await this.pool.connect();
     try {
@@ -670,6 +731,7 @@ export class PostgresAccountStore implements AccountStore {
             player_one_nickname,
             player_two_nickname,
             winner_account_id,
+            winner_player_slot,
             result,
             rating_before,
             rating_after,
@@ -677,8 +739,8 @@ export class PostgresAccountStore implements AccountStore {
             finished_at
           )
           values (
-            $1, $2, $3, $4, $5, $6, $7, $8, $9,
-            $10::jsonb, $11::jsonb, $12, $13
+            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+            $11::jsonb, $12::jsonb, $13, $14
           )
         `,
         [
@@ -690,11 +752,12 @@ export class PostgresAccountStore implements AccountStore {
           first.nickname,
           second.nickname,
           winnerAccountId,
+          winnerPlayerSlot,
           game.result,
           JSON.stringify(ratingBefore),
           JSON.stringify(ratingAfter),
           game.turnNumber,
-          new Date(room.updatedAt),
+          new Date(game.finishedAt ?? room.updatedAt),
         ],
       );
 
@@ -711,6 +774,9 @@ export class PostgresAccountStore implements AccountStore {
               ranked_wins = ranked_wins + $3,
               ranked_losses = ranked_losses + $4,
               ranked_draws = ranked_draws + $5,
+              casual_wins = casual_wins + $6,
+              casual_losses = casual_losses + $7,
+              casual_draws = casual_draws + $8,
               updated_at = now()
             where id = $1
           `,
@@ -720,6 +786,9 @@ export class PostgresAccountStore implements AccountStore {
             isRanked && score === 1 ? 1 : 0,
             isRanked && score === 0 ? 1 : 0,
             isRanked && score === 0.5 ? 1 : 0,
+            room.mode === "casual" && score === 1 ? 1 : 0,
+            room.mode === "casual" && score === 0 ? 1 : 0,
+            room.mode === "casual" && score === 0.5 ? 1 : 0,
           ],
         );
       }

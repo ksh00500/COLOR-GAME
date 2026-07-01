@@ -5,17 +5,17 @@ import {
 } from "./PatchNotesPanel";
 
 describe("patch notes", () => {
-  it("publishes the 20260630 economy and cosmetics update as the latest release", () => {
-    expect(latestPatchNote.version).toBe("20260630-v1.1.2");
+  it("publishes the 20260701 match and mobile update as the latest release", () => {
+    expect(latestPatchNote.version).toBe("20260701-v1.2.1");
     expect(latestPatchNote.entries).toHaveLength(6);
     expect(latestPatchNote.entries.map((entry) => entry.tag)).toEqual([
-      "ECONOMY",
-      "COSMETIC",
+      "MATCH",
+      "REMATCH",
+      "QUEST",
+      "ACCOUNT",
       "STORE",
-      "ATTENDANCE",
-      "COUPON",
       "UI",
     ]);
-    expect(patchNoteReleases[1]?.version).toBe("20260625-V1.1.1");
+    expect(patchNoteReleases[1]?.version).toBe("20260630-v1.1.2");
   });
 });

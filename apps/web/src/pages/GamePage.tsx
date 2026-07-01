@@ -8,7 +8,7 @@ import {
   placeTile,
   resignGame,
 } from "@color-game/game-core";
-import { nativeBackEvent } from "../nativeApp";
+import { fetchMe, getAuthToken, getCachedAccount, type Account } from "../api";
 import { notifyInvalidMove, notifyTilePlaced } from "../nativeFeedback";
 import type { Board, GamePlayer, GameState, Position, TileColorId } from "@color-game/shared-types";
 import { AppSidebar } from "../components/AppSidebar";
@@ -24,10 +24,6 @@ import { useI18n } from "../i18n";
 
 const HUMAN_ID = "player1";
 const AI_ID = "player2";
-const coachMarkKey = "tango-ai-coach-marks-complete-v1";
-const initialCoachMarks = ["rules", "board", "colors"] as const;
-type CoachMarkId = (typeof initialCoachMarks)[number];
-
 const aiNames: Record<AiDifficulty, string> = {
   easy: "Rookie",
   normal: "Mastermind",
@@ -40,14 +36,18 @@ const aiDescriptors: Record<AiDifficulty, string> = {
   hard: "AI · 심화 전술",
 };
 
-const createPlayers = (difficulty: AiDifficulty): [GamePlayer, GamePlayer] => [
+const createPlayers = (
+  difficulty: AiDifficulty,
+  account: Account | null = null,
+): [GamePlayer, GamePlayer] => [
   {
     id: HUMAN_ID,
-    nickname: "Guest-4821",
-    avatarId: "orbit",
+    accountId: account?.id ?? null,
+    nickname: account?.displayName ?? "Guest-4821",
+    avatarId: account?.avatarId ?? "orbit",
     score: 0,
     connectionStatus: "connected",
-    isGuest: true,
+    isGuest: account === null,
   },
   {
     id: AI_ID,
@@ -68,14 +68,18 @@ const resolveFirstPlayer = (preference: string | null): string => {
 const resolveDifficulty = (value: string | null): AiDifficulty =>
   value === "hard" && isHardAiAvailable ? "hard" : value === "normal" || value === "hard" ? "normal" : "easy";
 
-const createMatch = (difficulty: AiDifficulty, firstPreference: string | null): GameState => {
+const createMatch = (
+  difficulty: AiDifficulty,
+  firstPreference: string | null,
+  account: Account | null = null,
+): GameState => {
   const now = Date.now();
   return createInitialGame(DEFAULT_GAME_CONFIG, {
     id: `ai-match-${now}`,
     mode: "ai",
     firstPlayerId: resolveFirstPlayer(firstPreference),
     now,
-    players: createPlayers(difficulty),
+    players: createPlayers(difficulty, account),
   });
 };
 
@@ -96,7 +100,8 @@ export function GamePage() {
   const difficulty = resolveDifficulty(searchParams.get("difficulty"));
   const firstPreference = searchParams.get("first");
   const { settings } = useSettings();
-  const [game, setGame] = useState(() => createMatch(difficulty, firstPreference));
+  const [account, setAccount] = useState<Account | null>(() => getCachedAccount());
+  const [game, setGame] = useState(() => createMatch(difficulty, firstPreference, getCachedAccount()));
   const [selectedColors, setSelectedColors] = useState<Record<string, TileColorId>>({
     [HUMAN_ID]: "colorA",
     [AI_ID]: "colorB",
@@ -115,13 +120,6 @@ export function GamePage() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [resignOpen, setResignOpen] = useState(false);
-  const [coachMarks, setCoachMarks] = useState<CoachMarkId[]>(() => {
-    try {
-      return window.localStorage.getItem(coachMarkKey) === "true" ? [] : [...initialCoachMarks];
-    } catch {
-      return [];
-    }
-  });
   const [now, setNow] = useState(Date.now());
   const [matchStartedAt, setMatchStartedAt] = useState(Date.now());
   const effectTimers = useRef<number[]>([]);
@@ -134,14 +132,23 @@ export function GamePage() {
   const canHumanPlay = game.status === "playing" && humanTurn && !isAnimating;
 
   useEffect(() => {
-    const handleNativeBack = (event: Event) => {
-      if (game.status !== "playing") return;
-      event.preventDefault();
-      setResignOpen(true);
-    };
-    window.addEventListener(nativeBackEvent, handleNativeBack);
-    return () => window.removeEventListener(nativeBackEvent, handleNativeBack);
-  }, [game.status]);
+    if (getAuthToken() === null) return;
+    void fetchMe().then((nextAccount) => {
+      setAccount(nextAccount);
+      setGame((current) => ({
+        ...current,
+        players: current.players.map((player) => player.id === HUMAN_ID
+          ? {
+              ...player,
+              accountId: nextAccount.id,
+              nickname: nextAccount.displayName,
+              avatarId: nextAccount.avatarId,
+              isGuest: false,
+            }
+          : player) as [GamePlayer, GamePlayer],
+      }));
+    }).catch(() => undefined);
+  }, []);
 
   const clearEffectTimers = useCallback(() => {
     effectTimers.current.forEach((timer) => window.clearTimeout(timer));
@@ -293,7 +300,7 @@ export function GamePage() {
   const resetMatch = () => {
     clearEffectTimers();
     const startedAt = Date.now();
-    setGame(createMatch(difficulty, firstPreference));
+    setGame(createMatch(difficulty, firstPreference, account));
     setSelectedColors({ [HUMAN_ID]: "colorA", [AI_ID]: "colorB" });
     setVisualBoard(null);
     setScoringCells(new Set());
@@ -309,20 +316,6 @@ export function GamePage() {
     setNow(startedAt);
   };
 
-  const dismissCoachMark = (id: CoachMarkId) => {
-    setCoachMarks((current) => {
-      const next = current.filter((mark) => mark !== id);
-      if (next.length === 0) {
-        try {
-          window.localStorage.setItem(coachMarkKey, "true");
-        } catch {
-          // Coach marks are only a first-run convenience.
-        }
-      }
-      return next;
-    });
-  };
-
   const turnLabel = game.status === "finished"
     ? t("대전 종료")
     : humanTurn
@@ -330,7 +323,6 @@ export function GamePage() {
       : isAiThinking
         ? `${ai.nickname} 생각 중 ···`
         : t("상대 차례");
-
   return (
     <main className="game-page app-frame">
       <AppSidebar onSettings={() => setSettingsOpen(true)} />
@@ -349,29 +341,6 @@ export function GamePage() {
             <button className="icon-button labeled" type="button" onClick={() => setSettingsOpen(true)}><span>◌</span><small>{t("설정")}</small></button>
           </div>
         </header>
-
-        {coachMarks.length > 0 && (
-          <div className="coach-mark-layer" aria-label={t("첫 게임 안내")}>
-            {coachMarks.includes("rules") && (
-              <button className="coach-mark coach-rules" type="button" onClick={() => dismissCoachMark("rules")}>
-                <strong>{t("규칙은 여기")}</strong>
-                <span>{t("점수표와 보드 포화 규칙을 언제든 다시 볼 수 있어요.")}</span>
-              </button>
-            )}
-            {coachMarks.includes("board") && (
-              <button className="coach-mark coach-board" type="button" onClick={() => dismissCoachMark("board")}>
-                <strong>{t("빈칸을 클릭")}</strong>
-                <span>{t("고른 색을 5×5 보드의 빈칸에 놓습니다.")}</span>
-              </button>
-            )}
-            {coachMarks.includes("colors") && (
-              <button className="coach-mark coach-colors" type="button" onClick={() => dismissCoachMark("colors")}>
-                <strong>{t("색 선택")}</strong>
-                <span>{t("세 색은 둘 다 사용할 수 있고 숫자키 1·2·3도 됩니다.")}</span>
-              </button>
-            )}
-          </div>
-        )}
 
         <section className="game-layout">
           <div className="board-stage">
@@ -455,7 +424,10 @@ export function GamePage() {
       <HelpPanel open={helpOpen} onClose={() => setHelpOpen(false)} />
       <ResultPanel
         game={game}
-        elapsedSeconds={Math.max(0, Math.floor((now - matchStartedAt) / 1_000))}
+        elapsedSeconds={Math.max(
+          0,
+          Math.floor(((game.finishedAt ?? now) - (game.startedAt ?? matchStartedAt)) / 1_000),
+        )}
         onRematch={resetMatch}
         onLobby={() => navigate("/")}
       />

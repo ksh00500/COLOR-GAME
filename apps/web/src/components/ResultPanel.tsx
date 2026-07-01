@@ -8,6 +8,10 @@ interface ResultPanelProps {
   onLobby: () => void;
   perspectivePlayerId?: string;
   rematchLabel?: string;
+  showRematch?: boolean;
+  rematchPending?: boolean;
+  rematchSeconds?: number | null;
+  lobbyLabel?: string;
 }
 
 export function ResultPanel({
@@ -17,6 +21,10 @@ export function ResultPanel({
   onLobby,
   perspectivePlayerId,
   rematchLabel = "다시 하기",
+  showRematch = true,
+  rematchPending = false,
+  rematchSeconds = null,
+  lobbyLabel = "메인으로",
 }: ResultPanelProps) {
   const { t } = useI18n();
   if (game.status !== "finished") return null;
@@ -60,9 +68,19 @@ export function ResultPanel({
           <span><small>{t("전체 턴")}</small><strong>{game.turnNumber}</strong></span>
           <span><small>{t("게임 시간")}</small><strong>{Math.floor(elapsedSeconds / 60)}:{String(elapsedSeconds % 60).padStart(2, "0")}</strong></span>
         </div>
-        <div className="result-actions">
-          <button type="button" className="secondary-action" onClick={onLobby}>{t("메인으로")}</button>
-          <button type="button" className="primary-action" onClick={onRematch}>{t(rematchLabel)} <span>↗</span></button>
+        {rematchPending && (
+          <p className="rematch-waiting" role="status">
+            {t("상대의 재경기 동의를 기다리는 중입니다.")}
+            {rematchSeconds !== null && ` ${rematchSeconds}${t("초")}`}
+          </p>
+        )}
+        <div className={`result-actions${showRematch ? "" : " single"}`}>
+          <button type="button" className="secondary-action" onClick={onLobby}>{t(lobbyLabel)}</button>
+          {showRematch && (
+            <button type="button" className="primary-action" disabled={rematchPending} onClick={onRematch}>
+              {t(rematchPending ? "요청 완료" : rematchLabel)} <span>↗</span>
+            </button>
+          )}
         </div>
       </section>
     </div>

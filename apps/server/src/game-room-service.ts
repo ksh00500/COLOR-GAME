@@ -46,6 +46,7 @@ export type RoomErrorCode =
   | "GAME_NOT_STARTED"
   | "GAME_ALREADY_STARTED"
   | "ROOM_NOT_READY"
+  | "REMATCH_NOT_AVAILABLE"
   | "MOVE_REJECTED";
 
 export interface RoomError {
@@ -69,6 +70,10 @@ interface RoomSession {
   config: GameConfig;
   createdAt: number;
   updatedAt: number;
+  rematch: {
+    requestedPlayerIds: string[];
+    expiresAt: number | null;
+  } | null;
 }
 
 export interface GameRoomServiceOptions {
@@ -126,6 +131,8 @@ const disconnectGamePlayers = (game: GameState | null): GameState | null => {
 
   return {
     ...game,
+    startedAt: game.startedAt ?? Date.now(),
+    finishedAt: game.status === "finished" ? game.finishedAt ?? Date.now() : null,
     players: game.players.map((player) => ({
       ...player,
       connectionStatus: "disconnected",
@@ -147,6 +154,12 @@ const cloneRoom = (room: RoomSession): RoomSnapshot => ({
   config: cloneConfig(room.config),
   createdAt: room.createdAt,
   updatedAt: room.updatedAt,
+  rematch: room.rematch === null
+    ? null
+    : {
+        requestedPlayerIds: [...room.rematch.requestedPlayerIds],
+        expiresAt: room.rematch.expiresAt,
+      },
 });
 
 const makeError = (
@@ -213,6 +226,7 @@ export class GameRoomService {
       config: cloneConfig(config),
       createdAt: now,
       updatedAt: now,
+      rematch: null,
     };
 
     this.rooms.set(code, room);
@@ -253,6 +267,10 @@ export class GameRoomService {
       socketId: secondProfile.socketId ?? null,
     };
 
+    const matchConfig = {
+      ...cloneConfig(this.config),
+      turnTimeLimitSeconds: mode === "casual" ? 30 : 60,
+    };
     const room: RoomSession = {
       code,
       mode,
@@ -261,9 +279,10 @@ export class GameRoomService {
       spectatorsAllowed: true,
       players: [first, second],
       game: null,
-      config: cloneConfig(this.config),
+      config: matchConfig,
       createdAt: now,
       updatedAt: now,
+      rematch: null,
     };
 
     this.startGame(room);
@@ -286,6 +305,14 @@ export class GameRoomService {
       config: cloneConfig(snapshot.config ?? snapshot.game?.config ?? this.config),
       createdAt: snapshot.createdAt,
       updatedAt: this.now(),
+      rematch: snapshot.rematch === undefined
+        ? null
+        : snapshot.rematch === null
+          ? null
+          : {
+              requestedPlayerIds: [...snapshot.rematch.requestedPlayerIds],
+              expiresAt: snapshot.rematch.expiresAt,
+            },
     };
 
     this.rooms.set(room.code, room);
@@ -461,10 +488,84 @@ export class GameRoomService {
       };
     }
 
-    room.game = resignGame(room.game, playerId);
+    room.game = resignGame(room.game, playerId, this.now());
     room.status = room.game.status === "finished" ? "finished" : room.status;
     room.updatedAt = this.now();
     return { ok: true, value: cloneRoom(room) };
+  }
+
+  requestRematch(code: string, playerId: string): ServiceResult<RoomSnapshot> {
+    const room = this.rooms.get(code);
+    if (
+      room === undefined
+      || room.mode !== "casual"
+      || room.status !== "finished"
+      || room.game?.status !== "finished"
+    ) {
+      return {
+        ok: false,
+        error: makeError("REMATCH_NOT_AVAILABLE", "A casual rematch is not available."),
+      };
+    }
+    if (this.findPlayer(room, playerId) === null) {
+      return {
+        ok: false,
+        error: makeError("PLAYER_NOT_IN_ROOM", "Player is not in this room."),
+      };
+    }
+
+    const now = this.now();
+    if (room.rematch?.expiresAt !== null && room.rematch?.expiresAt !== undefined && room.rematch.expiresAt <= now) {
+      room.rematch = null;
+    }
+    const requested = new Set(room.rematch?.requestedPlayerIds ?? []);
+    requested.add(playerId);
+    room.rematch = {
+      requestedPlayerIds: [...requested],
+      expiresAt: room.rematch?.expiresAt ?? now + 20_000,
+    };
+
+    const players = room.players.filter((player): player is RoomPlayer => player !== null);
+    if (players.length === 2 && players.every((player) => requested.has(player.id))) {
+      const nextHost = players.find((player) => player.id !== room.hostPlayerId) ?? players[0]!;
+      room.hostPlayerId = nextHost.id;
+      room.players[0].ready = true;
+      if (room.players[1] !== null) room.players[1].ready = true;
+      room.rematch = null;
+      this.startGame(room);
+    } else {
+      room.updatedAt = now;
+    }
+    return { ok: true, value: cloneRoom(room) };
+  }
+
+  declineRematch(code: string, playerId: string): ServiceResult<RoomSnapshot> {
+    const room = this.rooms.get(code);
+    if (room === undefined) {
+      return { ok: false, error: makeError("ROOM_NOT_FOUND", "Room was not found.") };
+    }
+    if (this.findPlayer(room, playerId) === null) {
+      return {
+        ok: false,
+        error: makeError("PLAYER_NOT_IN_ROOM", "Player is not in this room."),
+      };
+    }
+    room.rematch = null;
+    room.updatedAt = this.now();
+    return { ok: true, value: cloneRoom(room) };
+  }
+
+  expireRematchRequests(): RoomSnapshot[] {
+    const now = this.now();
+    const changed: RoomSnapshot[] = [];
+    for (const room of this.rooms.values()) {
+      if (room.rematch?.expiresAt !== null && room.rematch?.expiresAt !== undefined && room.rematch.expiresAt <= now) {
+        room.rematch = null;
+        room.updatedAt = now;
+        changed.push(cloneRoom(room));
+      }
+    }
+    return changed;
   }
 
   markDisconnected(playerId: string): RoomSnapshot[] {
@@ -562,6 +663,7 @@ export class GameRoomService {
       players: [toGamePlayer(room.players[0]), toGamePlayer(guest)],
     });
     room.status = "playing";
+    room.rematch = null;
     room.updatedAt = now;
   }
 
