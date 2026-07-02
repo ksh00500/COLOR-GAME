@@ -670,82 +670,18 @@ p {
   display: block;
   width: 100%;
   height: 100%;
-  overflow: visible;
-  filter: drop-shadow(0 5px 9px rgba(0,0,0,0.16));
-}
-
-.palette-wood-shadow {
-  fill: rgba(0,0,0,0.18);
-  transform: translateY(2px);
-}
-
-.palette-wood {
-  fill: #d5a24a;
-  stroke: color-mix(in srgb, var(--bronze) 64%, #f7d68a);
-  stroke-width: 2.5;
-}
-
-.palette-highlight {
-  fill: rgba(255,255,255,0.2);
-}
-
-.palette-wood-grain {
-  fill: none;
-  stroke: rgba(111, 65, 20, 0.2);
-  stroke-width: 1.15;
-  stroke-linecap: round;
-}
-
-.palette-hole {
-  fill: color-mix(in srgb, var(--walnut-dark) 88%, black);
-}
-
-.palette-hole-highlight {
-  fill: rgba(255,255,255,0.24);
-}
-
-.palette-well-shadow {
-  fill: rgba(91, 45, 8, 0.58);
-}
-
-.palette-well {
-  fill: rgba(146, 84, 25, 0.42);
-  stroke: rgba(255, 216, 145, 0.82);
-  stroke-width: 1.15;
-}
-
-.palette-paint {
-  stroke: rgba(255,255,255,0.5);
-  stroke-width: 0.9;
-  filter: drop-shadow(0 1px 1px rgba(0,0,0,0.42));
-}
-
-.palette-paint-highlight {
-  fill: rgba(255,255,255,0.44);
+  background-image: url("/assets/rank-palettes/palette-tiers.png");
+  background-position:
+    calc(var(--palette-sprite-column) * 50%)
+    calc(var(--palette-sprite-row) * 50%);
+  background-repeat: no-repeat;
+  background-size: 300% 300%;
+  filter: drop-shadow(0 5px 9px rgba(0,0,0,0.18));
 }
 
 .rank-badge.rainbow {
   border-color: color-mix(in srgb, var(--green-light) 48%, var(--burgundy));
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--green-light) 14%, transparent);
-}
-
-.palette-tier-icon.rainbow .palette-wood {
-  stroke: rgba(255,255,255,0.42);
-  stroke-width: 3.2;
-}
-
-.palette-rainbow-sheen {
-  fill: rgba(255,255,255,0.2);
-  mix-blend-mode: screen;
-}
-
-.palette-rainbow-depth {
-  fill: rgba(0,0,0,0.16);
-  mix-blend-mode: multiply;
-}
-
-.palette-tier-icon.rainbow .palette-highlight {
-  fill: rgba(255,255,255,0.26);
 }
 
 .rank-badge.rainbow .rank-copy strong {
