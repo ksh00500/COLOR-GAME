@@ -1,4 +1,3 @@
-import type { CSSProperties } from "react";
 import { useI18n } from "../i18n";
 
 export const paletteSteps = [
@@ -81,16 +80,14 @@ export function PaletteTierIcon({
   isRainbow = false,
 }: PaletteTierIconProps) {
   const frame = getPaletteSpriteFrame(filledCount, isRainbow);
-  const style = {
-    "--palette-sprite-column": frame.column,
-    "--palette-sprite-row": frame.row,
-  } as CSSProperties;
 
   return (
-    <span
+    <img
       className={`palette-tier-icon palette-tier-sprite${isRainbow ? " rainbow" : ""}`}
-      style={style}
+      src={`/assets/rank-palettes/palette-tier-${frame.index}.png`}
+      alt=""
       aria-hidden="true"
+      draggable={false}
     />
   );
 }
