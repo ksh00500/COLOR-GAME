@@ -671,7 +671,7 @@ p {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  filter: drop-shadow(0 5px 9px rgba(0,0,0,0.18));
+  filter: none;
   user-select: none;
 }
 
@@ -2528,7 +2528,7 @@ kbd {
 }
 
 .tutorial-preview-cell.red-tile { --preview-color: var(--burgundy); }
-.tutorial-preview-cell.blue-tile { --preview-color: var(--blue); }
+.tutorial-preview-cell.blue-tile { --preview-color: var(--navy); }
 .tutorial-preview-cell.green-tile { --preview-color: var(--green); }
 
 .tutorial-preview-cell.red-tile::after,
@@ -2589,6 +2589,20 @@ kbd {
   height: 30px;
   border-radius: 9px;
   background: var(--burgundy);
+}
+
+.tutorial-preview-choice.blue-choice i {
+  background: var(--navy);
+}
+
+.tutorial-preview-cell.full-last-blue::after {
+  opacity: 1;
+  transform: scale(1);
+  animation: none;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.24),
+    0 0 0 2px color-mix(in srgb, var(--navy) 64%, white),
+    0 8px 16px rgba(0,0,0,0.18);
 }
 
 .tutorial-preview-score {
@@ -4760,8 +4774,8 @@ kbd {
 .tutorial-preview-cell.full-cleared::after {
   opacity: 0.12;
   transform: scale(0.62);
-  background: var(--blue);
-  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--blue) 50%, white);
+  background: var(--navy);
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--navy) 50%, white);
 }
 
 .tutorial-game-preview.full .tutorial-preview-body {
@@ -4881,11 +4895,11 @@ kbd {
 }
 
 .tutorial-game-preview.full .tutorial-preview-board.before-full .tutorial-preview-cell:not(.red-tile):not(.green-tile):not(.blue-tile) {
-  outline: 2px dashed color-mix(in srgb, var(--blue) 62%, white);
+  outline: 2px dashed color-mix(in srgb, var(--navy) 62%, white);
   outline-offset: -4px;
   background:
     linear-gradient(135deg, rgba(255,255,255,0.08), rgba(0,0,0,0.1)),
-    color-mix(in srgb, var(--walnut-dark) 56%, var(--blue));
+    color-mix(in srgb, var(--walnut-dark) 56%, var(--navy));
 }
 
 /* Compact Android/mobile layout */

@@ -3,6 +3,7 @@ import { useI18n } from "../i18n";
 
 const tutorialKey = "color-line-tutorial-complete-v4";
 const tutorialOpenEvent = "color-line:open-tutorial";
+export const tutorialFullBeforeLabel = "가득 차기 직전";
 
 export const openTutorial = () => {
   window.dispatchEvent(new Event(tutorialOpenEvent));
@@ -111,7 +112,7 @@ export const tutorialFullBeforeCellClass = (index: number) => {
   const greenCells = [2, 7, 10, 13, 15, 18, 21, 24];
 
   if (index === emptyCell) {
-    classes.push("blue-tile", "placing");
+    classes.push("blue-tile", "full-last-blue");
     return classes.join(" ");
   }
   if (redCells.includes(index)) classes.push("red-tile");
@@ -217,7 +218,7 @@ export function TutorialPanel() {
               {step.preview === "full" ? (
                 <div className="tutorial-preview-compare">
                   <div>
-                    <span>{t("가득 차기 직전")}</span>
+                    <span>{t(tutorialFullBeforeLabel)}</span>
                     <div className="tutorial-preview-board mini before-full">
                       {Array.from({ length: 25 }, (_, index) => (
                         <i key={index} className={tutorialFullBeforeCellClass(index)} />
@@ -242,7 +243,7 @@ export function TutorialPanel() {
               )}
               <div className="tutorial-preview-side">
                 <span className="tutorial-preview-status">{step.preview === "win" ? t("승리 조건") : t("예시 상황")}</span>
-                <span className="tutorial-preview-choice">
+                <span className={`tutorial-preview-choice${step.preview === "full" ? " blue-choice" : ""}`}>
                   <i />
                   <b>{step.preview === "shared" ? t("공용 색상") : t("마지막 한 수")}</b>
                 </span>
