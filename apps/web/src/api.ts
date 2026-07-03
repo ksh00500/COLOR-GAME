@@ -134,7 +134,6 @@ export interface EconomyOverview {
     key:
       | "welcome"
       | "attendance"
-      | "attendance_streak"
       | "online_matches"
       | "first_online_win"
       | "daily_complete"
@@ -524,7 +523,6 @@ export const claimEconomyQuest = async (
   quest:
     | "welcome"
     | "attendance"
-    | "attendance-streak"
     | "first-online-win"
     | "daily-complete"
     | "weekly-attendance"

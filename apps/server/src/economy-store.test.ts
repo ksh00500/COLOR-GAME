@@ -15,6 +15,7 @@ import {
   seoulWeek,
   TileColorSimilarityError,
   validateTileColorCombination,
+  weeklyQuestGoals,
 } from "./economy-store.js";
 import { createGuestToken, verifyGuestToken } from "./server.js";
 
@@ -56,6 +57,23 @@ const roomAtTurn = (turnNumber: number, mode: RoomSnapshot["mode"] = "casual"): 
 });
 
 describe("economy policy", () => {
+  it("uses the revised weekly attendance, match, and win goals", () => {
+    expect(weeklyQuestGoals).toEqual({
+      attendance: 5,
+      matches: 20,
+      wins: 10,
+    });
+  });
+
+  it("removes the seven-day attendance reward from the economy implementation", () => {
+    const storeSource = readFileSync(
+      fileURLToPath(new URL("./economy-store.ts", import.meta.url)),
+      "utf8",
+    );
+    expect(storeSource).not.toContain('key: "attendance_streak"');
+    expect(storeSource).not.toContain("'attendance_streak', $2, 20, 7, 7");
+  });
+
   it("uses the v1.2.1 palette box price", () => {
     expect(boxPrice).toBe(100);
   });

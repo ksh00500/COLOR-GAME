@@ -204,8 +204,8 @@ export function TutorialPanel() {
             <p className="eyebrow">FIRST GUIDE</p>
             <h2 id={titleId}>{t("처음 한 판을 위한 빠른 안내")}</h2>
           </div>
-          <button className="icon-button" type="button" onClick={close} aria-label={t("튜토리얼 닫기")}>
-            ×
+          <button className="tutorial-skip-button" type="button" onClick={close}>
+            {t("건너뛰기")}
           </button>
         </div>
         <div className="tutorial-stage">
@@ -283,8 +283,13 @@ export function TutorialPanel() {
           ))}
         </div>
         <div className="tutorial-actions">
-          <button className="secondary-action" type="button" onClick={close}>
-            {t("건너뛰기")}
+          <button
+            className="secondary-action"
+            type="button"
+            disabled={stepIndex === 0}
+            onClick={() => setStepIndex((current) => Math.max(0, current - 1))}
+          >
+            <span aria-hidden="true">←</span> {t("이전")}
           </button>
           <button
             className="primary-action"
@@ -297,7 +302,7 @@ export function TutorialPanel() {
               setStepIndex((current) => current + 1);
             }}
           >
-            {isLastStep ? t("시작하기") : t("다음")} <span aria-hidden="true">↗</span>
+            {isLastStep ? t("시작하기") : t("다음")} <span aria-hidden="true">→</span>
           </button>
         </div>
         <p id={noteId} className="tutorial-note">{t("나중에는 게임 화면의 규칙 버튼에서 핵심 규칙을 다시 볼 수 있습니다.")}</p>

@@ -2426,6 +2426,25 @@ kbd {
   gap: 1rem;
 }
 
+.tutorial-skip-button {
+  min-height: 36px;
+  padding: 0.45rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--ink-soft);
+  background: color-mix(in srgb, var(--surface) 72%, transparent);
+  font-size: 0.7rem;
+  font-weight: 850;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.tutorial-skip-button:hover {
+  border-color: color-mix(in srgb, var(--burgundy) 45%, var(--line));
+  color: var(--burgundy);
+  transform: translateY(-1px);
+}
+
 .tutorial-panel:focus-visible {
   outline: 3px solid var(--green-light);
   outline-offset: 3px;
@@ -2685,6 +2704,12 @@ kbd {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 0.65rem;
+}
+
+.tutorial-actions button:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .tutorial-note {
@@ -4903,6 +4928,12 @@ kbd {
 }
 
 /* Compact Android/mobile layout */
+@media (max-width: 720px) {
+  .game-topbar .game-settings-action {
+    display: none;
+  }
+}
+
 @media (max-width: 640px) {
   .app-frame {
     padding-bottom: calc(86px + var(--safe-area-bottom));
@@ -6304,6 +6335,79 @@ kbd {
   font-size: 0.72rem;
 }
 
+.owned-tile-tools {
+  display: grid;
+  grid-template-columns: minmax(200px, 0.7fr) minmax(0, 1.3fr);
+  align-items: end;
+  gap: 0.65rem;
+  padding: 0.65rem;
+  border: 1px solid var(--app-line);
+  border-radius: 12px;
+  background: var(--app-panel-muted);
+}
+
+.owned-tile-search {
+  display: grid;
+  gap: 0.3rem;
+  min-width: 0;
+  color: var(--app-ink-soft);
+  font-size: 0.64rem;
+  font-weight: 850;
+}
+
+.owned-tile-search input {
+  width: 100%;
+  min-width: 0;
+  min-height: 38px;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--app-line);
+  border-radius: 9px;
+  color: var(--app-ink);
+  background: var(--app-panel-strong);
+  font: inherit;
+  font-size: 0.74rem;
+}
+
+.owned-tile-search input:focus-visible {
+  border-color: var(--app-accent);
+  outline: 2px solid color-mix(in srgb, var(--app-accent) 24%, transparent);
+  outline-offset: 1px;
+}
+
+.owned-tile-rarity-filter {
+  display: flex;
+  gap: 0.35rem;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.owned-tile-rarity-filter button {
+  min-width: max-content;
+  min-height: 38px;
+  padding: 0.45rem 0.65rem;
+  border: 1px solid var(--app-line);
+  border-radius: 9px;
+  color: var(--app-ink-soft);
+  background: var(--app-panel-strong);
+  font-size: 0.68rem;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.owned-tile-rarity-filter button:hover,
+.owned-tile-rarity-filter button.active {
+  border-color: var(--app-accent);
+  color: var(--app-inverted);
+  background: var(--app-accent);
+}
+
+.owned-tile-rarity-filter small {
+  margin-left: 0.18rem;
+  opacity: 0.72;
+  font-size: 0.58rem;
+}
+
 .owned-tile-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -6722,6 +6826,16 @@ kbd {
 
   .owned-tile-grid {
     grid-template-columns: 1fr;
+  }
+
+  .owned-tile-tools {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+    padding: 0.55rem;
+  }
+
+  .owned-tile-rarity-filter {
+    padding-bottom: 0.1rem;
   }
 
   .fragment-grid,
@@ -8349,6 +8463,221 @@ kbd {
   html,
   body {
     min-width: 0;
+  }
+}
+
+/* Mobile replay: compact matchup, board-first playback, and thumb-friendly controls */
+@media (max-width: 640px) {
+  .game-page .replay-shell {
+    width: min(100%, 440px);
+    margin-inline: auto;
+    padding: 0.7rem 0.7rem 1.1rem;
+  }
+
+  .game-page .replay-header {
+    display: grid;
+    gap: 0.65rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .game-page .replay-header .eyebrow {
+    margin-bottom: 0.2rem;
+    font-size: 0.56rem;
+  }
+
+  .game-page .replay-header h1 {
+    max-width: 100%;
+    margin: 0;
+    overflow: hidden;
+    font-size: clamp(1.15rem, 6vw, 1.45rem);
+    line-height: 1.15;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .game-page .replay-header > div:first-child > p:last-child {
+    display: none;
+  }
+
+  .game-page .replay-header-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.45rem;
+  }
+
+  .game-page .replay-header-actions .primary-action,
+  .game-page .replay-header-actions .secondary-action {
+    min-height: 38px;
+    padding: 0.45rem 0.55rem;
+    font-size: 0.7rem;
+  }
+
+  .game-page .replay-layout {
+    display: grid;
+    grid-template-areas:
+      "player-one player-two"
+      "board board";
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.55rem;
+  }
+
+  .game-page .replay-layout > .player-card:first-child {
+    grid-area: player-one;
+  }
+
+  .game-page .replay-layout > .player-card:last-child {
+    grid-area: player-two;
+  }
+
+  .game-page .replay-layout > .player-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto 1fr;
+    gap: 0.25rem 0.35rem;
+    width: 100%;
+    min-width: 0;
+    min-height: 76px;
+    height: auto;
+    padding: 0.5rem;
+    border-radius: 12px;
+    box-shadow: none;
+  }
+
+  .game-page .replay-layout > .player-card .player-card-status {
+    grid-column: 1 / -1;
+    padding-bottom: 0.25rem;
+    font-size: 0.46rem;
+  }
+
+  .game-page .replay-layout > .player-card .player-avatar {
+    display: none;
+  }
+
+  .game-page .replay-layout > .player-card .player-identity {
+    min-width: 0;
+    align-self: center;
+  }
+
+  .game-page .replay-layout > .player-card .player-identity strong {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    font-size: 0.76rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .game-page .replay-layout > .player-card .player-identity span {
+    margin-top: 0.1rem;
+    font-size: 0.5rem;
+  }
+
+  .game-page .replay-layout > .player-card .player-meters {
+    align-self: center;
+    gap: 0;
+  }
+
+  .game-page .replay-layout > .player-card .score-ring {
+    width: 42px;
+    height: 42px;
+  }
+
+  .game-page .replay-layout > .player-card .score-ring::after {
+    inset: 4px;
+  }
+
+  .game-page .replay-layout > .player-card .score-ring strong {
+    font-size: 0.88rem;
+  }
+
+  .game-page .replay-layout > .player-card .score-ring small {
+    font-size: 0.46rem;
+  }
+
+  .game-page .replay-board-column {
+    grid-area: board;
+    width: min(100%, 300px);
+    justify-self: center;
+    gap: 0.55rem;
+  }
+
+  .game-page .replay-board-column .game-board-frame {
+    width: 100%;
+    padding: 8px;
+    border-width: 6px;
+    border-radius: 16px;
+  }
+
+  .game-page .replay-controls {
+    gap: 0.55rem;
+    padding: 0.65rem;
+    border-radius: 12px;
+    box-shadow: none;
+  }
+
+  .game-page .replay-step-label {
+    align-items: center;
+    gap: 0.55rem;
+    font-size: 0.64rem;
+  }
+
+  .game-page .replay-step-label strong {
+    font-size: 0.82rem;
+    white-space: nowrap;
+  }
+
+  .game-page .replay-step-label span {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--app-ink-soft);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .game-page .replay-controls input[type="range"] {
+    min-height: 24px;
+    margin: 0;
+  }
+
+  .game-page .replay-playback-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.45rem;
+  }
+
+  .game-page .replay-play-toggle {
+    width: auto;
+    min-width: 0;
+    min-height: 38px;
+    padding: 0.45rem 0.5rem;
+    font-size: 0.68rem;
+  }
+
+  .game-page .replay-speed {
+    width: auto;
+    gap: 0.18rem;
+    padding: 0.18rem;
+  }
+
+  .game-page .replay-speed button {
+    min-width: 36px;
+    min-height: 34px;
+    padding: 0.3rem;
+    font-size: 0.62rem;
+  }
+
+  .game-page .replay-buttons {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.3rem;
+  }
+
+  .game-page .replay-buttons button {
+    min-width: 0;
+    min-height: 36px;
+    padding: 0.4rem 0.12rem;
+    font-size: 0.6rem;
+    white-space: nowrap;
   }
 }
 

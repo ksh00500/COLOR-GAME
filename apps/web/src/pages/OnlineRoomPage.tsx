@@ -814,7 +814,7 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
           <div className="header-actions">
             <button className="icon-button labeled" type="button" onClick={() => void shareRoomLink("spectate")}><span>◎</span><small>{t("관전 공유")}</small></button>
             <button className="icon-button labeled" type="button" onClick={() => setHelpOpen(true)}><span>?</span><small>{t("규칙")}</small></button>
-            <button className="icon-button labeled" type="button" onClick={() => setSettingsOpen(true)}><span>◌</span><small>{t("설정")}</small></button>
+            <button className="icon-button labeled game-settings-action" type="button" onClick={() => setSettingsOpen(true)}><span>◌</span><small>{t("설정")}</small></button>
           </div>
         </header>
 

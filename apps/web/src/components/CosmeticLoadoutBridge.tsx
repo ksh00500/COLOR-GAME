@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import {
+  authChangedEvent,
   fetchEconomy,
   getAuthToken,
   type EconomyOverview,
@@ -7,8 +8,17 @@ import {
 } from "../api";
 import { cosmeticBackground } from "../cosmetics";
 
-const applyLoadout = (economy: EconomyOverview): void => {
-  const root = document.documentElement;
+export const loadoutChangedEvent = "tango:loadout-changed";
+
+interface LoadoutTarget {
+  dataset: Record<string, string | undefined>;
+  style: Pick<CSSStyleDeclaration, "removeProperty" | "setProperty">;
+}
+
+export const applyLoadout = (
+  economy: EconomyOverview,
+  root: LoadoutTarget = document.documentElement,
+): void => {
   const slots: TileLoadoutSlot[] = ["colorA", "colorB", "colorC"];
   for (const slot of slots) {
     const item = economy.inventory.find((entry) => entry.id === economy.loadout[slot]);
@@ -24,16 +34,54 @@ const applyLoadout = (economy: EconomyOverview): void => {
   }
 };
 
+export const clearLoadout = (
+  root: LoadoutTarget = document.documentElement,
+): void => {
+  for (const slot of ["a", "b", "c"]) {
+    delete root.dataset[`tangoTileColor${slot.toUpperCase()}`];
+    root.style.removeProperty(`--equipped-tile-${slot}-background`);
+    root.style.removeProperty(`--equipped-tile-${slot}-accent`);
+  }
+};
+
 export function CosmeticLoadoutBridge() {
   useEffect(() => {
+    let refreshId = 0;
     const refresh = () => {
-      if (getAuthToken() !== null) {
-        void fetchEconomy().then(applyLoadout).catch(() => undefined);
+      const currentRefreshId = ++refreshId;
+      if (getAuthToken() === null) {
+        clearLoadout();
+        return;
       }
+      void fetchEconomy({ force: true })
+        .then((economy) => {
+          if (currentRefreshId === refreshId && getAuthToken() !== null) {
+            applyLoadout(economy);
+          }
+        })
+        .catch(() => undefined);
+    };
+    const handleAuthChanged = () => {
+      clearLoadout();
+      refresh();
+    };
+    const handleLoadoutChanged = (event: Event) => {
+      const economy = (event as CustomEvent<EconomyOverview>).detail;
+      if (economy !== undefined && getAuthToken() !== null) {
+        refreshId += 1;
+        applyLoadout(economy);
+        return;
+      }
+      refresh();
     };
     refresh();
-    window.addEventListener("tango:loadout-changed", refresh);
-    return () => window.removeEventListener("tango:loadout-changed", refresh);
+    window.addEventListener(authChangedEvent, handleAuthChanged);
+    window.addEventListener(loadoutChangedEvent, handleLoadoutChanged);
+    return () => {
+      refreshId += 1;
+      window.removeEventListener(authChangedEvent, handleAuthChanged);
+      window.removeEventListener(loadoutChangedEvent, handleLoadoutChanged);
+    };
   }, []);
   return null;
 }

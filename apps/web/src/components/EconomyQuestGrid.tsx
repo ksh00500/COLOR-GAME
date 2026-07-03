@@ -6,16 +6,15 @@ import {
 } from "../api";
 import { useI18n } from "../i18n";
 
-const questLabels = {
+export const questLabels = {
   welcome: "신규 계정 보상",
   attendance: "오늘의 출석",
-  attendance_streak: "7일 연속 출석",
   online_matches: "온라인 대전 보상",
   first_online_win: "오늘의 첫 승리",
   daily_complete: "오늘의 퀘스트 완료",
   weekly_attendance: "주간 출석 5일",
-  weekly_matches: "주간 온라인 15경기",
-  weekly_wins: "주간 온라인 5승",
+  weekly_matches: "주간 온라인 20경기",
+  weekly_wins: "주간 온라인 10승",
   weekly_complete: "주간 퀘스트 완료",
   reward_ad: "선택형 보상 광고",
 } as const;
@@ -23,7 +22,6 @@ const questLabels = {
 const claimRoutes = {
   welcome: "welcome",
   attendance: "attendance",
-  attendance_streak: "attendance-streak",
   first_online_win: "first-online-win",
   daily_complete: "daily-complete",
   weekly_attendance: "weekly-attendance",

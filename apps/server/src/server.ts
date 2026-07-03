@@ -1241,27 +1241,6 @@ export const createServer = (options: ServerOptions = {}) => {
     }
   });
 
-  app.post("/economy/quests/attendance-streak/claim", async (request, reply) => {
-    const account = await authenticateToken(bearerToken(request.headers.authorization));
-    if (account === null || !economyStore.enabled) {
-      return reply.code(401).send({ code: "UNAUTHORIZED", message: "Sign in is required." });
-    }
-    const parsed = economyTimeZoneSchema.safeParse(request.body ?? {});
-    if (!parsed.success) return reply.code(400).send({ code: "INVALID_REQUEST" });
-    try {
-      return {
-        economy: await economyStore.claimUnlockedQuest(
-          account.id,
-          "attendance_streak",
-          account.attendanceStreak,
-        ),
-      };
-    } catch (error) {
-      const mapped = economyErrorStatus(error);
-      return reply.code(mapped.status).send({ code: mapped.code });
-    }
-  });
-
   app.post("/economy/quests/first-online-win/claim", async (request, reply) => {
     const account = await authenticateToken(bearerToken(request.headers.authorization));
     if (account === null || !economyStore.enabled) {

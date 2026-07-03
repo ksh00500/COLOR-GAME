@@ -34,6 +34,21 @@ import { GoogleSignInButton } from "../components/GoogleSignInButton";
 
 type AuthMode = "login" | "register";
 
+export const matchModeLabels: Record<string, string> = {
+  casual: "일반",
+  ranked: "경쟁",
+  private: "사설방",
+  ai: "AI 대전",
+};
+
+export const matchResultLabels: Record<string, string> = {
+  "target-score": "목표 점수 달성",
+  draw: "무승부 종료",
+  timeout: "제한 시간 종료",
+  resignation: "기권으로 종료",
+  disconnect: "연결 끊김으로 종료",
+};
+
 const findLeaderboardRank = (players: PublicProfile[], accountId: string): number | null => {
   const index = players.findIndex((player) => player.id === accountId);
   return index === -1 ? null : index + 1;
@@ -442,8 +457,8 @@ export function AccountPage({ deletionEntry = false }: { deletionEntry?: boolean
                             <article className={`match-history-${outcomeClass}`} key={match.gameId}>
                               <b className={`match-outcome-badge ${outcomeClass}`}>{t(outcomeLabel)}</b>
                               <span>
-                                <b>{match.mode.toUpperCase()} · {match.opponentName}</b>
-                                <small>{match.result ?? t("완료")} · TURN {match.turnNumber}</small>
+                                <b>{t(matchModeLabels[match.mode] ?? match.mode)} · {match.opponentName}</b>
+                                <small>{t(match.result === null ? "완료" : matchResultLabels[match.result] ?? match.result)} · TURN {match.turnNumber}</small>
                               </span>
                               <Link to={`/replay/${encodeURIComponent(match.gameId)}`}>{t("리플레이")}</Link>
                             </article>

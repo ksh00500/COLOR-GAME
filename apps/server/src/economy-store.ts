@@ -21,7 +21,6 @@ export type TileLoadoutSlot = "colorA" | "colorB" | "colorC";
 export type QuestKey =
   | "welcome"
   | "attendance"
-  | "attendance_streak"
   | "online_matches"
   | "first_online_win"
   | "daily_complete"
@@ -142,7 +141,7 @@ export interface EconomyStore {
   ): Promise<EconomyOverview>;
   claimUnlockedQuest(
     accountId: string,
-    questKey: "attendance_streak" | "first_online_win",
+    questKey: "first_online_win",
     attendanceStreak?: number,
   ): Promise<EconomyOverview>;
   claimProgressQuest(
@@ -178,6 +177,11 @@ export interface EconomyStore {
 }
 
 const rarities: CosmeticRarity[] = ["common", "rare", "epic", "legendary"];
+export const weeklyQuestGoals = {
+  attendance: 5,
+  matches: 20,
+  wins: 10,
+} as const;
 const weeklyCounts: Record<CosmeticRarity, number> = {
   common: 5,
   rare: 4,
@@ -637,7 +641,6 @@ export class PostgresEconomyStore implements EconomyStore {
   private async overviewWithClient(
     client: PoolClient,
     accountId: string,
-    attendanceStreak: number,
   ): Promise<EconomyOverview> {
     await this.ensureAccount(client, accountId);
     const week = await this.ensureWeeklyRotation(client);
@@ -767,7 +770,6 @@ export class PostgresEconomyStore implements EconomyStore {
       (quest) => quest.quest_key === "attendance" && quest.cycle_key === dayKey,
     );
     const welcome = quests.find((quest) => quest.quest_key === "welcome");
-    const streak = quests.find((quest) => quest.quest_key === "attendance_streak" && quest.status === "unlocked");
     const firstWin = quests.find(
       (quest) => quest.quest_key === "first_online_win" && quest.cycle_key === dayKey,
     );
@@ -788,7 +790,9 @@ export class PostgresEconomyStore implements EconomyStore {
     );
     const dailyObjectivesComplete = attendedToday && matchProgress >= 5 && firstWin !== undefined;
     const weeklyObjectivesComplete =
-      weeklyAttendanceProgress >= 5 && weeklyMatchProgress >= 15 && weeklyWinProgress >= 5;
+      weeklyAttendanceProgress >= weeklyQuestGoals.attendance
+      && weeklyMatchProgress >= weeklyQuestGoals.matches
+      && weeklyWinProgress >= weeklyQuestGoals.wins;
     const config = configResult.rows[0];
     const now = new Date();
     const startsAt = config?.founder_sale_starts_at ?? null;
@@ -851,17 +855,6 @@ export class PostgresEconomyStore implements EconomyStore {
           goal: 1,
         },
         {
-          key: "attendance_streak",
-          period: "daily",
-          cycleKey: streak?.cycle_key ?? `progress:${dayKey}`,
-          rewardChips: 20,
-          rewardBoxTickets: 0,
-          claimed: false,
-          claimable: streak !== undefined,
-          progress: streak === undefined ? attendanceStreak % 7 : 7,
-          goal: 7,
-        },
-        {
           key: "online_matches",
           period: "daily",
           cycleKey: dayKey,
@@ -901,9 +894,11 @@ export class PostgresEconomyStore implements EconomyStore {
           rewardChips: 50,
           rewardBoxTickets: 0,
           claimed: weeklyAttendanceQuest?.status === "claimed",
-          claimable: weeklyAttendanceProgress >= 5 && weeklyAttendanceQuest?.status !== "claimed",
-          progress: Math.min(weeklyAttendanceProgress, 5),
-          goal: 5,
+          claimable:
+            weeklyAttendanceProgress >= weeklyQuestGoals.attendance
+            && weeklyAttendanceQuest?.status !== "claimed",
+          progress: Math.min(weeklyAttendanceProgress, weeklyQuestGoals.attendance),
+          goal: weeklyQuestGoals.attendance,
         },
         {
           key: "weekly_matches",
@@ -912,9 +907,11 @@ export class PostgresEconomyStore implements EconomyStore {
           rewardChips: 100,
           rewardBoxTickets: 0,
           claimed: weeklyMatchesQuest?.status === "claimed",
-          claimable: weeklyMatchProgress >= 15 && weeklyMatchesQuest?.status !== "claimed",
-          progress: Math.min(weeklyMatchProgress, 15),
-          goal: 15,
+          claimable:
+            weeklyMatchProgress >= weeklyQuestGoals.matches
+            && weeklyMatchesQuest?.status !== "claimed",
+          progress: Math.min(weeklyMatchProgress, weeklyQuestGoals.matches),
+          goal: weeklyQuestGoals.matches,
         },
         {
           key: "weekly_wins",
@@ -923,9 +920,11 @@ export class PostgresEconomyStore implements EconomyStore {
           rewardChips: 150,
           rewardBoxTickets: 0,
           claimed: weeklyWinsQuest?.status === "claimed",
-          claimable: weeklyWinProgress >= 5 && weeklyWinsQuest?.status !== "claimed",
-          progress: Math.min(weeklyWinProgress, 5),
-          goal: 5,
+          claimable:
+            weeklyWinProgress >= weeklyQuestGoals.wins
+            && weeklyWinsQuest?.status !== "claimed",
+          progress: Math.min(weeklyWinProgress, weeklyQuestGoals.wins),
+          goal: weeklyQuestGoals.wins,
         },
         {
           key: "weekly_complete",
@@ -936,9 +935,9 @@ export class PostgresEconomyStore implements EconomyStore {
           claimed: weeklyComplete?.status === "claimed",
           claimable: weeklyObjectivesComplete && weeklyComplete?.status !== "claimed",
           progress: [
-            weeklyAttendanceProgress >= 5,
-            weeklyMatchProgress >= 15,
-            weeklyWinProgress >= 5,
+            weeklyAttendanceProgress >= weeklyQuestGoals.attendance,
+            weeklyMatchProgress >= weeklyQuestGoals.matches,
+            weeklyWinProgress >= weeklyQuestGoals.wins,
           ].filter(Boolean).length,
           goal: 3,
         },
@@ -990,10 +989,10 @@ export class PostgresEconomyStore implements EconomyStore {
     };
   }
 
-  async getOverview(accountId: string, attendanceStreak = 0): Promise<EconomyOverview> {
+  async getOverview(accountId: string, _attendanceStreak = 0): Promise<EconomyOverview> {
     const client = await this.pool.connect();
     try {
-      return await this.overviewWithClient(client, accountId, attendanceStreak);
+      return await this.overviewWithClient(client, accountId);
     } finally {
       client.release();
     }
@@ -1069,15 +1068,6 @@ export class PostgresEconomyStore implements EconomyStore {
       );
       if ((created.rowCount ?? 0) === 0) throw new Error("QUEST_ALREADY_CLAIMED");
       await this.claimQuestRow(client, accountId, "attendance", attendedOn);
-      if (attendanceStreak > 0 && attendanceStreak % 7 === 0) {
-        await client.query(
-          `insert into economy_quest_unlocks (
-             account_id, quest_key, cycle_key, reward_chips, progress, goal
-           ) values ($1, 'attendance_streak', $2, 20, 7, 7)
-           on conflict (account_id, quest_key, cycle_key) do nothing`,
-          [accountId, attendedOn],
-        );
-      }
       await client.query("commit");
     } catch (error) {
       await client.query("rollback");
@@ -1090,7 +1080,7 @@ export class PostgresEconomyStore implements EconomyStore {
 
   async claimUnlockedQuest(
     accountId: string,
-    questKey: "attendance_streak" | "first_online_win",
+    questKey: "first_online_win",
     attendanceStreak = 0,
   ): Promise<EconomyOverview> {
     const client = await this.pool.connect();

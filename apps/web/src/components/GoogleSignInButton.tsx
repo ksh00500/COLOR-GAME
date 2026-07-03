@@ -1,5 +1,6 @@
 import { Capacitor, registerPlugin } from "@capacitor/core";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useI18n } from "../i18n";
 
 const defaultWebClientId =
   "346527230938-6219p1srt8p9ejhs44fvea3bldcknlrf.apps.googleusercontent.com";
@@ -76,8 +77,10 @@ export function GoogleSignInButton({
   onCredential: (idToken: string) => void;
   onError: (code: string) => void;
 }) {
+  const { t } = useI18n();
   const containerRef = useRef<HTMLDivElement>(null);
   const native = Capacitor.isNativePlatform();
+  const [nativePending, setNativePending] = useState(false);
 
   useEffect(() => {
     if (native || containerRef.current === null) return;
@@ -110,23 +113,28 @@ export function GoogleSignInButton({
   }, [native, onCredential, onError]);
 
   if (native) {
+    const nativeBusy = busy || nativePending;
     return (
       <button
         className="google-native-button"
         type="button"
-        disabled={busy}
+        disabled={nativeBusy}
+        aria-busy={nativeBusy}
         onClick={() => {
+          if (nativeBusy) return;
+          setNativePending(true);
           void nativeGoogleAuth
             .signIn({ serverClientId: webClientId })
             .then(({ idToken }) => onCredential(idToken))
             .catch((error: unknown) => {
               const message = error instanceof Error ? error.message : "";
               onError(message.includes("CANCELED") ? "GOOGLE_SIGN_IN_CANCELED" : "GOOGLE_SIGN_IN_FAILED");
-            });
+            })
+            .finally(() => setNativePending(false));
         }}
       >
         <span aria-hidden="true">G</span>
-        Google로 로그인
+        {t("Google로 로그인")}
       </button>
     );
   }

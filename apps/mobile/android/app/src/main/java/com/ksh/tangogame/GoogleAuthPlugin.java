@@ -17,14 +17,21 @@ import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption;
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @CapacitorPlugin(name = "GoogleAuth")
 public class GoogleAuthPlugin extends Plugin {
+    private final AtomicBoolean signInInProgress = new AtomicBoolean(false);
+
     @PluginMethod
     public void signIn(PluginCall call) {
         String serverClientId = call.getString("serverClientId");
         if (serverClientId == null || serverClientId.trim().isEmpty()) {
             call.reject("MISSING_SERVER_CLIENT_ID");
+            return;
+        }
+        if (!signInInProgress.compareAndSet(false, true)) {
+            call.reject("GOOGLE_SIGN_IN_IN_PROGRESS");
             return;
         }
 
@@ -42,6 +49,7 @@ public class GoogleAuthPlugin extends Plugin {
             new CredentialManagerCallback<GetCredentialResponse, GetCredentialException>() {
                 @Override
                 public void onResult(GetCredentialResponse response) {
+                    signInInProgress.set(false);
                     Credential credential = response.getCredential();
                     if (!(credential instanceof CustomCredential)) {
                         call.reject("UNSUPPORTED_GOOGLE_CREDENTIAL");
@@ -67,6 +75,7 @@ public class GoogleAuthPlugin extends Plugin {
 
                 @Override
                 public void onError(GetCredentialException error) {
+                    signInInProgress.set(false);
                     if (error instanceof GetCredentialCancellationException) {
                         call.reject("GOOGLE_SIGN_IN_CANCELED");
                     } else {

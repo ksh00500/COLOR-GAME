@@ -18,10 +18,31 @@ import { useI18n } from "../i18n";
 import { EconomyQuestGrid } from "./EconomyQuestGrid";
 import { TileSkinPreview } from "./TileSkinPreview";
 import { CosmeticOutcomeModal } from "./CosmeticOutcomeModal";
+import { loadoutChangedEvent } from "./CosmeticLoadoutBridge";
 
 export type AccountEconomyTab = "tiles" | "quests" | "records" | "benefits";
 
 const rarities: CosmeticRarity[] = ["common", "rare", "epic", "legendary"];
+type TileRarityFilter = "all" | CosmeticRarity;
+
+export const filterOwnedTileItems = (
+  items: CosmeticItem[],
+  locale: string,
+  query: string,
+  rarity: TileRarityFilter,
+) => {
+  const normalizedQuery = query.trim().toLocaleLowerCase(locale);
+  return items.filter((item) => {
+    if (rarity !== "all" && item.rarity !== rarity) return false;
+    if (normalizedQuery === "") return true;
+    return [
+      localizedCosmeticName(item, locale),
+      item.nameKo,
+      item.nameEn,
+    ].some((name) => name.toLocaleLowerCase(locale).includes(normalizedQuery));
+  });
+};
+
 const tileSlots: Array<{
   key: TileLoadoutSlot;
   label: string;
@@ -42,6 +63,8 @@ export function EconomyAccountPanel({ activeTab }: { activeTab: AccountEconomyTa
   const [couponCode, setCouponCode] = useState("");
   const [couponResult, setCouponResult] = useState<CouponRedemptionResult | null>(null);
   const [ledgerExpanded, setLedgerExpanded] = useState(false);
+  const [tileQuery, setTileQuery] = useState("");
+  const [tileRarity, setTileRarity] = useState<TileRarityFilter>("all");
   const [similarWarning, setSimilarWarning] = useState<{
     slot: TileLoadoutSlot;
     item: CosmeticItem;
@@ -53,8 +76,7 @@ export function EconomyAccountPanel({ activeTab }: { activeTab: AccountEconomyTa
 
   const applyEconomy = (next: EconomyOverview) => {
     setEconomy(next);
-    window.localStorage.setItem("tango-cosmetic-loadout", JSON.stringify(next.loadout));
-    window.dispatchEvent(new CustomEvent("tango:loadout-changed"));
+    window.dispatchEvent(new CustomEvent(loadoutChangedEvent, { detail: next }));
   };
 
   const combine = async (rarity: CosmeticRarity) => {
@@ -126,6 +148,7 @@ export function EconomyAccountPanel({ activeTab }: { activeTab: AccountEconomyTa
   }
 
   const ownedTiles = economy.inventory.filter((item) => item.equipSlot === "tile_color");
+  const filteredOwnedTiles = filterOwnedTileItems(ownedTiles, locale, tileQuery, tileRarity);
 
   return (
     <section className="economy-account-panel">
@@ -175,11 +198,43 @@ export function EconomyAccountPanel({ activeTab }: { activeTab: AccountEconomyTa
             </div>
             <strong>{t(tileSlots.find((slot) => slot.key === selectedSlot)?.label ?? "빨강 슬롯")}</strong>
           </div>
+          <div className="owned-tile-tools">
+            <label className="owned-tile-search">
+              <span>{t("타일 이름 검색")}</span>
+              <input
+                type="search"
+                value={tileQuery}
+                placeholder={t("이름으로 검색")}
+                onChange={(event) => setTileQuery(event.target.value)}
+              />
+            </label>
+            <div className="owned-tile-rarity-filter" role="group" aria-label={t("보유 타일 등급 필터")}>
+              <button
+                type="button"
+                className={tileRarity === "all" ? "active" : ""}
+                onClick={() => setTileRarity("all")}
+              >
+                {t("모두")} <small>{ownedTiles.length}</small>
+              </button>
+              {rarities.map((rarity) => (
+                <button
+                  key={rarity}
+                  type="button"
+                  className={tileRarity === rarity ? "active" : ""}
+                  onClick={() => setTileRarity(rarity)}
+                >
+                  {t(rarity)} <small>{ownedTiles.filter((item) => item.rarity === rarity).length}</small>
+                </button>
+              ))}
+            </div>
+          </div>
           {ownedTiles.length === 0 ? (
             <p className="online-message">{t("아직 보유한 스킨이 없습니다. 상점에서 첫 스킨을 만나보세요.")}</p>
+          ) : filteredOwnedTiles.length === 0 ? (
+            <p className="online-message">{t("검색 조건에 맞는 보유 타일이 없습니다.")}</p>
           ) : (
             <div className="owned-tile-grid">
-              {ownedTiles.map((item) => {
+              {filteredOwnedTiles.map((item) => {
                 const equippedHere = economy.loadout[selectedSlot] === item.id;
                 const equippedElsewhere = item.equippedSlots.some((slot) => slot !== selectedSlot);
                 return (

@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { resolveAppLanguage, useSettings, type AppLanguage } from "./settings";
 
-type Locale = Exclude<AppLanguage, "auto">;
+export type Locale = Exclude<AppLanguage, "auto">;
 type Message = Record<Exclude<Locale, "ko">, string>;
 
 const messages: Record<string, Message> = {
@@ -223,6 +223,7 @@ const messages: Record<string, Message> = {
   "플레이 중": { en: "Playing", ja: "プレイ中", es: "Jugando", "pt-BR": "Jogando" },
   "색 선택": { en: "Choose color", ja: "色を選択", es: "Elegir color", "pt-BR": "Escolher cor" },
   "건너뛰기": { en: "Skip", ja: "スキップ", es: "Omitir", "pt-BR": "Pular" },
+  "이전": { en: "Previous", ja: "前へ", es: "Anterior", "pt-BR": "Anterior" },
   "시작하기": { en: "Start", ja: "始める", es: "Empezar", "pt-BR": "Começar" },
   "다음": { en: "Next", ja: "次へ", es: "Siguiente", "pt-BR": "Próximo" },
   "나중에는 게임 화면의 규칙 버튼에서 핵심 규칙을 다시 볼 수 있습니다.": { en: "You can review the rules later from the game screen.", ja: "ルールは後でゲーム画面から確認できます。", es: "Puedes consultar las reglas después desde la pantalla de juego.", "pt-BR": "Você pode rever as regras depois na tela do jogo." },
@@ -405,6 +406,7 @@ const messages: Record<string, Message> = {
   "로그인 접근성 개선": { en: "Sign-in visibility", ja: "ログイン導線改善", es: "Acceso al inicio de sesión", "pt-BR": "Acesso ao login" },
   "메인 로그인 카드 추가": { en: "Home sign-in card added", ja: "ホームにログインカードを追加", es: "Tarjeta de inicio añadida", "pt-BR": "Cartão de login na tela inicial" },
   "메인 화면에서 로그인과 계정 진입이 더 잘 보이도록 계정 카드를 추가했습니다.": { en: "The home screen now has a clearer account card for sign-in and account access.", ja: "ホームにログイン・アカウント用カードを追加しました。", es: "La pantalla principal ahora muestra mejor el acceso a cuenta.", "pt-BR": "A tela inicial agora destaca melhor o acesso à conta." },
+  "메인 화면에서 로그인과 계정 진입이 더 잘 보이도록 계정 카드를 추가했습니다. 경쟁전, 리더보드, 출석 기록 안내도 함께 표시합니다.": { en: "The home screen now has a clearer account card for sign-in and account access, with guidance for Ranked play, the leaderboard, and attendance records.", ja: "ホームにログイン・アカウント用カードを追加し、ランク戦、リーダーボード、出席記録の案内も表示します。", es: "La pantalla principal ahora destaca el acceso a la cuenta y muestra información sobre partidas competitivas, clasificación y asistencia.", "pt-BR": "A tela inicial agora destaca o acesso à conta e mostra orientações sobre partidas competitivas, ranking e presença." },
   "동시 로그인 방지": { en: "Single active login", ja: "同時ログイン防止", es: "Inicio único activo", "pt-BR": "Login ativo único" },
   "같은 계정은 마지막 로그인만 유지되며, 이전 탭과 기기의 세션은 자동으로 만료됩니다.": { en: "Only the latest login remains active; older tabs and devices expire automatically.", ja: "同じアカウントでは最新ログインのみ有効で、古いタブや端末は自動失効します。", es: "Solo queda activo el último inicio; pestañas y dispositivos anteriores caducan.", "pt-BR": "Só o login mais recente fica ativo; sessões antigas expiram." },
   "확인했어요": { en: "Got it", ja: "確認しました", es: "Entendido", "pt-BR": "Entendi" },
@@ -567,6 +569,10 @@ const messages: Record<string, Message> = {
   "기본 그린": { en: "Default green", ja: "基本グリーン", es: "Verde base", "pt-BR": "Verde padrão" },
   "기본으로 복원": { en: "Restore default", ja: "初期設定に戻す", es: "Restaurar base", "pt-BR": "Restaurar padrão" },
   "보유 타일": { en: "Owned tiles", ja: "所有タイル", es: "Fichas obtenidas", "pt-BR": "Peças adquiridas" },
+  "타일 이름 검색": { en: "Search tile names", ja: "タイル名を検索", es: "Buscar nombres de fichas", "pt-BR": "Buscar nomes de peças" },
+  "이름으로 검색": { en: "Search by name", ja: "名前で検索", es: "Buscar por nombre", "pt-BR": "Buscar por nome" },
+  "보유 타일 등급 필터": { en: "Owned tile rarity filter", ja: "所有タイルのレアリティフィルター", es: "Filtro de rareza de fichas", "pt-BR": "Filtro de raridade das peças" },
+  "검색 조건에 맞는 보유 타일이 없습니다.": { en: "No owned tiles match these filters.", ja: "条件に一致する所有タイルはありません。", es: "No hay fichas que coincidan con los filtros.", "pt-BR": "Nenhuma peça corresponde aos filtros." },
   "타일 하나를 선택한 슬롯에 장착합니다.": { en: "Equip one tile to the selected slot.", ja: "選択したスロットにタイルを1つ装備します。", es: "Equipa una ficha en el espacio seleccionado.", "pt-BR": "Equipe uma peça no espaço selecionado." },
   "다른 슬롯 사용 중": { en: "Used in another slot", ja: "別スロットで使用中", es: "En otro espacio", "pt-BR": "Em outro espaço" },
   "퀘스트와 파편": { en: "Quests and fragments", ja: "クエストと欠片", es: "Misiones y fragmentos", "pt-BR": "Missões e fragmentos" },
@@ -608,6 +614,48 @@ const messages: Record<string, Message> = {
   "상대의 재경기 동의를 기다리는 중입니다.": { en: "Waiting for your opponent to accept the rematch.", ja: "相手の再戦同意を待っています。", es: "Esperando que el rival acepte la revancha.", "pt-BR": "Aguardando o adversário aceitar a revanche." },
   "재경기": { en: "Rematch", ja: "再戦", es: "Revancha", "pt-BR": "Revanche" },
   "요청 완료": { en: "Requested", ja: "リクエスト済み", es: "Solicitado", "pt-BR": "Solicitado" },
+  "Google로 로그인": { en: "Sign in with Google", ja: "Googleでログイン", es: "Iniciar sesión con Google", "pt-BR": "Entrar com Google" },
+  "닉네임을 변경했습니다.": { en: "Your nickname has been changed.", ja: "ニックネームを変更しました。", es: "Tu apodo se ha cambiado.", "pt-BR": "Seu apelido foi alterado." },
+  "계정 정보를 불러오는 중입니다.": { en: "Loading account information.", ja: "アカウント情報を読み込んでいます。", es: "Cargando la información de la cuenta.", "pt-BR": "Carregando informações da conta." },
+  "닉네임 변경": { en: "Change nickname", ja: "ニックネーム変更", es: "Cambiar apodo", "pt-BR": "Alterar apelido" },
+  "닉네임을 변경할 수 있습니다.": { en: "You can change your nickname.", ja: "ニックネームを変更できます。", es: "Puedes cambiar tu apodo.", "pt-BR": "Você pode alterar seu apelido." },
+  "{date}부터 다시 변경할 수 있습니다.": { en: "You can change it again from {date}.", ja: "{date}から再度変更できます。", es: "Podrás cambiarlo de nuevo a partir del {date}.", "pt-BR": "Você poderá alterar novamente a partir de {date}." },
+  "변경": { en: "Change", ja: "変更", es: "Cambiar", "pt-BR": "Alterar" },
+  "전적 모드": { en: "Match record mode", ja: "戦績モード", es: "Modo de historial", "pt-BR": "Modo de histórico" },
+  "목표 점수 달성": { en: "Target score reached", ja: "目標スコア達成", es: "Puntuación objetivo alcanzada", "pt-BR": "Pontuação-alvo alcançada" },
+  "무승부 종료": { en: "Finished in a draw", ja: "引き分け終了", es: "Finalizó en empate", "pt-BR": "Terminou em empate" },
+  "제한 시간 종료": { en: "Time limit reached", ja: "制限時間終了", es: "Límite de tiempo alcanzado", "pt-BR": "Limite de tempo atingido" },
+  "기권으로 종료": { en: "Ended by resignation", ja: "投了で終了", es: "Terminó por abandono", "pt-BR": "Terminou por desistência" },
+  "연결 끊김으로 종료": { en: "Ended by disconnection", ja: "切断で終了", es: "Terminó por desconexión", "pt-BR": "Terminou por desconexão" },
+  "구매 확정": { en: "Confirm purchase", ja: "購入確認", es: "Confirmar compra", "pt-BR": "Confirmar compra" },
+  "{chips}칩을 사용해 이 타일을 구매할까요?": { en: "Spend {chips} Chips to purchase this tile?", ja: "{chips}チップでこのタイルを購入しますか？", es: "¿Usar {chips} fichas para comprar esta ficha?", "pt-BR": "Usar {chips} fichas para comprar esta peça?" },
+  "보유 칩 {chips}": { en: "{chips} Chips owned", ja: "所持チップ {chips}", es: "Fichas disponibles: {chips}", "pt-BR": "Fichas disponíveis: {chips}" },
+  "보유 중 · 파편으로 전환": { en: "Owned · Converted to a fragment", ja: "所有済み・欠片に変換", es: "Obtenido · Convertido en fragmento", "pt-BR": "Já possui · Convertido em fragmento" },
+  "상자": { en: "Box", ja: "ボックス", es: "Caja", "pt-BR": "Caixa" },
+  "영구 프리미엄": { en: "Permanent Premium", ja: "永久プレミアム", es: "Premium permanente", "pt-BR": "Premium permanente" },
+  "쿠폰 보상을 받았습니다.": { en: "Coupon rewards received.", ja: "クーポン報酬を受け取りました。", es: "Has recibido las recompensas del cupón.", "pt-BR": "Você recebeu as recompensas do cupom." },
+  "확인": { en: "Confirm", ja: "確認", es: "Confirmar", "pt-BR": "Confirmar" },
+  "퀘스트 기간": { en: "Quest period", ja: "クエスト期間", es: "Periodo de misiones", "pt-BR": "Período das missões" },
+  "주간": { en: "Weekly", ja: "週間", es: "Semanal", "pt-BR": "Semanal" },
+  "오늘의 퀘스트 완료": { en: "Complete today's quests", ja: "今日のクエスト完了", es: "Completa las misiones de hoy", "pt-BR": "Conclua as missões de hoje" },
+  "주간 출석 5일": { en: "Check in 5 days this week", ja: "週間出席5日", es: "Regístrate 5 días esta semana", "pt-BR": "Faça check-in em 5 dias na semana" },
+  "주간 온라인 20경기": { en: "Play 20 online matches this week", ja: "週間オンライン20試合", es: "Juega 20 partidas en línea esta semana", "pt-BR": "Jogue 20 partidas online na semana" },
+  "주간 온라인 10승": { en: "Win 10 online matches this week", ja: "週間オンライン10勝", es: "Gana 10 partidas en línea esta semana", "pt-BR": "Vença 10 partidas online na semana" },
+  "주간 퀘스트 완료": { en: "Complete the weekly quests", ja: "週間クエスト完了", es: "Completa las misiones semanales", "pt-BR": "Conclua as missões semanais" },
+  "대전 기록과 모바일 경험 개선": { en: "Match records and mobile experience improvements", ja: "対戦記録とモバイル体験の改善", es: "Mejoras del historial y la experiencia móvil", "pt-BR": "Melhorias no histórico e na experiência móvel" },
+  "전적 판정, 재경기, 퀘스트와 상점 경제를 바로잡고 모바일 화면과 게임 종료 흐름을 다듬은 통합 패치입니다.": { en: "This update fixes match results, rematches, quests, and the store economy while refining mobile screens and the end-of-match flow.", ja: "戦績判定、再戦、クエスト、ストア経済を修正し、モバイル画面と対戦終了フローを改善しました。", es: "Esta actualización corrige resultados, revanchas, misiones y economía de la tienda, y mejora las pantallas móviles y el final de partida.", "pt-BR": "Esta atualização corrige resultados, revanche, missões e economia da loja, além de melhorar as telas móveis e o fim da partida." },
+  "정확한 승패무와 멈추는 경기 시간": { en: "Accurate results and a timer that stops", ja: "正確な勝敗・引き分けと停止する対戦時間", es: "Resultados precisos y tiempo que se detiene", "pt-BR": "Resultados corretos e tempo que para" },
+  "게스트 상대 결과를 포함한 승패무 기록을 바로잡고 일반·경쟁 통계를 분리했습니다. 경기 시간은 종료 순간에 멈춥니다.": { en: "Wins, losses, and draws now include guest opponents correctly, with separate Casual and Ranked stats. Match time stops when the game ends.", ja: "ゲスト対戦を含む勝敗・引き分けを修正し、一般戦とランク戦の統計を分けました。対戦時間は終了時に停止します。", es: "Corregimos victorias, derrotas y empates contra invitados y separamos estadísticas casuales y competitivas. El tiempo se detiene al terminar.", "pt-BR": "Corrigimos vitórias, derrotas e empates contra convidados e separamos estatísticas casuais e competitivas. O tempo para ao terminar." },
+  "일반게임 재경기와 탈주 방지": { en: "Casual rematches and leave protection", ja: "一般戦の再戦と離脱防止", es: "Revanchas casuales y protección al salir", "pt-BR": "Revanche casual e proteção contra saída" },
+  "일반게임은 두 플레이어가 동의하면 같은 상대와 재경기할 수 있습니다. 온라인 대전 중 이동할 때는 기권 확인을 거칩니다.": { en: "Casual matches can restart when both players agree. Leaving an online match now requires resignation confirmation.", ja: "一般戦は両者の同意で同じ相手と再戦できます。オンライン対戦中の移動時には投了確認が表示されます。", es: "Las partidas casuales permiten revancha si ambos aceptan. Salir durante una partida en línea requiere confirmar el abandono.", "pt-BR": "Partidas casuais permitem revanche quando ambos aceitam. Sair durante uma partida online exige confirmação de desistência." },
+  "일간·주간 퀘스트": { en: "Daily and weekly quests", ja: "日間・週間クエスト", es: "Misiones diarias y semanales", "pt-BR": "Missões diárias e semanais" },
+  "일간 퀘스트 완료 상자와 주간 출석·경기·승리 보상을 추가하고 첫 승리 수령 상태를 수정했습니다.": { en: "Added a box for completing daily quests and weekly check-in, match, and win rewards, and fixed first-win claim status.", ja: "日間クエスト完了ボックスと週間出席・対戦・勝利報酬を追加し、初勝利報酬の受取状態を修正しました。", es: "Añadimos una caja por completar misiones diarias y recompensas semanales de registro, partidas y victorias, y corregimos el estado de la primera victoria.", "pt-BR": "Adicionamos uma caixa por concluir missões diárias e recompensas semanais de check-in, partidas e vitórias, além de corrigir o primeiro prêmio de vitória." },
+  "닉네임 변경과 전적 화면": { en: "Nickname changes and match records", ja: "ニックネーム変更と戦績画面", es: "Cambio de apodo e historial", "pt-BR": "Alteração de apelido e histórico" },
+  "닉네임을 14일마다 변경할 수 있으며 전적을 전체·일반·경쟁으로 나눠 확인할 수 있습니다.": { en: "You can change your nickname every 14 days and view match records by All, Casual, and Ranked.", ja: "ニックネームは14日ごとに変更でき、戦績を全体・一般・ランク戦に分けて確認できます。", es: "Puedes cambiar tu apodo cada 14 días y ver el historial total, casual y competitivo.", "pt-BR": "Você pode alterar o apelido a cada 14 dias e ver o histórico geral, casual e competitivo." },
+  "상점 경제와 구매 확인": { en: "Store economy and purchase confirmation", ja: "ストア経済と購入確認", es: "Economía de la tienda y confirmación de compra", "pt-BR": "Economia da loja e confirmação de compra" },
+  "팔레트 상자와 등급별 스킨 가격을 조정하고 구매 확인 및 쿠폰 보상 결과 화면을 추가했습니다.": { en: "Adjusted Palette Box and skin prices, and added purchase confirmation and coupon reward result screens.", ja: "パレットボックスと等級別スキン価格を調整し、購入確認とクーポン報酬結果画面を追加しました。", es: "Ajustamos la Caja de paleta y los precios de aspectos, y añadimos confirmación de compra y resultados de cupones.", "pt-BR": "Ajustamos a Caixa de Paleta e os preços das skins e adicionamos confirmação de compra e resultados de cupons." },
+  "모바일 가독성과 안내 개선": { en: "Mobile readability and guidance improvements", ja: "モバイルの見やすさと案内改善", es: "Mejoras de legibilidad y orientación móvil", "pt-BR": "Melhorias de legibilidade e orientação móvel" },
+  "화이트 모드 메뉴, 상단 바, 플레이 버튼, 튜토리얼, 패치노트와 결과 화면의 모바일 배치를 개선했습니다.": { en: "Improved the mobile layout of light-mode menus, the top bar, play buttons, tutorial, patch notes, and results.", ja: "ライトモードのメニュー、上部バー、プレイボタン、チュートリアル、パッチノート、結果画面のモバイル配置を改善しました。", es: "Mejoramos el diseño móvil de menús claros, barra superior, botones de juego, tutorial, notas y resultados.", "pt-BR": "Melhoramos o layout móvel dos menus claros, barra superior, botões, tutorial, notas e resultados." },
   "NICKNAME_CHANGE_COOLDOWN": { en: "You can change your nickname once every 14 days.", ja: "ニックネームは14日ごとに変更できます。", es: "Puedes cambiar el apodo cada 14 días.", "pt-BR": "Você pode mudar o apelido a cada 14 dias." },
 };
 
@@ -621,16 +669,20 @@ const interpolate = (value: string, values?: Record<string, string | number>) =>
   );
 };
 
+export const translateMessage = (
+  key: string,
+  locale: Locale,
+  values?: Record<string, string | number>,
+): string => interpolate(locale === "ko" ? key : messages[key]?.[locale] ?? key, values);
+
 export const useI18n = () => {
   const { settings } = useSettings();
   const locale = resolveAppLanguage(settings.language);
 
   return useMemo(() => ({
     locale,
-    t: (key: string, values?: Record<string, string | number>) => interpolate(
-      locale === "ko" ? key : messages[key]?.[locale] ?? key,
-      values,
-    ),
+    t: (key: string, values?: Record<string, string | number>) =>
+      translateMessage(key, locale, values),
     formatNumber: (value: number) => new Intl.NumberFormat(locale).format(value),
     formatDate: (value: string | number | Date) => new Intl.DateTimeFormat(locale, {
       year: "numeric",
