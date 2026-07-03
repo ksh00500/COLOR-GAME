@@ -1,7 +1,7 @@
 # Tango UI 문구 전체 검토본
 
 - 다시 생성: `node scripts/extract-ui-copy.mjs`
-- 번역 원문: 652개
+- 번역 원문: 653개
 - 코드 직접 표시 문구: 137개
 - 동적 조합 문구 후보: 15개
 - 번역 사전 누락 호출: 0개
@@ -207,7 +207,7 @@
 
 - 현재: 계정
 - 위치: `apps/web/src/i18n.ts:32`
-- 사용: `apps/web/src/pages/LobbyPage.tsx:194`
+- 사용: `apps/web/src/pages/LobbyPage.tsx:198`
 - 수정안:
 
 ### T-0026
@@ -228,7 +228,7 @@
 
 - 현재: 패치노트
 - 위치: `apps/web/src/i18n.ts:35`
-- 사용: `apps/web/src/components/AppSidebar.tsx:41`, `apps/web/src/pages/LobbyPage.tsx:137`, `apps/web/src/pages/PatchNotesPage.tsx:21`
+- 사용: `apps/web/src/components/AppSidebar.tsx:41`, `apps/web/src/pages/LobbyPage.tsx:141`, `apps/web/src/pages/PatchNotesPage.tsx:21`
 - 수정안:
 
 ### T-0029
@@ -396,14 +396,14 @@
 
 - 현재: 색을 이어 점수를 완성하세요
 - 위치: `apps/web/src/i18n.ts:59`
-- 사용: `apps/web/src/pages/LobbyPage.tsx:116`
+- 사용: `apps/web/src/pages/LobbyPage.tsx:120`
 - 수정안:
 
 ### T-0053
 
 - 현재: 5×5 보드에서 같은 색 3개 이상을 만들면 점수를 얻습니다.
 - 위치: `apps/web/src/i18n.ts:60`
-- 사용: `apps/web/src/pages/LobbyPage.tsx:117`
+- 사용: `apps/web/src/pages/LobbyPage.tsx:121`
 - 수정안:
 
 ### T-0054
@@ -424,7 +424,7 @@
 
 - 현재: 튜토리얼 보기
 - 위치: `apps/web/src/i18n.ts:63`
-- 사용: `apps/web/src/pages/LobbyPage.tsx:136`
+- 사용: `apps/web/src/pages/LobbyPage.tsx:140`
 - 수정안:
 
 ### T-0057
@@ -438,28 +438,28 @@
 
 - 현재: 계정 연결됨
 - 위치: `apps/web/src/i18n.ts:65`
-- 사용: `apps/web/src/pages/LobbyPage.tsx:196`
+- 사용: `apps/web/src/pages/LobbyPage.tsx:200`
 - 수정안:
 
 ### T-0059
 
 - 현재: 로그인하면 더 좋아요
 - 위치: `apps/web/src/i18n.ts:66`
-- 사용: `apps/web/src/pages/LobbyPage.tsx:196`
+- 사용: `apps/web/src/pages/LobbyPage.tsx:200`
 - 수정안:
 
 ### T-0060
 
 - 현재: 전적과 출석을 확인하세요
 - 위치: `apps/web/src/i18n.ts:67`
-- 사용: `apps/web/src/pages/LobbyPage.tsx:197`
+- 사용: `apps/web/src/pages/LobbyPage.tsx:201`
 - 수정안:
 
 ### T-0061
 
 - 현재: 로그인하고 랭크 기록을 저장하세요
 - 위치: `apps/web/src/i18n.ts:68`
-- 사용: `apps/web/src/pages/LobbyPage.tsx:197`
+- 사용: `apps/web/src/pages/LobbyPage.tsx:201`
 - 수정안:
 
 ### T-0062
@@ -508,56 +508,56 @@
 
 - 현재: 바로 시작
 - 위치: `apps/web/src/i18n.ts:75`
-- 사용: `apps/web/src/pages/LobbyPage.tsx:185`
+- 사용: `apps/web/src/pages/LobbyPage.tsx:189`
 - 수정안:
 
 ### T-0069
 
 - 현재: 방 만들기
 - 위치: `apps/web/src/i18n.ts:76`
-- 사용: `apps/web/src/pages/LobbyPage.tsx:185`
+- 사용: `apps/web/src/pages/LobbyPage.tsx:189`
 - 수정안:
 
 ### T-0070
 
 - 현재: 매칭
 - 위치: `apps/web/src/i18n.ts:77`
-- 사용: `apps/web/src/pages/LobbyPage.tsx:185`
+- 사용: `apps/web/src/pages/LobbyPage.tsx:189`
 - 수정안:
 
 ### T-0071
 
 - 현재: 나
 - 위치: `apps/web/src/i18n.ts:78`
-- 사용: `apps/web/src/pages/LobbyPage.tsx:174`, `apps/web/src/pages/OnlineRoomPage.tsx:875`
+- 사용: `apps/web/src/pages/LobbyPage.tsx:178`, `apps/web/src/pages/OnlineRoomPage.tsx:875`
 - 수정안:
 
 ### T-0072
 
 - 현재: 랜덤
 - 위치: `apps/web/src/i18n.ts:79`
-- 사용: `apps/web/src/pages/LobbyPage.tsx:174`
+- 사용: `apps/web/src/pages/LobbyPage.tsx:178`
 - 수정안:
 
 ### T-0073
 
 - 현재: 실시간
 - 위치: `apps/web/src/i18n.ts:80`
-- 사용: `apps/web/src/pages/LobbyPage.tsx:206`
+- 사용: `apps/web/src/pages/LobbyPage.tsx:210`
 - 수정안:
 
 ### T-0074
 
 - 현재: 일간
 - 위치: `apps/web/src/i18n.ts:81`
-- 사용: `apps/web/src/components/EconomyQuestGrid.tsx:64`, `apps/web/src/pages/LobbyPage.tsx:210`
+- 사용: `apps/web/src/components/EconomyQuestGrid.tsx:64`, `apps/web/src/pages/LobbyPage.tsx:214`
 - 수정안:
 
 ### T-0075
 
 - 현재: 월간
 - 위치: `apps/web/src/i18n.ts:82`
-- 사용: `apps/web/src/pages/LobbyPage.tsx:214`
+- 사용: `apps/web/src/pages/LobbyPage.tsx:218`
 - 수정안:
 
 ### T-0076
@@ -830,7 +830,7 @@
 
 - 현재: 로그인
 - 위치: `apps/web/src/i18n.ts:121`
-- 사용: `apps/web/src/pages/AccountPage.tsx:300`, `apps/web/src/pages/AccountPage.tsx:333`, `apps/web/src/pages/LobbyPage.tsx:200`, `apps/web/src/pages/StorePage.tsx:159`
+- 사용: `apps/web/src/pages/AccountPage.tsx:300`, `apps/web/src/pages/AccountPage.tsx:333`, `apps/web/src/pages/LobbyPage.tsx:204`, `apps/web/src/pages/StorePage.tsx:159`
 - 수정안:
 
 ### T-0115
@@ -1187,7 +1187,7 @@
 
 - 현재: 준비중
 - 위치: `apps/web/src/i18n.ts:172`
-- 사용: `apps/web/src/pages/LobbyPage.tsx:159`
+- 사용: `apps/web/src/pages/LobbyPage.tsx:163`
 - 수정안:
 
 ### T-0166
@@ -2027,2575 +2027,2582 @@
 
 - 현재: AI 대전 설정
 - 위치: `apps/web/src/i18n.ts:292`
-- 사용: `apps/web/src/pages/LobbyPage.tsx:142`
+- 사용: `apps/web/src/pages/LobbyPage.tsx:146`
 - 수정안:
 
 ### T-0286
 
-- 현재: 아직 준비중입니다.
+- 현재: Easy·Normal·Hard 세 가지 AI 난이도를 플레이할 수 있습니다.
 - 위치: `apps/web/src/i18n.ts:293`
-- 사용: `apps/web/src/pages/LobbyPage.tsx:152`, `apps/web/src/pages/LobbyPage.tsx:153`
+- 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0287
 
-- 현재: 선공 설정
+- 현재: 아직 준비중입니다.
 - 위치: `apps/web/src/i18n.ts:294`
-- 사용: `apps/web/src/pages/LobbyPage.tsx:165`
+- 사용: `apps/web/src/pages/LobbyPage.tsx:156`, `apps/web/src/pages/LobbyPage.tsx:157`
 - 수정안:
 
 ### T-0288
 
-- 현재: 선공
+- 현재: 선공 설정
 - 위치: `apps/web/src/i18n.ts:295`
-- 사용: `apps/web/src/pages/LobbyPage.tsx:166`
+- 사용: `apps/web/src/pages/LobbyPage.tsx:169`
 - 수정안:
 
 ### T-0289
 
-- 현재: 게임 모드
+- 현재: 선공
 - 위치: `apps/web/src/i18n.ts:296`
-- 사용: `apps/web/src/pages/LobbyPage.tsx:129`, `apps/web/src/pages/LobbyPage.tsx:133`, `apps/web/src/pages/LobbyPage.tsx:180`
+- 사용: `apps/web/src/pages/LobbyPage.tsx:170`
 - 수정안:
 
 ### T-0290
 
-- 현재: 접속자 현황
+- 현재: 게임 모드
 - 위치: `apps/web/src/i18n.ts:297`
-- 사용: `apps/web/src/pages/LobbyPage.tsx:204`
+- 사용: `apps/web/src/pages/LobbyPage.tsx:133`, `apps/web/src/pages/LobbyPage.tsx:137`, `apps/web/src/pages/LobbyPage.tsx:184`
 - 수정안:
 
 ### T-0291
 
-- 현재: 숫자키 1 · 2 · 3
+- 현재: 접속자 현황
 - 위치: `apps/web/src/i18n.ts:298`
-- 사용: `apps/web/src/components/ColorPicker.tsx:23`
+- 사용: `apps/web/src/pages/LobbyPage.tsx:208`
 - 수정안:
 
 ### T-0292
 
-- 현재: 핵심 규칙 먼저 보기
+- 현재: 숫자키 1 · 2 · 3
 - 위치: `apps/web/src/i18n.ts:299`
-- 사용: 사용 위치 없음
+- 사용: `apps/web/src/components/ColorPicker.tsx:23`
 - 수정안:
 
 ### T-0293
 
-- 현재: 세 색상은 공용이며, 연결을 완성한 플레이어가 점수를 얻습니다. 한 수가 여러 방향을 완성하면 점수도 함께 합산됩니다.
+- 현재: 핵심 규칙 먼저 보기
 - 위치: `apps/web/src/i18n.ts:300`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0294
 
-- 현재: 세 색상은 모두 공용입니다
+- 현재: 세 색상은 공용이며, 연결을 완성한 플레이어가 점수를 얻습니다. 한 수가 여러 방향을 완성하면 점수도 함께 합산됩니다.
 - 위치: `apps/web/src/i18n.ts:301`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0295
 
-- 현재: 이 게임에는 내 색과 상대 색이 따로 없습니다. 빨강, 파랑, 초록은 양쪽 플레이어가 모두 사용할 수 있어요.
+- 현재: 세 색상은 모두 공용입니다
 - 위치: `apps/web/src/i18n.ts:302`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0296
 
-- 현재: 상대가 둔 색도 내가 이어서 점수를 낼 수 있습니다.
+- 현재: 이 게임에는 내 색과 상대 색이 따로 없습니다. 빨강, 파랑, 초록은 양쪽 플레이어가 모두 사용할 수 있어요.
 - 위치: `apps/web/src/i18n.ts:303`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0297
 
-- 현재: 색을 고르는 순간부터 상대의 흐름까지 같이 보세요.
+- 현재: 상대가 둔 색도 내가 이어서 점수를 낼 수 있습니다.
 - 위치: `apps/web/src/i18n.ts:304`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0298
 
-- 현재: 점수는 마지막 한 수가 가져갑니다
+- 현재: 색을 고르는 순간부터 상대의 흐름까지 같이 보세요.
 - 위치: `apps/web/src/i18n.ts:305`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0299
 
-- 현재: 이미 놓인 타일이 누구 것이었는지는 중요하지 않습니다. 연결을 완성하는 마지막 한 수를 둔 플레이어가 점수를 얻습니다.
+- 현재: 점수는 마지막 한 수가 가져갑니다
 - 위치: `apps/web/src/i18n.ts:306`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0300
 
-- 현재: 상대가 빨강 2개를 만들어도, 내가 빨강을 하나 더 놓아 3개를 만들면 내가 1점입니다.
+- 현재: 이미 놓인 타일이 누구 것이었는지는 중요하지 않습니다. 연결을 완성하는 마지막 한 수를 둔 플레이어가 점수를 얻습니다.
 - 위치: `apps/web/src/i18n.ts:307`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0301
 
-- 현재: 가로, 세로, 대각선을 연결하세요
+- 현재: 상대가 빨강 2개를 만들어도, 내가 빨강을 하나 더 놓아 3개를 만들면 내가 1점입니다.
 - 위치: `apps/web/src/i18n.ts:308`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0302
 
-- 현재: 같은 색을 가로, 세로, 대각선 중 한 방향으로 3개 이상 연결하면 점수가 납니다.
+- 현재: 가로, 세로, 대각선을 연결하세요
 - 위치: `apps/web/src/i18n.ts:309`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0303
 
-- 현재: 3개 연결은 1점, 4개 연결은 2점, 5개 연결은 4점입니다.
+- 현재: 같은 색을 가로, 세로, 대각선 중 한 방향으로 3개 이상 연결하면 점수가 납니다.
 - 위치: `apps/web/src/i18n.ts:310`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0304
 
-- 현재: 한 수로 여러 방향을 동시에 만들 수 있습니다
+- 현재: 3개 연결은 1점, 4개 연결은 2점, 5개 연결은 4점입니다.
 - 위치: `apps/web/src/i18n.ts:311`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0305
 
-- 현재: 방금 둔 타일 하나가 가로와 세로, 또는 대각선까지 동시에 완성하면 각 방향의 점수를 모두 받습니다.
+- 현재: 한 수로 여러 방향을 동시에 만들 수 있습니다
 - 위치: `apps/web/src/i18n.ts:312`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0306
 
-- 현재: 예를 들어 가로 3개와 세로 3개를 한 번에 만들면 1점 + 1점 = 2점입니다.
+- 현재: 방금 둔 타일 하나가 가로와 세로, 또는 대각선까지 동시에 완성하면 각 방향의 점수를 모두 받습니다.
 - 위치: `apps/web/src/i18n.ts:313`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0307
 
-- 현재: 득점에 사용된 타일은 사라집니다
+- 현재: 예를 들어 가로 3개와 세로 3개를 한 번에 만들면 1점 + 1점 = 2점입니다.
 - 위치: `apps/web/src/i18n.ts:314`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0308
 
-- 현재: 점수에 사용된 타일은 보드에서 제거됩니다. 위에 있던 타일이 떨어지는 중력이나 자동 연쇄 콤보는 없습니다.
+- 현재: 득점에 사용된 타일은 사라집니다
 - 위치: `apps/web/src/i18n.ts:315`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0309
 
-- 현재: 사라진 빈칸은 다음 턴부터 다시 사용할 수 있습니다.
+- 현재: 점수에 사용된 타일은 보드에서 제거됩니다. 위에 있던 타일이 떨어지는 중력이나 자동 연쇄 콤보는 없습니다.
 - 위치: `apps/web/src/i18n.ts:316`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0310
 
-- 현재: 보드가 꽉 차면 마지막 색이 정리됩니다
+- 현재: 사라진 빈칸은 다음 턴부터 다시 사용할 수 있습니다.
 - 위치: `apps/web/src/i18n.ts:317`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0311
 
-- 현재: 아무도 점수를 내지 못한 채 보드가 꽉 차면, 마지막에 둔 색과 같은 타일만 사라집니다.
+- 현재: 보드가 꽉 차면 마지막 색이 정리됩니다
 - 위치: `apps/web/src/i18n.ts:318`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0312
 
-- 현재: 마지막으로 파랑을 뒀다면 보드 위의 파랑 타일들이 제거되고 게임이 계속됩니다.
+- 현재: 아무도 점수를 내지 못한 채 보드가 꽉 차면, 마지막에 둔 색과 같은 타일만 사라집니다.
 - 위치: `apps/web/src/i18n.ts:319`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0313
 
-- 현재: 먼저 7점을 만들면 승리합니다
+- 현재: 마지막으로 파랑을 뒀다면 보드 위의 파랑 타일들이 제거되고 게임이 계속됩니다.
 - 위치: `apps/web/src/i18n.ts:320`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0314
 
-- 현재: 상대가 만든 흐름을 읽고 마지막 한 수를 가져가세요. 먼저 7점에 도달하는 플레이어가 승리합니다.
+- 현재: 먼저 7점을 만들면 승리합니다
 - 위치: `apps/web/src/i18n.ts:321`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0315
 
-- 현재: 상대의 색까지 내 전략이 되는 순간, Tango가 시작됩니다.
+- 현재: 상대가 만든 흐름을 읽고 마지막 한 수를 가져가세요. 먼저 7점에 도달하는 플레이어가 승리합니다.
 - 위치: `apps/web/src/i18n.ts:322`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0316
 
-- 현재: 예시
+- 현재: 상대의 색까지 내 전략이 되는 순간, Tango가 시작됩니다.
 - 위치: `apps/web/src/i18n.ts:323`
-- 사용: `apps/web/src/components/TutorialPanel.tsx:215`
+- 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0317
 
-- 현재: 예시 상황
+- 현재: 예시
 - 위치: `apps/web/src/i18n.ts:324`
-- 사용: `apps/web/src/components/TutorialPanel.tsx:245`
+- 사용: `apps/web/src/components/TutorialPanel.tsx:215`
 - 수정안:
 
 ### T-0318
 
-- 현재: 승리 조건
+- 현재: 예시 상황
 - 위치: `apps/web/src/i18n.ts:325`
 - 사용: `apps/web/src/components/TutorialPanel.tsx:245`
 - 수정안:
 
 ### T-0319
 
-- 현재: 가득 차기 직전
+- 현재: 승리 조건
 - 위치: `apps/web/src/i18n.ts:326`
-- 사용: 사용 위치 없음
+- 사용: `apps/web/src/components/TutorialPanel.tsx:245`
 - 수정안:
 
 ### T-0320
 
-- 현재: 마지막 색 제거 후
+- 현재: 가득 차기 직전
 - 위치: `apps/web/src/i18n.ts:327`
-- 사용: `apps/web/src/components/TutorialPanel.tsx:229`
+- 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0321
 
-- 현재: 튜토리얼 진행도
+- 현재: 마지막 색 제거 후
 - 위치: `apps/web/src/i18n.ts:328`
-- 사용: `apps/web/src/components/TutorialPanel.tsx:274`
+- 사용: `apps/web/src/components/TutorialPanel.tsx:229`
 - 수정안:
 
 ### T-0322
 
-- 현재: 튜토리얼
+- 현재: 튜토리얼 진행도
 - 위치: `apps/web/src/i18n.ts:329`
-- 사용: `apps/web/src/components/SettingsPanel.tsx:189`
+- 사용: `apps/web/src/components/TutorialPanel.tsx:274`
 - 수정안:
 
 ### T-0323
 
-- 현재: 튜토리얼 다시 보기
+- 현재: 튜토리얼
 - 위치: `apps/web/src/i18n.ts:330`
-- 사용: `apps/web/src/components/SettingsPanel.tsx:200`
+- 사용: `apps/web/src/components/SettingsPanel.tsx:189`
 - 수정안:
 
 ### T-0324
 
-- 현재: 게임 방법과 점수 규칙을 처음부터 다시 확인합니다.
+- 현재: 튜토리얼 다시 보기
 - 위치: `apps/web/src/i18n.ts:331`
-- 사용: `apps/web/src/components/SettingsPanel.tsx:190`
+- 사용: `apps/web/src/components/SettingsPanel.tsx:200`
 - 수정안:
 
 ### T-0325
 
-- 현재: {step}단계로 이동
+- 현재: 게임 방법과 점수 규칙을 처음부터 다시 확인합니다.
 - 위치: `apps/web/src/i18n.ts:332`
-- 사용: `apps/web/src/components/TutorialPanel.tsx:280`
+- 사용: `apps/web/src/components/SettingsPanel.tsx:190`
 - 수정안:
 
 ### T-0326
 
-- 현재: {name} 플레이어가 목표 점수에 먼저 도달했습니다.
+- 현재: {step}단계로 이동
 - 위치: `apps/web/src/i18n.ts:333`
-- 사용: 사용 위치 없음
+- 사용: `apps/web/src/components/TutorialPanel.tsx:280`
 - 수정안:
 
 ### T-0327
 
-- 현재: 첫 게임 안내
+- 현재: {name} 플레이어가 목표 점수에 먼저 도달했습니다.
 - 위치: `apps/web/src/i18n.ts:334`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0328
 
-- 현재: 규칙은 여기
+- 현재: 첫 게임 안내
 - 위치: `apps/web/src/i18n.ts:335`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0329
 
-- 현재: 점수표와 보드 포화 규칙을 언제든 다시 볼 수 있어요.
+- 현재: 규칙은 여기
 - 위치: `apps/web/src/i18n.ts:336`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0330
 
-- 현재: 빈칸을 클릭
+- 현재: 점수표와 보드 포화 규칙을 언제든 다시 볼 수 있어요.
 - 위치: `apps/web/src/i18n.ts:337`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0331
 
-- 현재: 고른 색을 5×5 보드의 빈칸에 놓습니다.
+- 현재: 빈칸을 클릭
 - 위치: `apps/web/src/i18n.ts:338`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0332
 
-- 현재: 세 색은 둘 다 사용할 수 있고 숫자키 1·2·3도 됩니다.
+- 현재: 고른 색을 5×5 보드의 빈칸에 놓습니다.
 - 위치: `apps/web/src/i18n.ts:339`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0333
 
-- 현재: AI · 쉬운 전술
+- 현재: 세 색은 둘 다 사용할 수 있고 숫자키 1·2·3도 됩니다.
 - 위치: `apps/web/src/i18n.ts:340`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0334
 
-- 현재: AI · 학습 모델
+- 현재: AI · 쉬운 전술
 - 위치: `apps/web/src/i18n.ts:341`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0335
 
-- 현재: 계정 요청을 처리하지 못했습니다.
+- 현재: AI · 학습 모델
 - 위치: `apps/web/src/i18n.ts:342`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0336
 
-- 현재: 리더보드를 불러오지 못했습니다.
+- 현재: 계정 요청을 처리하지 못했습니다.
 - 위치: `apps/web/src/i18n.ts:343`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0337
 
-- 현재: 팔레트 티어 구성
+- 현재: 리더보드를 불러오지 못했습니다.
 - 위치: `apps/web/src/i18n.ts:344`
-- 사용: `apps/web/src/pages/LeaderboardPage.tsx:76`
+- 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0338
 
-- 현재: 매칭 서버에 연결하지 못했습니다.
+- 현재: 팔레트 티어 구성
 - 위치: `apps/web/src/i18n.ts:345`
-- 사용: 사용 위치 없음
+- 사용: `apps/web/src/pages/LeaderboardPage.tsx:76`
 - 수정안:
 
 ### T-0339
 
-- 현재: 경쟁 게임은 로그인이 필요합니다.
+- 현재: 매칭 서버에 연결하지 못했습니다.
 - 위치: `apps/web/src/i18n.ts:346`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0340
 
-- 현재: 매칭에 참가하지 못했습니다.
+- 현재: 경쟁 게임은 로그인이 필요합니다.
 - 위치: `apps/web/src/i18n.ts:347`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0341
 
-- 현재: 매칭을 취소했습니다.
+- 현재: 매칭에 참가하지 못했습니다.
 - 위치: `apps/web/src/i18n.ts:348`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0342
 
-- 현재: REQUEST_FAILED
+- 현재: 매칭을 취소했습니다.
 - 위치: `apps/web/src/i18n.ts:349`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0343
 
-- 현재: DATABASE_DISABLED
+- 현재: REQUEST_FAILED
 - 위치: `apps/web/src/i18n.ts:350`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0344
 
-- 현재: ACCOUNT_EXISTS
+- 현재: DATABASE_DISABLED
 - 위치: `apps/web/src/i18n.ts:351`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0345
 
-- 현재: INVALID_CREDENTIALS
+- 현재: ACCOUNT_EXISTS
 - 위치: `apps/web/src/i18n.ts:352`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0346
 
-- 현재: UNAUTHORIZED
+- 현재: INVALID_CREDENTIALS
 - 위치: `apps/web/src/i18n.ts:353`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0347
 
-- 현재: PROFILE_NOT_FOUND
+- 현재: UNAUTHORIZED
 - 위치: `apps/web/src/i18n.ts:354`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0348
 
-- 현재: REPLAY_NOT_FOUND
+- 현재: PROFILE_NOT_FOUND
 - 위치: `apps/web/src/i18n.ts:355`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0349
 
-- 현재: LOGIN_REQUIRED
+- 현재: REPLAY_NOT_FOUND
 - 위치: `apps/web/src/i18n.ts:356`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0350
 
-- 현재: ROOM_NOT_FOUND
+- 현재: LOGIN_REQUIRED
 - 위치: `apps/web/src/i18n.ts:357`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0351
 
-- 현재: ROOM_FULL
+- 현재: ROOM_NOT_FOUND
 - 위치: `apps/web/src/i18n.ts:358`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0352
 
-- 현재: PLAYER_NOT_IN_ROOM
+- 현재: ROOM_FULL
 - 위치: `apps/web/src/i18n.ts:359`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0353
 
-- 현재: NOT_YOUR_TURN
+- 현재: PLAYER_NOT_IN_ROOM
 - 위치: `apps/web/src/i18n.ts:360`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0354
 
-- 현재: CELL_NOT_EMPTY
+- 현재: NOT_YOUR_TURN
 - 위치: `apps/web/src/i18n.ts:361`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0355
 
-- 현재: TURN_TIME_EXPIRED
+- 현재: CELL_NOT_EMPTY
 - 위치: `apps/web/src/i18n.ts:362`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0356
 
-- 현재: 레이팅 {rating} 미만
+- 현재: TURN_TIME_EXPIRED
 - 위치: `apps/web/src/i18n.ts:363`
-- 사용: `apps/web/src/pages/LeaderboardPage.tsx:92`
+- 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0357
 
-- 현재: 레이팅 {rating}+
+- 현재: 레이팅 {rating} 미만
 - 위치: `apps/web/src/i18n.ts:364`
-- 사용: `apps/web/src/pages/LeaderboardPage.tsx:95`
+- 사용: `apps/web/src/pages/LeaderboardPage.tsx:92`
 - 수정안:
 
 ### T-0358
 
-- 현재: 레이팅 {rating}+ · 상위 {count}명
+- 현재: 레이팅 {rating}+
 - 위치: `apps/web/src/i18n.ts:365`
-- 사용: `apps/web/src/pages/LeaderboardPage.tsx:94`
+- 사용: `apps/web/src/pages/LeaderboardPage.tsx:95`
 - 수정안:
 
 ### T-0359
 
-- 현재: 첫 번째 색을 채웁니다.
+- 현재: 레이팅 {rating}+ · 상위 {count}명
 - 위치: `apps/web/src/i18n.ts:366`
-- 사용: 사용 위치 없음
+- 사용: `apps/web/src/pages/LeaderboardPage.tsx:94`
 - 수정안:
 
 ### T-0360
 
-- 현재: 두 번째 색을 채웁니다.
+- 현재: 첫 번째 색을 채웁니다.
 - 위치: `apps/web/src/i18n.ts:367`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0361
 
-- 현재: 세 번째 색을 채웁니다.
+- 현재: 두 번째 색을 채웁니다.
 - 위치: `apps/web/src/i18n.ts:368`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0362
 
-- 현재: 네 번째 색을 채웁니다.
+- 현재: 세 번째 색을 채웁니다.
 - 위치: `apps/web/src/i18n.ts:369`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0363
 
-- 현재: 다섯 번째 색을 채웁니다.
+- 현재: 네 번째 색을 채웁니다.
 - 위치: `apps/web/src/i18n.ts:370`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0364
 
-- 현재: 여섯 번째 색을 채웁니다.
+- 현재: 다섯 번째 색을 채웁니다.
 - 위치: `apps/web/src/i18n.ts:371`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0365
 
-- 현재: 일곱 색을 모두 채웁니다.
+- 현재: 여섯 번째 색을 채웁니다.
 - 위치: `apps/web/src/i18n.ts:372`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0366
 
-- 현재: 처음 시작하면 이 상태입니다.
+- 현재: 일곱 색을 모두 채웁니다.
 - 위치: `apps/web/src/i18n.ts:373`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0367
 
-- 현재: 보라 완성 후 랭킹 보상입니다.
+- 현재: 처음 시작하면 이 상태입니다.
 - 위치: `apps/web/src/i18n.ts:374`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0368
 
-- 현재: 매칭 정보를 찾지 못했습니다. 다시 매칭을 시작해 주세요.
+- 현재: 보라 완성 후 랭킹 보상입니다.
 - 위치: `apps/web/src/i18n.ts:375`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0369
 
-- 현재: 온라인 서버에 연결하지 못했습니다. 서버가 실행 중인지 확인해 주세요.
+- 현재: 매칭 정보를 찾지 못했습니다. 다시 매칭을 시작해 주세요.
 - 위치: `apps/web/src/i18n.ts:376`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0370
 
-- 현재: 매칭 정보를 동기화하고 있습니다.
+- 현재: 온라인 서버에 연결하지 못했습니다. 서버가 실행 중인지 확인해 주세요.
 - 위치: `apps/web/src/i18n.ts:377`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0371
 
-- 현재: 게임 서버에 연결하고 있습니다.
+- 현재: 매칭 정보를 동기화하고 있습니다.
 - 위치: `apps/web/src/i18n.ts:378`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0372
 
-- 현재: 게임 서버와 다시 연결하고 있습니다.
+- 현재: 게임 서버에 연결하고 있습니다.
 - 위치: `apps/web/src/i18n.ts:379`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0373
 
-- 현재: 방 생성 중
+- 현재: 게임 서버와 다시 연결하고 있습니다.
 - 위치: `apps/web/src/i18n.ts:380`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0374
 
-- 현재: 방 참가 중
+- 현재: 방 생성 중
 - 위치: `apps/web/src/i18n.ts:381`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0375
 
-- 현재: 준비 상태 변경 중
+- 현재: 방 참가 중
 - 위치: `apps/web/src/i18n.ts:382`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0376
 
-- 현재: 수 전송 중
+- 현재: 준비 상태 변경 중
 - 위치: `apps/web/src/i18n.ts:383`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0377
 
-- 현재: 기권 처리 중
+- 현재: 수 전송 중
 - 위치: `apps/web/src/i18n.ts:384`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0378
 
-- 현재: 경기를 유지한 채 링크를 복사할 수 있습니다.
+- 현재: 기권 처리 중
 - 위치: `apps/web/src/i18n.ts:385`
-- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:909`
+- 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0379
 
-- 현재: 공유 링크
+- 현재: 경기를 유지한 채 링크를 복사할 수 있습니다.
 - 위치: `apps/web/src/i18n.ts:386`
-- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:912`
+- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:909`
 - 수정안:
 
 ### T-0380
 
-- 현재: 닫기
+- 현재: 공유 링크
 - 위치: `apps/web/src/i18n.ts:387`
-- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:918`
+- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:912`
 - 수정안:
 
 ### T-0381
 
-- 현재: 링크 복사
+- 현재: 닫기
 - 위치: `apps/web/src/i18n.ts:388`
-- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:919`
+- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:918`
 - 수정안:
 
 ### T-0382
 
-- 현재: 공유 링크를 직접 선택해 복사해 주세요.
+- 현재: 링크 복사
 - 위치: `apps/web/src/i18n.ts:389`
-- 사용: 사용 위치 없음
+- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:919`
 - 수정안:
 
 ### T-0383
 
-- 현재: 새로운 변경사항
+- 현재: 공유 링크를 직접 선택해 복사해 주세요.
 - 위치: `apps/web/src/i18n.ts:390`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0384
 
-- 현재: 패치노트 닫기
+- 현재: 새로운 변경사항
 - 위치: `apps/web/src/i18n.ts:391`
-- 사용: `apps/web/src/components/PatchNotesPanel.tsx:211`
+- 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0385
 
-- 현재: 업데이트 기록을 버전별로 확인할 수 있습니다. 항목을 누르면 상세 내용이 열립니다.
+- 현재: 패치노트 닫기
 - 위치: `apps/web/src/i18n.ts:392`
-- 사용: `apps/web/src/pages/PatchNotesPage.tsx:22`
+- 사용: `apps/web/src/components/PatchNotesPanel.tsx:211`
 - 수정안:
 
 ### T-0386
 
-- 현재: 상세 보기
+- 현재: 업데이트 기록을 버전별로 확인할 수 있습니다. 항목을 누르면 상세 내용이 열립니다.
 - 위치: `apps/web/src/i18n.ts:393`
-- 사용: `apps/web/src/pages/PatchNotesPage.tsx:37`
+- 사용: `apps/web/src/pages/PatchNotesPage.tsx:22`
 - 수정안:
 
 ### T-0387
 
-- 현재: 온보딩과 AI 난이도 정리
+- 현재: 상세 보기
 - 위치: `apps/web/src/i18n.ts:394`
-- 사용: 사용 위치 없음
+- 사용: `apps/web/src/pages/PatchNotesPage.tsx:37`
 - 수정안:
 
 ### T-0388
 
-- 현재: 튜토리얼을 실제 규칙 이해 중심으로 다시 쓰고, AI 난이도와 로그인 접근성을 정리한 패치입니다.
+- 현재: 온보딩과 AI 난이도 정리
 - 위치: `apps/web/src/i18n.ts:395`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0389
 
-- 현재: 튜토리얼 7단계 개편
+- 현재: 튜토리얼을 실제 규칙 이해 중심으로 다시 쓰고, AI 난이도와 로그인 접근성을 정리한 패치입니다.
 - 위치: `apps/web/src/i18n.ts:396`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0390
 
-- 현재: 공용 색상, 마지막 한 수 득점, 방향별 점수, 동시 득점, 타일 제거, 보드 포화, 승리 조건을 보드 예시와 함께 순서대로 설명하도록 바꿨습니다.
+- 현재: 튜토리얼 7단계 개편
 - 위치: `apps/web/src/i18n.ts:397`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0391
 
-- 현재: 보드 포화 예시 보강
+- 현재: 공용 색상, 마지막 한 수 득점, 방향별 점수, 동시 득점, 타일 제거, 보드 포화, 승리 조건을 보드 예시와 함께 순서대로 설명하도록 바꿨습니다.
 - 위치: `apps/web/src/i18n.ts:398`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0392
 
-- 현재: 보드가 꽉 찼을 때 마지막 색이 제거되는 규칙을 이해하기 쉽도록 제거 직전과 제거 후 상태를 나란히 보여줍니다.
+- 현재: 보드 포화 예시 보강
 - 위치: `apps/web/src/i18n.ts:399`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0393
 
-- 현재: 이번 패치에서는 안내 흐름, AI 난이도, 로그인 접근성을 정리했습니다.
+- 현재: 보드가 꽉 찼을 때 마지막 색이 제거되는 규칙을 이해하기 쉽도록 제거 직전과 제거 후 상태를 나란히 보여줍니다.
 - 위치: `apps/web/src/i18n.ts:400`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0394
 
-- 현재: 튜토리얼 개편
+- 현재: 이번 패치에서는 안내 흐름, AI 난이도, 로그인 접근성을 정리했습니다.
 - 위치: `apps/web/src/i18n.ts:401`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0395
 
-- 현재: 규칙 요약과 점수 구조를 먼저 보여주고, 첫 게임에서는 클릭하면 사라지는 코치마크로 핵심 조작을 안내합니다.
+- 현재: 튜토리얼 개편
 - 위치: `apps/web/src/i18n.ts:402`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0396
 
-- 현재: AI 난이도 재정리
+- 현재: 규칙 요약과 점수 구조를 먼저 보여주고, 첫 게임에서는 클릭하면 사라지는 코치마크로 핵심 조작을 안내합니다.
 - 위치: `apps/web/src/i18n.ts:403`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0397
 
-- 현재: Easy는 더 편하게 이길 수 있도록 낮추고, 기존 Hard 학습 모델은 Normal로 이동했습니다. Hard는 다음 모델까지 잠금 상태입니다.
+- 현재: AI 난이도 재정리
 - 위치: `apps/web/src/i18n.ts:404`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0398
 
-- 현재: Easy는 더 쉽게 낮추고, 기존 Hard 학습 모델을 Normal로 이동했습니다. Hard는 다음 고난도 모델 준비 전까지 잠금 상태입니다.
+- 현재: Easy는 더 편하게 이길 수 있도록 낮추고, 기존 Hard 학습 모델은 Normal로 이동했습니다. Hard는 다음 모델까지 잠금 상태입니다.
 - 위치: `apps/web/src/i18n.ts:405`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0399
 
-- 현재: 로그인 접근성 개선
+- 현재: Easy는 더 쉽게 낮추고, 기존 Hard 학습 모델을 Normal로 이동했습니다. Hard는 다음 고난도 모델 준비 전까지 잠금 상태입니다.
 - 위치: `apps/web/src/i18n.ts:406`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0400
 
-- 현재: 메인 로그인 카드 추가
+- 현재: 로그인 접근성 개선
 - 위치: `apps/web/src/i18n.ts:407`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0401
 
-- 현재: 메인 화면에서 로그인과 계정 진입이 더 잘 보이도록 계정 카드를 추가했습니다.
+- 현재: 메인 로그인 카드 추가
 - 위치: `apps/web/src/i18n.ts:408`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0402
 
-- 현재: 메인 화면에서 로그인과 계정 진입이 더 잘 보이도록 계정 카드를 추가했습니다. 경쟁전, 리더보드, 출석 기록 안내도 함께 표시합니다.
+- 현재: 메인 화면에서 로그인과 계정 진입이 더 잘 보이도록 계정 카드를 추가했습니다.
 - 위치: `apps/web/src/i18n.ts:409`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0403
 
-- 현재: 동시 로그인 방지
+- 현재: 메인 화면에서 로그인과 계정 진입이 더 잘 보이도록 계정 카드를 추가했습니다. 경쟁전, 리더보드, 출석 기록 안내도 함께 표시합니다.
 - 위치: `apps/web/src/i18n.ts:410`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0404
 
-- 현재: 같은 계정은 마지막 로그인만 유지되며, 이전 탭과 기기의 세션은 자동으로 만료됩니다.
+- 현재: 동시 로그인 방지
 - 위치: `apps/web/src/i18n.ts:411`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0405
 
-- 현재: 확인했어요
+- 현재: 같은 계정은 마지막 로그인만 유지되며, 이전 탭과 기기의 세션은 자동으로 만료됩니다.
 - 위치: `apps/web/src/i18n.ts:412`
-- 사용: `apps/web/src/components/CosmeticOutcomeModal.tsx:52`, `apps/web/src/components/EconomyAccountPanel.tsx:413`, `apps/web/src/components/PatchNotesPanel.tsx:230`
+- 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0406
 
-- 현재: 다시 뽑기
+- 현재: 확인했어요
 - 위치: `apps/web/src/i18n.ts:413`
-- 사용: `apps/web/src/components/CosmeticOutcomeModal.tsx:55`
+- 사용: `apps/web/src/components/CosmeticOutcomeModal.tsx:52`, `apps/web/src/components/EconomyAccountPanel.tsx:413`, `apps/web/src/components/PatchNotesPanel.tsx:230`
 - 수정안:
 
 ### T-0407
 
-- 현재: 파편을 합성해 새로운 스킨을 완성했습니다.
+- 현재: 다시 뽑기
 - 위치: `apps/web/src/i18n.ts:414`
-- 사용: 사용 위치 없음
+- 사용: `apps/web/src/components/CosmeticOutcomeModal.tsx:55`
 - 수정안:
 
 ### T-0408
 
-- 현재: 새로 획득한 스킨
+- 현재: 파편을 합성해 새로운 스킨을 완성했습니다.
 - 위치: `apps/web/src/i18n.ts:415`
-- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:256`
+- 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0409
 
-- 현재: 더보기
+- 현재: 새로 획득한 스킨
 - 위치: `apps/web/src/i18n.ts:416`
-- 사용: 사용 위치 없음
+- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:256`
 - 수정안:
 
 ### T-0410
 
-- 현재: 접기
+- 현재: 더보기
 - 위치: `apps/web/src/i18n.ts:417`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0411
 
-- 현재: 무
+- 현재: 접기
 - 위치: `apps/web/src/i18n.ts:418`
-- 사용: `apps/web/src/pages/AccountPage.tsx:394`, `apps/web/src/pages/AccountPage.tsx:442`
+- 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0412
 
-- 현재: 경쟁전 승패무
+- 현재: 무
 - 위치: `apps/web/src/i18n.ts:419`
-- 사용: `apps/web/src/pages/AccountPage.tsx:439`
+- 사용: `apps/web/src/pages/AccountPage.tsx:394`, `apps/web/src/pages/AccountPage.tsx:442`
 - 수정안:
 
 ### T-0413
 
-- 현재: 상점
+- 현재: 경쟁전 승패무
 - 위치: `apps/web/src/i18n.ts:420`
-- 사용: `apps/web/src/components/AppSidebar.tsx:28`, `apps/web/src/components/AppSidebar.tsx:38`
+- 사용: `apps/web/src/pages/AccountPage.tsx:439`
 - 수정안:
 
 ### T-0414
 
-- 현재: 마이
+- 현재: 상점
 - 위치: `apps/web/src/i18n.ts:421`
-- 사용: 사용 위치 없음
+- 사용: `apps/web/src/components/AppSidebar.tsx:28`, `apps/web/src/components/AppSidebar.tsx:38`
 - 수정안:
 
 ### T-0415
 
-- 현재: 색을 모으고 나만의 Tango를 만드세요.
+- 현재: 마이
 - 위치: `apps/web/src/i18n.ts:422`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0416
 
-- 현재: 매주 바뀌는 스킨을 컬러 칩으로 구매하거나 팔레트 상자에서 파편을 모을 수 있습니다.
+- 현재: 색을 모으고 나만의 Tango를 만드세요.
 - 위치: `apps/web/src/i18n.ts:423`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0417
 
-- 현재: 컬러 칩
+- 현재: 매주 바뀌는 스킨을 컬러 칩으로 구매하거나 팔레트 상자에서 파편을 모을 수 있습니다.
 - 위치: `apps/web/src/i18n.ts:424`
-- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:394`, `apps/web/src/pages/StorePage.tsx:141`
+- 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0418
 
-- 현재: 컬러 칩 잔액
+- 현재: 컬러 칩
 - 위치: `apps/web/src/i18n.ts:425`
-- 사용: `apps/web/src/pages/StorePage.tsx:139`
+- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:394`, `apps/web/src/pages/StorePage.tsx:141`
 - 수정안:
 
 ### T-0419
 
-- 현재: 상점을 불러오는 중입니다.
+- 현재: 컬러 칩 잔액
 - 위치: `apps/web/src/i18n.ts:426`
-- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:147`, `apps/web/src/pages/StorePage.tsx:147`
+- 사용: `apps/web/src/pages/StorePage.tsx:139`
 - 수정안:
 
 ### T-0420
 
-- 현재: 상점을 불러오지 못했습니다.
+- 현재: 상점을 불러오는 중입니다.
 - 위치: `apps/web/src/i18n.ts:427`
-- 사용: 사용 위치 없음
+- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:147`, `apps/web/src/pages/StorePage.tsx:147`
 - 수정안:
 
 ### T-0421
 
-- 현재: 로그인하고 상점을 이용하세요.
+- 현재: 상점을 불러오지 못했습니다.
 - 위치: `apps/web/src/i18n.ts:428`
-- 사용: `apps/web/src/pages/StorePage.tsx:157`
+- 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0422
 
-- 현재: 컬러 칩과 스킨은 Tango 계정에 안전하게 저장됩니다.
+- 현재: 로그인하고 상점을 이용하세요.
 - 위치: `apps/web/src/i18n.ts:429`
-- 사용: `apps/web/src/pages/StorePage.tsx:158`
+- 사용: `apps/web/src/pages/StorePage.tsx:157`
 - 수정안:
 
 ### T-0423
 
-- 현재: 이번 주 스킨
+- 현재: 컬러 칩과 스킨은 Tango 계정에 안전하게 저장됩니다.
 - 위치: `apps/web/src/i18n.ts:430`
-- 사용: 사용 위치 없음
+- 사용: `apps/web/src/pages/StorePage.tsx:158`
 - 수정안:
 
 ### T-0424
 
-- 현재: {date}에 변경
+- 현재: 이번 주 스킨
 - 위치: `apps/web/src/i18n.ts:431`
-- 사용: `apps/web/src/pages/StorePage.tsx:191`
+- 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0425
 
-- 현재: common
+- 현재: {date}에 변경
 - 위치: `apps/web/src/i18n.ts:432`
-- 사용: 사용 위치 없음
+- 사용: `apps/web/src/pages/StorePage.tsx:191`
 - 수정안:
 
 ### T-0426
 
-- 현재: rare
+- 현재: common
 - 위치: `apps/web/src/i18n.ts:433`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0427
 
-- 현재: epic
+- 현재: rare
 - 위치: `apps/web/src/i18n.ts:434`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0428
 
-- 현재: legendary
+- 현재: epic
 - 위치: `apps/web/src/i18n.ts:435`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0429
 
-- 현재: tile
+- 현재: legendary
 - 위치: `apps/web/src/i18n.ts:436`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0430
 
-- 현재: board
+- 현재: tile
 - 위치: `apps/web/src/i18n.ts:437`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0431
 
-- 현재: score_effect
+- 현재: board
 - 위치: `apps/web/src/i18n.ts:438`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0432
 
-- 현재: victory_effect
+- 현재: score_effect
 - 위치: `apps/web/src/i18n.ts:439`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0433
 
-- 현재: profile_frame
+- 현재: victory_effect
 - 위치: `apps/web/src/i18n.ts:440`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0434
 
-- 현재: 보유 중
+- 현재: profile_frame
 - 위치: `apps/web/src/i18n.ts:441`
-- 사용: `apps/web/src/pages/StorePage.tsx:123`, `apps/web/src/pages/StorePage.tsx:286`
+- 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0435
 
-- 현재: {chips} 칩
+- 현재: 보유 중
 - 위치: `apps/web/src/i18n.ts:442`
-- 사용: `apps/web/src/pages/StorePage.tsx:124`
+- 사용: `apps/web/src/pages/StorePage.tsx:123`, `apps/web/src/pages/StorePage.tsx:286`
 - 수정안:
 
 ### T-0436
 
-- 현재: {name} 스킨을 구매했습니다.
+- 현재: {chips} 칩
 - 위치: `apps/web/src/i18n.ts:443`
-- 사용: `apps/web/src/pages/StorePage.tsx:80`
+- 사용: `apps/web/src/pages/StorePage.tsx:124`
 - 수정안:
 
 ### T-0437
 
-- 현재: 구매를 처리하지 못했습니다.
+- 현재: {name} 스킨을 구매했습니다.
 - 위치: `apps/web/src/i18n.ts:444`
-- 사용: 사용 위치 없음
+- 사용: `apps/web/src/pages/StorePage.tsx:80`
 - 수정안:
 
 ### T-0438
 
-- 현재: 팔레트 상자
+- 현재: 구매를 처리하지 못했습니다.
 - 위치: `apps/web/src/i18n.ts:445`
-- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:396`, `apps/web/src/pages/StorePage.tsx:301`
+- 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0439
 
-- 현재: 등급별 파편 또는 완성 스킨 하나를 획득합니다. 파편 4개를 모으면 같은 등급의 미보유 스킨을 얻습니다.
+- 현재: 팔레트 상자
 - 위치: `apps/web/src/i18n.ts:446`
-- 사용: `apps/web/src/pages/StorePage.tsx:302`
+- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:396`, `apps/web/src/pages/StorePage.tsx:301`
 - 수정안:
 
 ### T-0440
 
-- 현재: {chips} 칩으로 열기
+- 현재: 등급별 파편 또는 완성 스킨 하나를 획득합니다. 파편 4개를 모으면 같은 등급의 미보유 스킨을 얻습니다.
 - 위치: `apps/web/src/i18n.ts:447`
-- 사용: `apps/web/src/pages/StorePage.tsx:312`
+- 사용: `apps/web/src/pages/StorePage.tsx:302`
 - 수정안:
 
 ### T-0441
 
-- 현재: 획득 확률 보기
+- 현재: {chips} 칩으로 열기
 - 위치: `apps/web/src/i18n.ts:448`
-- 사용: `apps/web/src/pages/StorePage.tsx:315`
+- 사용: `apps/web/src/pages/StorePage.tsx:312`
 - 수정안:
 
 ### T-0442
 
-- 현재: 파편
+- 현재: 획득 확률 보기
 - 위치: `apps/web/src/i18n.ts:449`
-- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:398`
+- 사용: `apps/web/src/pages/StorePage.tsx:315`
 - 수정안:
 
 ### T-0443
 
-- 현재: 스킨
+- 현재: 파편
 - 위치: `apps/web/src/i18n.ts:450`
-- 사용: 사용 위치 없음
+- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:398`
 - 수정안:
 
 ### T-0444
 
-- 현재: 쿠폰 등록
+- 현재: 스킨
 - 위치: `apps/web/src/i18n.ts:451`
-- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:354`
+- 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0445
 
-- 현재: 쿠폰 코드를 입력해 보상을 받으세요.
+- 현재: 쿠폰 등록
 - 위치: `apps/web/src/i18n.ts:452`
-- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:355`
+- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:354`
 - 수정안:
 
 ### T-0446
 
-- 현재: 쿠폰 코드
+- 현재: 쿠폰 코드를 입력해 보상을 받으세요.
 - 위치: `apps/web/src/i18n.ts:453`
-- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:361`
+- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:355`
 - 수정안:
 
 ### T-0447
 
-- 현재: 등록
+- 현재: 쿠폰 코드
 - 위치: `apps/web/src/i18n.ts:454`
-- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:366`
+- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:361`
 - 수정안:
 
 ### T-0448
 
-- 현재: 처리 중
+- 현재: 등록
 - 위치: `apps/web/src/i18n.ts:455`
 - 사용: `apps/web/src/components/EconomyAccountPanel.tsx:366`
 - 수정안:
 
 ### T-0449
 
-- 현재: 상자 이용권으로 열기 ({count}개 보유)
+- 현재: 처리 중
 - 위치: `apps/web/src/i18n.ts:456`
-- 사용: `apps/web/src/pages/StorePage.tsx:311`
+- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:366`
 - 수정안:
 
 ### T-0450
 
-- 현재: COUPON_NOT_FOUND
+- 현재: 상자 이용권으로 열기 ({count}개 보유)
 - 위치: `apps/web/src/i18n.ts:457`
-- 사용: 사용 위치 없음
+- 사용: `apps/web/src/pages/StorePage.tsx:311`
 - 수정안:
 
 ### T-0451
 
-- 현재: COUPON_ALREADY_REDEEMED
+- 현재: COUPON_NOT_FOUND
 - 위치: `apps/web/src/i18n.ts:458`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0452
 
-- 현재: COUPON_EXPIRED
+- 현재: COUPON_ALREADY_REDEEMED
 - 위치: `apps/web/src/i18n.ts:459`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0453
 
-- 현재: COUPON_INACTIVE
+- 현재: COUPON_EXPIRED
 - 위치: `apps/web/src/i18n.ts:460`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0454
 
-- 현재: COUPON_NOT_STARTED
+- 현재: COUPON_INACTIVE
 - 위치: `apps/web/src/i18n.ts:461`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0455
 
-- 현재: COUPON_LIMIT_REACHED
+- 현재: COUPON_NOT_STARTED
 - 위치: `apps/web/src/i18n.ts:462`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0456
 
-- 현재: 쿠폰 보상
+- 현재: COUPON_LIMIT_REACHED
 - 위치: `apps/web/src/i18n.ts:463`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0457
 
-- 현재: 마이 Tango에서 쿠폰 코드를 등록해 컬러 칩, 팔레트 상자, 파편과 스킨 보상을 받을 수 있습니다.
+- 현재: 쿠폰 보상
 - 위치: `apps/web/src/i18n.ts:464`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0458
 
-- 현재: 상자를 열지 못했습니다.
+- 현재: 마이 Tango에서 쿠폰 코드를 등록해 컬러 칩, 팔레트 상자, 파편과 스킨 보상을 받을 수 있습니다.
 - 위치: `apps/web/src/i18n.ts:465`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0459
 
-- 현재: 창립자 팩과 프리미엄
+- 현재: 상자를 열지 못했습니다.
 - 위치: `apps/web/src/i18n.ts:466`
-- 사용: `apps/web/src/pages/StorePage.tsx:333`
+- 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0460
 
-- 현재: 정식 출시일이 정해지면 창립자 팩이 30일 동안 열립니다. 현재는 미리보기만 제공됩니다.
+- 현재: 창립자 팩과 프리미엄
 - 위치: `apps/web/src/i18n.ts:467`
-- 사용: `apps/web/src/pages/StorePage.tsx:334`
+- 사용: `apps/web/src/pages/StorePage.tsx:333`
 - 수정안:
 
 ### T-0461
 
-- 현재: 정식 출시 전 잠금
+- 현재: 정식 출시일이 정해지면 창립자 팩이 30일 동안 열립니다. 현재는 미리보기만 제공됩니다.
 - 위치: `apps/web/src/i18n.ts:468`
-- 사용: `apps/web/src/pages/StorePage.tsx:335`
+- 사용: `apps/web/src/pages/StorePage.tsx:334`
 - 수정안:
 
 ### T-0462
 
-- 현재: 창립자 한정 보드·타일·배지
+- 현재: 정식 출시 전 잠금
 - 위치: `apps/web/src/i18n.ts:469`
-- 사용: 사용 위치 없음
+- 사용: `apps/web/src/pages/StorePage.tsx:335`
 - 수정안:
 
 ### T-0463
 
-- 현재: 프리미엄 커스텀 사설방 설정
+- 현재: 창립자 한정 보드·타일·배지
 - 위치: `apps/web/src/i18n.ts:470`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0464
 
-- 현재: 시간·목표 점수·관전 설정
+- 현재: 프리미엄 커스텀 사설방 설정
 - 위치: `apps/web/src/i18n.ts:471`
-- 사용: `apps/web/src/pages/StorePage.tsx:340`
+- 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0465
 
-- 현재: {rarity} 파편 1개
+- 현재: 시간·목표 점수·관전 설정
 - 위치: `apps/web/src/i18n.ts:472`
-- 사용: `apps/web/src/components/CosmeticOutcomeModal.tsx:44`
+- 사용: `apps/web/src/pages/StorePage.tsx:340`
 - 수정안:
 
 ### T-0466
 
-- 현재: 새로운 스킨을 획득했습니다.
+- 현재: {rarity} 파편 1개
 - 위치: `apps/web/src/i18n.ts:473`
-- 사용: 사용 위치 없음
+- 사용: `apps/web/src/components/CosmeticOutcomeModal.tsx:44`
 - 수정안:
 
 ### T-0467
 
-- 현재: 같은 등급 파편 4개를 모아 스킨을 합성하세요.
+- 현재: 새로운 스킨을 획득했습니다.
 - 위치: `apps/web/src/i18n.ts:474`
-- 사용: `apps/web/src/components/CosmeticOutcomeModal.tsx:49`
+- 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0468
 
-- 현재: 컬러 칩과 내 스킨
+- 현재: 같은 등급 파편 4개를 모아 스킨을 합성하세요.
 - 위치: `apps/web/src/i18n.ts:475`
-- 사용: 사용 위치 없음
+- 사용: `apps/web/src/components/CosmeticOutcomeModal.tsx:49`
 - 수정안:
 
 ### T-0469
 
-- 현재: 신규 계정 보상
+- 현재: 컬러 칩과 내 스킨
 - 위치: `apps/web/src/i18n.ts:476`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0470
 
-- 현재: 오늘의 출석
+- 현재: 신규 계정 보상
 - 위치: `apps/web/src/i18n.ts:477`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0471
 
-- 현재: 오늘의 출석 체크
+- 현재: 오늘의 출석
 - 위치: `apps/web/src/i18n.ts:478`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0472
 
-- 현재: 출석 완료!
+- 현재: 오늘의 출석 체크
 - 위치: `apps/web/src/i18n.ts:479`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0473
 
-- 현재: 출석하고 컬러 칩을 받으세요.
+- 현재: 출석 완료!
 - 위치: `apps/web/src/i18n.ts:480`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0474
 
-- 현재: 컬러 칩 {chips}개를 받았습니다.
+- 현재: 출석하고 컬러 칩을 받으세요.
 - 위치: `apps/web/src/i18n.ts:481`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0475
 
-- 현재: 현재 연속 출석
+- 현재: 컬러 칩 {chips}개를 받았습니다.
 - 위치: `apps/web/src/i18n.ts:482`
-- 사용: `apps/web/src/components/AttendanceCheckInModal.tsx:121`
+- 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0476
 
-- 현재: 7일마다 추가 20칩
+- 현재: 현재 연속 출석
 - 위치: `apps/web/src/i18n.ts:483`
-- 사용: `apps/web/src/components/AttendanceCheckInModal.tsx:124`
+- 사용: `apps/web/src/components/AttendanceCheckInModal.tsx:121`
 - 수정안:
 
 ### T-0477
 
-- 현재: 7일 출석 진행도
+- 현재: 7일마다 추가 20칩
 - 위치: `apps/web/src/i18n.ts:484`
-- 사용: `apps/web/src/components/AttendanceCheckInModal.tsx:126`
+- 사용: `apps/web/src/components/AttendanceCheckInModal.tsx:124`
 - 수정안:
 
 ### T-0478
 
-- 현재: 출석하기
+- 현재: 7일 출석 진행도
 - 위치: `apps/web/src/i18n.ts:485`
-- 사용: `apps/web/src/components/AttendanceCheckInModal.tsx:148`
+- 사용: `apps/web/src/components/AttendanceCheckInModal.tsx:126`
 - 수정안:
 
 ### T-0479
 
-- 현재: 나중에
+- 현재: 출석하기
 - 위치: `apps/web/src/i18n.ts:486`
-- 사용: `apps/web/src/components/AttendanceCheckInModal.tsx:145`
+- 사용: `apps/web/src/components/AttendanceCheckInModal.tsx:148`
 - 수정안:
 
 ### T-0480
 
-- 현재: 온라인 대전 보상
+- 현재: 나중에
 - 위치: `apps/web/src/i18n.ts:487`
-- 사용: 사용 위치 없음
+- 사용: `apps/web/src/components/AttendanceCheckInModal.tsx:145`
 - 수정안:
 
 ### T-0481
 
-- 현재: 오늘의 첫 승리
+- 현재: 온라인 대전 보상
 - 위치: `apps/web/src/i18n.ts:488`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0482
 
-- 현재: 받기
+- 현재: 오늘의 첫 승리
 - 위치: `apps/web/src/i18n.ts:489`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0483
 
-- 현재: 진행 중
+- 현재: 받기
 - 위치: `apps/web/src/i18n.ts:490`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0484
 
-- 현재: 등급별 파편
+- 현재: 진행 중
 - 위치: `apps/web/src/i18n.ts:491`
-- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:276`
+- 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0485
 
-- 현재: 합성
+- 현재: 등급별 파편
 - 위치: `apps/web/src/i18n.ts:492`
-- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:290`
+- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:276`
 - 수정안:
 
 ### T-0486
 
-- 현재: 보유 스킨
+- 현재: 합성
 - 위치: `apps/web/src/i18n.ts:493`
-- 사용: 사용 위치 없음
+- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:290`
 - 수정안:
 
 ### T-0487
 
-- 현재: 아직 보유한 스킨이 없습니다. 상점에서 첫 스킨을 만나보세요.
+- 현재: 보유 스킨
 - 위치: `apps/web/src/i18n.ts:494`
-- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:232`
+- 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0488
 
-- 현재: 장착 중
+- 현재: 아직 보유한 스킨이 없습니다. 상점에서 첫 스킨을 만나보세요.
 - 위치: `apps/web/src/i18n.ts:495`
-- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:253`
+- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:232`
 - 수정안:
 
 ### T-0489
 
-- 현재: 장착
+- 현재: 장착 중
 - 위치: `apps/web/src/i18n.ts:496`
 - 사용: `apps/web/src/components/EconomyAccountPanel.tsx:253`
 - 수정안:
 
 ### T-0490
 
-- 현재: {name} 스킨을 획득했습니다.
+- 현재: 장착
 - 위치: `apps/web/src/i18n.ts:497`
-- 사용: 사용 위치 없음
+- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:253`
 - 수정안:
 
 ### T-0491
 
-- 현재: 보상을 받지 못했습니다.
+- 현재: {name} 스킨을 획득했습니다.
 - 위치: `apps/web/src/i18n.ts:498`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0492
 
-- 현재: 파편을 합성하지 못했습니다.
+- 현재: 보상을 받지 못했습니다.
 - 위치: `apps/web/src/i18n.ts:499`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0493
 
-- 현재: 스킨을 장착하지 못했습니다.
+- 현재: 파편을 합성하지 못했습니다.
 - 위치: `apps/web/src/i18n.ts:500`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0494
 
-- 현재: INSUFFICIENT_CHIPS
+- 현재: 스킨을 장착하지 못했습니다.
 - 위치: `apps/web/src/i18n.ts:501`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0495
 
-- 현재: NOT_ENOUGH_FRAGMENTS
+- 현재: INSUFFICIENT_CHIPS
 - 위치: `apps/web/src/i18n.ts:502`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0496
 
-- 현재: QUEST_ALREADY_CLAIMED
+- 현재: NOT_ENOUGH_FRAGMENTS
 - 위치: `apps/web/src/i18n.ts:503`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0497
 
-- 현재: COSMETIC_ALREADY_OWNED
+- 현재: QUEST_ALREADY_CLAIMED
 - 위치: `apps/web/src/i18n.ts:504`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0498
 
-- 현재: NO_UNOWNED_COSMETICS
+- 현재: COSMETIC_ALREADY_OWNED
 - 위치: `apps/web/src/i18n.ts:505`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0499
 
-- 현재: ECONOMY_REQUEST_FAILED
+- 현재: NO_UNOWNED_COSMETICS
 - 위치: `apps/web/src/i18n.ts:506`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0500
 
-- 현재: 커스텀 방 설정
+- 현재: ECONOMY_REQUEST_FAILED
 - 위치: `apps/web/src/i18n.ts:507`
-- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:689`
+- 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0501
 
-- 현재: 목표 점수
+- 현재: 커스텀 방 설정
 - 위치: `apps/web/src/i18n.ts:508`
-- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:691`
+- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:689`
 - 수정안:
 
 ### T-0502
 
-- 현재: 턴 제한시간
+- 현재: 목표 점수
 - 위치: `apps/web/src/i18n.ts:509`
-- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:707`
+- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:691`
 - 수정안:
 
 ### T-0503
 
-- 현재: 초
+- 현재: 턴 제한시간
 - 위치: `apps/web/src/i18n.ts:510`
-- 사용: `apps/web/src/components/ResultPanel.tsx:74`, `apps/web/src/pages/OnlineRoomPage.tsx:717`
+- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:707`
 - 수정안:
 
 ### T-0504
 
-- 현재: 기본 사설방은 무료이며, 시간과 목표 점수 설정은 프리미엄 전용입니다.
+- 현재: 초
 - 위치: `apps/web/src/i18n.ts:511`
-- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:731`
+- 사용: `apps/web/src/components/ResultPanel.tsx:74`, `apps/web/src/pages/OnlineRoomPage.tsx:717`
 - 수정안:
 
 ### T-0505
 
-- 현재: 관전 허용
+- 현재: 기본 사설방은 무료이며, 시간과 목표 점수 설정은 프리미엄 전용입니다.
 - 위치: `apps/web/src/i18n.ts:512`
-- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:723`
+- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:731`
 - 수정안:
 
 ### T-0506
 
-- 현재: 출시 예정
+- 현재: 관전 허용
 - 위치: `apps/web/src/i18n.ts:513`
-- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:347`, `apps/web/src/components/EconomyAccountPanel.tsx:349`, `apps/web/src/components/EconomyQuestGrid.tsx:96`, `apps/web/src/pages/StorePage.tsx:351`
+- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:723`
 - 수정안:
 
 ### T-0507
 
-- 현재: 판매 종료
+- 현재: 출시 예정
 - 위치: `apps/web/src/i18n.ts:514`
-- 사용: 사용 위치 없음
+- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:347`, `apps/web/src/components/EconomyAccountPanel.tsx:349`, `apps/web/src/components/EconomyQuestGrid.tsx:96`, `apps/web/src/pages/StorePage.tsx:351`
 - 수정안:
 
 ### T-0508
 
-- 현재: 자동 지급
+- 현재: 판매 종료
 - 위치: `apps/web/src/i18n.ts:515`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0509
 
-- 현재: 7일 연속 출석
+- 현재: 자동 지급
 - 위치: `apps/web/src/i18n.ts:516`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0510
 
-- 현재: 선택형 보상 광고
+- 현재: 7일 연속 출석
 - 위치: `apps/web/src/i18n.ts:517`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0511
 
-- 현재: 보유 타일 색
+- 현재: 선택형 보상 광고
 - 위치: `apps/web/src/i18n.ts:518`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0512
 
-- 현재: 빨강 슬롯
+- 현재: 보유 타일 색
 - 위치: `apps/web/src/i18n.ts:519`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0513
 
-- 현재: 파랑 슬롯
+- 현재: 빨강 슬롯
 - 위치: `apps/web/src/i18n.ts:520`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0514
 
-- 현재: 초록 슬롯
+- 현재: 파랑 슬롯
 - 위치: `apps/web/src/i18n.ts:521`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0515
 
-- 현재: 최근 획득·사용 기록
+- 현재: 초록 슬롯
 - 위치: `apps/web/src/i18n.ts:522`
-- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:303`
+- 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0516
 
-- 현재: 아직 컬러 칩 기록이 없습니다.
+- 현재: 최근 획득·사용 기록
 - 위치: `apps/web/src/i18n.ts:523`
-- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:309`
+- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:303`
 - 수정안:
 
 ### T-0517
 
-- 현재: 구매 복원
+- 현재: 아직 컬러 칩 기록이 없습니다.
 - 위치: `apps/web/src/i18n.ts:524`
-- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:349`
+- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:309`
 - 수정안:
 
 ### T-0518
 
-- 현재: 창립자 팩
+- 현재: 구매 복원
 - 위치: `apps/web/src/i18n.ts:525`
-- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:340`, `apps/web/src/pages/StorePage.tsx:337`
+- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:349`
 - 수정안:
 
 ### T-0519
 
-- 현재: 프리미엄 팩
+- 현재: 창립자 팩
 - 위치: `apps/web/src/i18n.ts:526`
-- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:345`, `apps/web/src/pages/StorePage.tsx:339`
+- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:340`, `apps/web/src/pages/StorePage.tsx:337`
 - 수정안:
 
 ### T-0520
 
-- 현재: 출시 예정 스킨
+- 현재: 프리미엄 팩
 - 위치: `apps/web/src/i18n.ts:527`
-- 사용: `apps/web/src/pages/StorePage.tsx:345`
+- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:345`, `apps/web/src/pages/StorePage.tsx:339`
 - 수정안:
 
 ### T-0521
 
-- 현재: 창립자 한정 타일·프로필·승리 연출
+- 현재: 출시 예정 스킨
 - 위치: `apps/web/src/i18n.ts:528`
-- 사용: `apps/web/src/pages/StorePage.tsx:338`
+- 사용: `apps/web/src/pages/StorePage.tsx:345`
 - 수정안:
 
 ### T-0522
 
-- 현재: tile_color
+- 현재: 창립자 한정 타일·프로필·승리 연출
 - 위치: `apps/web/src/i18n.ts:529`
-- 사용: 사용 위치 없음
+- 사용: `apps/web/src/pages/StorePage.tsx:338`
 - 수정안:
 
 ### T-0523
 
-- 현재: placement_effect
+- 현재: tile_color
 - 위치: `apps/web/src/i18n.ts:530`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0524
 
-- 현재: profile
+- 현재: placement_effect
 - 위치: `apps/web/src/i18n.ts:531`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0525
 
-- 현재: solid
+- 현재: profile
 - 위치: `apps/web/src/i18n.ts:532`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0526
 
-- 현재: split
+- 현재: solid
 - 위치: `apps/web/src/i18n.ts:533`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0527
 
-- 현재: gradient
+- 현재: split
 - 위치: `apps/web/src/i18n.ts:534`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0528
 
-- 현재: pattern
+- 현재: gradient
 - 위치: `apps/web/src/i18n.ts:535`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0529
 
-- 현재: quest_welcome
+- 현재: pattern
 - 위치: `apps/web/src/i18n.ts:536`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0530
 
-- 현재: quest_attendance
+- 현재: quest_welcome
 - 위치: `apps/web/src/i18n.ts:537`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0531
 
-- 현재: quest_attendance_streak
+- 현재: quest_attendance
 - 위치: `apps/web/src/i18n.ts:538`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0532
 
-- 현재: quest_first_online_win
+- 현재: quest_attendance_streak
 - 위치: `apps/web/src/i18n.ts:539`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0533
 
-- 현재: online_match
+- 현재: quest_first_online_win
 - 위치: `apps/web/src/i18n.ts:540`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0534
 
-- 현재: weekly_store
+- 현재: online_match
 - 위치: `apps/web/src/i18n.ts:541`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0535
 
-- 현재: palette_box
+- 현재: weekly_store
 - 위치: `apps/web/src/i18n.ts:542`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0536
 
-- 현재: DUPLICATE_TILE_COLOR
+- 현재: palette_box
 - 위치: `apps/web/src/i18n.ts:543`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0537
 
-- 현재: TILE_COLORS_TOO_SIMILAR
+- 현재: DUPLICATE_TILE_COLOR
 - 위치: `apps/web/src/i18n.ts:544`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0538
 
-- 현재: 타일 컬러 상점
+- 현재: TILE_COLORS_TOO_SIMILAR
 - 위치: `apps/web/src/i18n.ts:545`
-- 사용: `apps/web/src/pages/StorePage.tsx:136`
+- 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0539
 
-- 현재: 타일 하나를 구매해 빨강·파랑·초록 슬롯 중 원하는 곳에 장착하세요.
+- 현재: 타일 컬러 상점
 - 위치: `apps/web/src/i18n.ts:546`
-- 사용: `apps/web/src/pages/StorePage.tsx:137`
+- 사용: `apps/web/src/pages/StorePage.tsx:136`
 - 수정안:
 
 ### T-0540
 
-- 현재: 상점 메뉴
+- 현재: 타일 하나를 구매해 빨강·파랑·초록 슬롯 중 원하는 곳에 장착하세요.
 - 위치: `apps/web/src/i18n.ts:547`
-- 사용: `apps/web/src/pages/StorePage.tsx:166`
+- 사용: `apps/web/src/pages/StorePage.tsx:137`
 - 수정안:
 
 ### T-0541
 
-- 현재: 주간 타일
+- 현재: 상점 메뉴
 - 위치: `apps/web/src/i18n.ts:548`
-- 사용: 사용 위치 없음
+- 사용: `apps/web/src/pages/StorePage.tsx:166`
 - 수정안:
 
 ### T-0542
 
-- 현재: 스킨 도감
+- 현재: 주간 타일
 - 위치: `apps/web/src/i18n.ts:549`
-- 사용: `apps/web/src/pages/StorePage.tsx:241`
+- 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0543
 
-- 현재: Tango의 타일 스킨을 모아 도감을 완성하세요.
+- 현재: 스킨 도감
 - 위치: `apps/web/src/i18n.ts:550`
-- 사용: `apps/web/src/pages/StorePage.tsx:242`
+- 사용: `apps/web/src/pages/StorePage.tsx:241`
 - 수정안:
 
 ### T-0544
 
-- 현재: 수집 완료
+- 현재: Tango의 타일 스킨을 모아 도감을 완성하세요.
 - 위치: `apps/web/src/i18n.ts:551`
-- 사용: `apps/web/src/pages/StorePage.tsx:249`
+- 사용: `apps/web/src/pages/StorePage.tsx:242`
 - 수정안:
 
 ### T-0545
 
-- 현재: 도감 등급 필터
+- 현재: 수집 완료
 - 위치: `apps/web/src/i18n.ts:552`
-- 사용: `apps/web/src/pages/StorePage.tsx:253`
+- 사용: `apps/web/src/pages/StorePage.tsx:249`
 - 수정안:
 
 ### T-0546
 
-- 현재: 모두
+- 현재: 도감 등급 필터
 - 위치: `apps/web/src/i18n.ts:553`
-- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:217`, `apps/web/src/pages/StorePage.tsx:261`
+- 사용: `apps/web/src/pages/StorePage.tsx:253`
 - 수정안:
 
 ### T-0547
 
-- 현재: 미보유
+- 현재: 모두
 - 위치: `apps/web/src/i18n.ts:554`
-- 사용: `apps/web/src/pages/StorePage.tsx:286`
+- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:217`, `apps/web/src/pages/StorePage.tsx:261`
 - 수정안:
 
 ### T-0548
 
-- 현재: 이번 주 타일
+- 현재: 미보유
 - 위치: `apps/web/src/i18n.ts:555`
-- 사용: `apps/web/src/pages/StorePage.tsx:189`
+- 사용: `apps/web/src/pages/StorePage.tsx:286`
 - 수정안:
 
 ### T-0549
 
-- 현재: 등급
+- 현재: 이번 주 타일
 - 위치: `apps/web/src/i18n.ts:556`
-- 사용: `apps/web/src/pages/StorePage.tsx:212`
+- 사용: `apps/web/src/pages/StorePage.tsx:189`
 - 수정안:
 
 ### T-0550
 
-- 현재: 마이 Tango
+- 현재: 등급
 - 위치: `apps/web/src/i18n.ts:557`
-- 사용: 사용 위치 없음
+- 사용: `apps/web/src/pages/StorePage.tsx:212`
 - 수정안:
 
 ### T-0551
 
-- 현재: Tango 계정
+- 현재: 마이 Tango
 - 위치: `apps/web/src/i18n.ts:558`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0552
 
-- 현재: 로그인하고 전적과 보상을 안전하게 저장하세요.
+- 현재: Tango 계정
 - 위치: `apps/web/src/i18n.ts:559`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0553
 
-- 현재: 전적·스킨·보상을 한곳에서 관리하세요.
+- 현재: 로그인하고 전적과 보상을 안전하게 저장하세요.
 - 위치: `apps/web/src/i18n.ts:560`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0554
 
-- 현재: 마이페이지 메뉴
+- 현재: 전적·스킨·보상을 한곳에서 관리하세요.
 - 위치: `apps/web/src/i18n.ts:561`
-- 사용: `apps/web/src/pages/AccountPage.tsx:398`
+- 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0555
 
-- 현재: 타일 설정
+- 현재: 마이페이지 메뉴
 - 위치: `apps/web/src/i18n.ts:562`
-- 사용: 사용 위치 없음
+- 사용: `apps/web/src/pages/AccountPage.tsx:398`
 - 수정안:
 
 ### T-0556
 
-- 현재: 퀘스트·파편
+- 현재: 타일 설정
 - 위치: `apps/web/src/i18n.ts:563`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0557
 
-- 현재: 기록
+- 현재: 퀘스트·파편
 - 위치: `apps/web/src/i18n.ts:564`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0558
 
-- 현재: 혜택·계정
+- 현재: 기록
 - 위치: `apps/web/src/i18n.ts:565`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0559
 
-- 현재: 세 가지 기본 색을 내 타일로 바꾸세요
+- 현재: 혜택·계정
 - 위치: `apps/web/src/i18n.ts:566`
-- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:160`
+- 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0560
 
-- 현재: 기본 버건디
+- 현재: 세 가지 기본 색을 내 타일로 바꾸세요
 - 위치: `apps/web/src/i18n.ts:567`
-- 사용: 사용 위치 없음
+- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:160`
 - 수정안:
 
 ### T-0561
 
-- 현재: 기본 네이비
+- 현재: 기본 버건디
 - 위치: `apps/web/src/i18n.ts:568`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0562
 
-- 현재: 기본 그린
+- 현재: 기본 네이비
 - 위치: `apps/web/src/i18n.ts:569`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0563
 
-- 현재: 기본으로 복원
+- 현재: 기본 그린
 - 위치: `apps/web/src/i18n.ts:570`
-- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:187`
+- 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0564
 
-- 현재: 보유 타일
+- 현재: 기본으로 복원
 - 위치: `apps/web/src/i18n.ts:571`
-- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:196`
+- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:187`
 - 수정안:
 
 ### T-0565
 
-- 현재: 타일 이름 검색
+- 현재: 보유 타일
 - 위치: `apps/web/src/i18n.ts:572`
-- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:203`
+- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:196`
 - 수정안:
 
 ### T-0566
 
-- 현재: 이름으로 검색
+- 현재: 타일 이름 검색
 - 위치: `apps/web/src/i18n.ts:573`
-- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:207`
+- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:203`
 - 수정안:
 
 ### T-0567
 
-- 현재: 보유 타일 등급 필터
+- 현재: 이름으로 검색
 - 위치: `apps/web/src/i18n.ts:574`
-- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:211`
+- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:207`
 - 수정안:
 
 ### T-0568
 
-- 현재: 검색 조건에 맞는 보유 타일이 없습니다.
+- 현재: 보유 타일 등급 필터
 - 위치: `apps/web/src/i18n.ts:575`
-- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:234`
+- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:211`
 - 수정안:
 
 ### T-0569
 
-- 현재: 타일 하나를 선택한 슬롯에 장착합니다.
+- 현재: 검색 조건에 맞는 보유 타일이 없습니다.
 - 위치: `apps/web/src/i18n.ts:576`
-- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:197`
+- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:234`
 - 수정안:
 
 ### T-0570
 
-- 현재: 다른 슬롯 사용 중
+- 현재: 타일 하나를 선택한 슬롯에 장착합니다.
 - 위치: `apps/web/src/i18n.ts:577`
-- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:253`
+- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:197`
 - 수정안:
 
 ### T-0571
 
-- 현재: 퀘스트와 파편
+- 현재: 다른 슬롯 사용 중
 - 위치: `apps/web/src/i18n.ts:578`
-- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:271`
+- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:253`
 - 수정안:
 
 ### T-0572
 
-- 현재: 프리미엄과 창립자 혜택
+- 현재: 퀘스트와 파편
 - 위치: `apps/web/src/i18n.ts:579`
-- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:335`
+- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:271`
 - 수정안:
 
 ### T-0573
 
-- 현재: 기존 타일과 색이 비슷합니다.
+- 현재: 프리미엄과 창립자 혜택
 - 위치: `apps/web/src/i18n.ts:580`
-- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:423`
+- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:335`
 - 수정안:
 
 ### T-0574
 
-- 현재: 색각 보조 도형은 유지됩니다. 그래도 이 조합을 사용하시겠어요?
+- 현재: 기존 타일과 색이 비슷합니다.
 - 위치: `apps/web/src/i18n.ts:581`
-- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:424`
+- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:423`
 - 수정안:
 
 ### T-0575
 
-- 현재: 그래도 장착
+- 현재: 색각 보조 도형은 유지됩니다. 그래도 이 조합을 사용하시겠어요?
 - 위치: `apps/web/src/i18n.ts:582`
-- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:427`
+- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:424`
 - 수정안:
 
 ### T-0576
 
-- 현재: 퀘스트
+- 현재: 그래도 장착
 - 위치: `apps/web/src/i18n.ts:583`
-- 사용: `apps/web/src/pages/LobbyPage.tsx:220`
+- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:427`
 - 수정안:
 
 ### T-0577
 
-- 현재: 오늘의 퀘스트
+- 현재: 퀘스트
 - 위치: `apps/web/src/i18n.ts:584`
-- 사용: `apps/web/src/pages/LobbyPage.tsx:222`
+- 사용: `apps/web/src/pages/LobbyPage.tsx:224`
 - 수정안:
 
 ### T-0578
 
-- 현재: 전체 관리
+- 현재: 오늘의 퀘스트
 - 위치: `apps/web/src/i18n.ts:585`
-- 사용: `apps/web/src/pages/LobbyPage.tsx:223`
+- 사용: `apps/web/src/pages/LobbyPage.tsx:226`
 - 수정안:
 
 ### T-0579
 
-- 현재: 퀘스트를 불러오는 중입니다.
+- 현재: 전체 관리
 - 위치: `apps/web/src/i18n.ts:586`
-- 사용: `apps/web/src/pages/LobbyPage.tsx:229`
+- 사용: `apps/web/src/pages/LobbyPage.tsx:227`
 - 수정안:
 
 ### T-0580
 
-- 현재: 로그인하고 퀘스트 보상을 받으세요.
+- 현재: 퀘스트를 불러오는 중입니다.
 - 위치: `apps/web/src/i18n.ts:587`
-- 사용: `apps/web/src/pages/LobbyPage.tsx:229`
+- 사용: `apps/web/src/pages/LobbyPage.tsx:233`
 - 수정안:
 
 ### T-0581
 
-- 현재: 컬러 칩 경제와 타일 스킨
+- 현재: 로그인하고 퀘스트 보상을 받으세요.
 - 위치: `apps/web/src/i18n.ts:588`
-- 사용: 사용 위치 없음
+- 사용: `apps/web/src/pages/LobbyPage.tsx:233`
 - 수정안:
 
 ### T-0582
 
-- 현재: 무료 컬러 칩 경제, 36종 타일 스킨, 출석 팝업과 웹·모바일 화면 개선을 함께 담은 패치입니다.
+- 현재: 컬러 칩 경제와 타일 스킨
 - 위치: `apps/web/src/i18n.ts:589`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0583
 
-- 현재: 무료 컬러 칩 경제 시작
+- 현재: 무료 컬러 칩 경제, 36종 타일 스킨, 출석 팝업과 웹·모바일 화면 개선을 함께 담은 패치입니다.
 - 위치: `apps/web/src/i18n.ts:590`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0584
 
-- 현재: 신규 계정, 출석, 연속 출석, 일반·경쟁전과 첫 승리 보상을 추가했습니다. 광고와 유료 상품은 정식 출시 전까지 잠금 상태로 유지됩니다.
+- 현재: 무료 컬러 칩 경제 시작
 - 위치: `apps/web/src/i18n.ts:591`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0585
 
-- 현재: 타일 스킨 36종과 스킨 도감
+- 현재: 신규 계정, 출석, 연속 출석, 일반·경쟁전과 첫 승리 보상을 추가했습니다. 광고와 유료 상품은 정식 출시 전까지 잠금 상태로 유지됩니다.
 - 위치: `apps/web/src/i18n.ts:592`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0586
 
-- 현재: 단색, 50:50 분할, 그라데이션, 고유 문양으로 구성된 타일 스킨을 추가했습니다. 상점의 스킨 도감에서 전체 목록과 수집 현황을 확인할 수 있습니다.
+- 현재: 타일 스킨 36종과 스킨 도감
 - 위치: `apps/web/src/i18n.ts:593`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0587
 
-- 현재: 주간 상점과 팔레트 상자
+- 현재: 단색, 50:50 분할, 그라데이션, 고유 문양으로 구성된 타일 스킨을 추가했습니다. 상점의 스킨 도감에서 전체 목록과 수집 현황을 확인할 수 있습니다.
 - 위치: `apps/web/src/i18n.ts:594`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0588
 
-- 현재: 매주 바뀌는 타일 상점과 등급별 파편, 팔레트 상자를 추가했습니다. 구매한 타일은 빨강·파랑·초록 슬롯에 각각 장착할 수 있습니다.
+- 현재: 주간 상점과 팔레트 상자
 - 위치: `apps/web/src/i18n.ts:595`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0589
 
-- 현재: 로그인 출석 팝업
+- 현재: 매주 바뀌는 타일 상점과 등급별 파편, 팔레트 상자를 추가했습니다. 구매한 타일은 빨강·파랑·초록 슬롯에 각각 장착할 수 있습니다.
 - 위치: `apps/web/src/i18n.ts:596`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0590
 
-- 현재: 로그인하면 오늘의 출석 팝업이 열립니다. 7일 진행도와 연속 출석을 확인하고 컬러 칩 보상을 바로 받을 수 있습니다.
+- 현재: 로그인 출석 팝업
 - 위치: `apps/web/src/i18n.ts:597`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0591
 
-- 현재: 웹·모바일 화면 개선
+- 현재: 로그인하면 오늘의 출석 팝업이 열립니다. 7일 진행도와 연속 출석을 확인하고 컬러 칩 보상을 바로 받을 수 있습니다.
 - 위치: `apps/web/src/i18n.ts:598`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0592
 
-- 현재: 메인, 상점, 마이페이지와 패치노트의 크기와 정렬을 다듬고, 모바일 내비게이션과 게임 모드 영역을 화면에 맞게 개선했습니다.
+- 현재: 웹·모바일 화면 개선
 - 위치: `apps/web/src/i18n.ts:599`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0593
 
-- 현재: 계정, 출석 기록, 컬러 칩 원장과 보유 스킨, 연결된 경기 기록과 리플레이가 삭제되며 복구할 수 없습니다.
+- 현재: 메인, 상점, 마이페이지와 패치노트의 크기와 정렬을 다듬고, 모바일 내비게이션과 게임 모드 영역을 화면에 맞게 개선했습니다.
 - 위치: `apps/web/src/i18n.ts:600`
-- 사용: `apps/web/src/pages/AccountPage.tsx:563`
+- 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0594
 
-- 현재: QUEST_NOT_CLAIMABLE
+- 현재: 계정, 출석 기록, 컬러 칩 원장과 보유 스킨, 연결된 경기 기록과 리플레이가 삭제되며 복구할 수 없습니다.
 - 위치: `apps/web/src/i18n.ts:601`
-- 사용: 사용 위치 없음
+- 사용: `apps/web/src/pages/AccountPage.tsx:563`
 - 수정안:
 
 ### T-0595
 
-- 현재: 시행일: 2026년 6월 29일
+- 현재: QUEST_NOT_CLAIMABLE
 - 위치: `apps/web/src/i18n.ts:602`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0596
 
-- 현재: Tango는 계정 이용 시 이메일, 해시 처리된 비밀번호, 닉네임, 아바타, 레이팅, 전적, 출석 기록, 컬러 칩 잔액과 원장, 보유·장착 스킨, 파편·상자 결과와 쿠폰 수령 기록을 처리합니다. 서비스 운영과 반복 보상 방지를 위해 서명된 익명 게스트 식별자, 접속 경로, 브라우저 정보를 처리할 수 있습니다.
+- 현재: 시행일: 2026년 6월 29일
 - 위치: `apps/web/src/i18n.ts:603`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0597
 
-- 현재: 수집한 정보는 로그인, 온라인 대전, 전적과 리더보드, 출석·퀘스트·쿠폰 보상, 상점·스킨 소유권과 부정 수령 방지, 서비스 안정성 확인에 사용합니다.
+- 현재: Tango는 계정 이용 시 이메일, 해시 처리된 비밀번호, 닉네임, 아바타, 레이팅, 전적, 출석 기록, 컬러 칩 잔액과 원장, 보유·장착 스킨, 파편·상자 결과와 쿠폰 수령 기록을 처리합니다. 서비스 운영과 반복 보상 방지를 위해 서명된 익명 게스트 식별자, 접속 경로, 브라우저 정보를 처리할 수 있습니다.
 - 위치: `apps/web/src/i18n.ts:604`
-- 사용: `apps/web/src/pages/PrivacyPage.tsx:26`
+- 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0598
 
-- 현재: 계정 정보는 회원 탈퇴 전까지 보관합니다. 계정을 삭제하면 계정 정보, 출석 기록, 경제 원장, 보유 스킨·파편·상자 기록, 계정과 연결된 경기 기록과 리플레이가 삭제되며 복구할 수 없습니다. 계정과 연결되지 않은 익명 게스트 식별자, 집계형 매칭 시간과 익명 방문 통계는 서비스 운영과 부정 이용 방지 목적으로 남을 수 있습니다.
+- 현재: 수집한 정보는 로그인, 온라인 대전, 전적과 리더보드, 출석·퀘스트·쿠폰 보상, 상점·스킨 소유권과 부정 수령 방지, 서비스 안정성 확인에 사용합니다.
 - 위치: `apps/web/src/i18n.ts:605`
-- 사용: `apps/web/src/pages/PrivacyPage.tsx:30`
+- 사용: `apps/web/src/pages/PrivacyPage.tsx:26`
 - 수정안:
 
 ### T-0599
 
-- 현재: PREMIUM_REQUIRED
+- 현재: 계정 정보는 회원 탈퇴 전까지 보관합니다. 계정을 삭제하면 계정 정보, 출석 기록, 경제 원장, 보유 스킨·파편·상자 기록, 계정과 연결된 경기 기록과 리플레이가 삭제되며 복구할 수 없습니다. 계정과 연결되지 않은 익명 게스트 식별자, 집계형 매칭 시간과 익명 방문 통계는 서비스 운영과 부정 이용 방지 목적으로 남을 수 있습니다.
 - 위치: `apps/web/src/i18n.ts:606`
-- 사용: 사용 위치 없음
+- 사용: `apps/web/src/pages/PrivacyPage.tsx:30`
 - 수정안:
 
 ### T-0600
 
-- 현재: 마이 페이지
+- 현재: PREMIUM_REQUIRED
 - 위치: `apps/web/src/i18n.ts:607`
-- 사용: `apps/web/src/components/AppSidebar.tsx:29`, `apps/web/src/components/AppSidebar.tsx:40`, `apps/web/src/pages/LobbyPage.tsx:200`
+- 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0601
 
-- 현재: 상대의 시간이 끝났습니다.
+- 현재: 마이 페이지
 - 위치: `apps/web/src/i18n.ts:608`
-- 사용: 사용 위치 없음
+- 사용: `apps/web/src/components/AppSidebar.tsx:29`, `apps/web/src/components/AppSidebar.tsx:40`, `apps/web/src/pages/LobbyPage.tsx:204`
 - 수정안:
 
 ### T-0602
 
-- 현재: 제한 시간이 끝났습니다.
+- 현재: 상대의 시간이 끝났습니다.
 - 위치: `apps/web/src/i18n.ts:609`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0603
 
-- 현재: 상대가 대전을 종료했습니다.
+- 현재: 제한 시간이 끝났습니다.
 - 위치: `apps/web/src/i18n.ts:610`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0604
 
-- 현재: 대전을 종료했습니다.
+- 현재: 상대가 대전을 종료했습니다.
 - 위치: `apps/web/src/i18n.ts:611`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0605
 
-- 현재: 보드가 가득 찼습니다.
+- 현재: 대전을 종료했습니다.
 - 위치: `apps/web/src/i18n.ts:612`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0606
 
-- 현재: 마지막 연결이 목표 점수를 완성했습니다.
+- 현재: 보드가 가득 찼습니다.
 - 위치: `apps/web/src/i18n.ts:613`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0607
 
-- 현재: 상대의 재경기 동의를 기다리는 중입니다.
+- 현재: 마지막 연결이 목표 점수를 완성했습니다.
 - 위치: `apps/web/src/i18n.ts:614`
-- 사용: `apps/web/src/components/ResultPanel.tsx:73`
+- 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0608
 
-- 현재: 재경기
+- 현재: 상대의 재경기 동의를 기다리는 중입니다.
 - 위치: `apps/web/src/i18n.ts:615`
-- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:934`
+- 사용: `apps/web/src/components/ResultPanel.tsx:73`
 - 수정안:
 
 ### T-0609
 
-- 현재: 요청 완료
+- 현재: 재경기
 - 위치: `apps/web/src/i18n.ts:616`
-- 사용: 사용 위치 없음
+- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:934`
 - 수정안:
 
 ### T-0610
 
-- 현재: Google로 로그인
+- 현재: 요청 완료
 - 위치: `apps/web/src/i18n.ts:617`
-- 사용: `apps/web/src/components/GoogleSignInButton.tsx:137`
+- 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0611
 
-- 현재: 닉네임을 변경했습니다.
+- 현재: Google로 로그인
 - 위치: `apps/web/src/i18n.ts:618`
-- 사용: 사용 위치 없음
+- 사용: `apps/web/src/components/GoogleSignInButton.tsx:137`
 - 수정안:
 
 ### T-0612
 
-- 현재: 계정 정보를 불러오는 중입니다.
+- 현재: 닉네임을 변경했습니다.
 - 위치: `apps/web/src/i18n.ts:619`
-- 사용: `apps/web/src/pages/AccountPage.tsx:290`
+- 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0613
 
-- 현재: 닉네임 변경
+- 현재: 계정 정보를 불러오는 중입니다.
 - 위치: `apps/web/src/i18n.ts:620`
-- 사용: `apps/web/src/pages/AccountPage.tsx:484`
+- 사용: `apps/web/src/pages/AccountPage.tsx:290`
 - 수정안:
 
 ### T-0614
 
-- 현재: 닉네임을 변경할 수 있습니다.
+- 현재: 닉네임 변경
 - 위치: `apps/web/src/i18n.ts:621`
-- 사용: `apps/web/src/pages/AccountPage.tsx:486`
+- 사용: `apps/web/src/pages/AccountPage.tsx:484`
 - 수정안:
 
 ### T-0615
 
-- 현재: {date}부터 다시 변경할 수 있습니다.
+- 현재: 닉네임을 변경할 수 있습니다.
 - 위치: `apps/web/src/i18n.ts:622`
-- 사용: `apps/web/src/pages/AccountPage.tsx:487`
+- 사용: `apps/web/src/pages/AccountPage.tsx:486`
 - 수정안:
 
 ### T-0616
 
-- 현재: 변경
+- 현재: {date}부터 다시 변경할 수 있습니다.
 - 위치: `apps/web/src/i18n.ts:623`
-- 사용: `apps/web/src/pages/AccountPage.tsx:510`
+- 사용: `apps/web/src/pages/AccountPage.tsx:487`
 - 수정안:
 
 ### T-0617
 
-- 현재: 전적 모드
+- 현재: 변경
 - 위치: `apps/web/src/i18n.ts:624`
-- 사용: `apps/web/src/pages/AccountPage.tsx:420`
+- 사용: `apps/web/src/pages/AccountPage.tsx:510`
 - 수정안:
 
 ### T-0618
 
-- 현재: 목표 점수 달성
+- 현재: 전적 모드
 - 위치: `apps/web/src/i18n.ts:625`
-- 사용: 사용 위치 없음
+- 사용: `apps/web/src/pages/AccountPage.tsx:420`
 - 수정안:
 
 ### T-0619
 
-- 현재: 무승부 종료
+- 현재: 목표 점수 달성
 - 위치: `apps/web/src/i18n.ts:626`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0620
 
-- 현재: 제한 시간 종료
+- 현재: 무승부 종료
 - 위치: `apps/web/src/i18n.ts:627`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0621
 
-- 현재: 기권으로 종료
+- 현재: 제한 시간 종료
 - 위치: `apps/web/src/i18n.ts:628`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0622
 
-- 현재: 연결 끊김으로 종료
+- 현재: 기권으로 종료
 - 위치: `apps/web/src/i18n.ts:629`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0623
 
-- 현재: 구매 확정
+- 현재: 연결 끊김으로 종료
 - 위치: `apps/web/src/i18n.ts:630`
-- 사용: `apps/web/src/pages/StorePage.tsx:402`
+- 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0624
 
-- 현재: {chips}칩을 사용해 이 타일을 구매할까요?
+- 현재: 구매 확정
 - 위치: `apps/web/src/i18n.ts:631`
-- 사용: `apps/web/src/pages/StorePage.tsx:390`
+- 사용: `apps/web/src/pages/StorePage.tsx:402`
 - 수정안:
 
 ### T-0625
 
-- 현재: 보유 칩 {chips}
+- 현재: {chips}칩을 사용해 이 타일을 구매할까요?
 - 위치: `apps/web/src/i18n.ts:632`
-- 사용: `apps/web/src/pages/StorePage.tsx:393`
+- 사용: `apps/web/src/pages/StorePage.tsx:390`
 - 수정안:
 
 ### T-0626
 
-- 현재: 보유 중 · 파편으로 전환
+- 현재: 보유 칩 {chips}
 - 위치: `apps/web/src/i18n.ts:633`
-- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:408`
+- 사용: `apps/web/src/pages/StorePage.tsx:393`
 - 수정안:
 
 ### T-0627
 
-- 현재: 상자
+- 현재: 보유 중 · 파편으로 전환
 - 위치: `apps/web/src/i18n.ts:634`
-- 사용: `apps/web/src/components/EconomyQuestGrid.tsx:84`
+- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:408`
 - 수정안:
 
 ### T-0628
 
-- 현재: 영구 프리미엄
+- 현재: 상자
 - 위치: `apps/web/src/i18n.ts:635`
-- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:399`
+- 사용: `apps/web/src/components/EconomyQuestGrid.tsx:84`
 - 수정안:
 
 ### T-0629
 
-- 현재: 쿠폰 보상을 받았습니다.
+- 현재: 영구 프리미엄
 - 위치: `apps/web/src/i18n.ts:636`
-- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:386`
+- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:399`
 - 수정안:
 
 ### T-0630
 
-- 현재: 확인
+- 현재: 쿠폰 보상을 받았습니다.
 - 위치: `apps/web/src/i18n.ts:637`
-- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:940`
+- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:386`
 - 수정안:
 
 ### T-0631
 
-- 현재: 퀘스트 기간
+- 현재: 확인
 - 위치: `apps/web/src/i18n.ts:638`
-- 사용: `apps/web/src/components/EconomyQuestGrid.tsx:63`
+- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:940`
 - 수정안:
 
 ### T-0632
 
-- 현재: 주간
+- 현재: 퀘스트 기간
 - 위치: `apps/web/src/i18n.ts:639`
-- 사용: `apps/web/src/components/EconomyQuestGrid.tsx:65`
+- 사용: `apps/web/src/components/EconomyQuestGrid.tsx:63`
 - 수정안:
 
 ### T-0633
 
-- 현재: 오늘의 퀘스트 완료
+- 현재: 주간
 - 위치: `apps/web/src/i18n.ts:640`
-- 사용: 사용 위치 없음
+- 사용: `apps/web/src/components/EconomyQuestGrid.tsx:65`
 - 수정안:
 
 ### T-0634
 
-- 현재: 주간 출석 5일
+- 현재: 오늘의 퀘스트 완료
 - 위치: `apps/web/src/i18n.ts:641`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0635
 
-- 현재: 주간 온라인 20경기
+- 현재: 주간 출석 5일
 - 위치: `apps/web/src/i18n.ts:642`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0636
 
-- 현재: 주간 온라인 10승
+- 현재: 주간 온라인 20경기
 - 위치: `apps/web/src/i18n.ts:643`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0637
 
-- 현재: 주간 퀘스트 완료
+- 현재: 주간 온라인 10승
 - 위치: `apps/web/src/i18n.ts:644`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0638
 
-- 현재: 대전 기록과 모바일 경험 개선
+- 현재: 주간 퀘스트 완료
 - 위치: `apps/web/src/i18n.ts:645`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0639
 
-- 현재: 전적 판정, 재경기, 퀘스트와 상점 경제를 바로잡고 모바일 화면과 게임 종료 흐름을 다듬은 통합 패치입니다.
+- 현재: 대전 기록과 모바일 경험 개선
 - 위치: `apps/web/src/i18n.ts:646`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0640
 
-- 현재: 정확한 승패무와 멈추는 경기 시간
+- 현재: 전적 판정, 재경기, 퀘스트와 상점 경제를 바로잡고 모바일 화면과 게임 종료 흐름을 다듬은 통합 패치입니다.
 - 위치: `apps/web/src/i18n.ts:647`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0641
 
-- 현재: 게스트 상대 결과를 포함한 승패무 기록을 바로잡고 일반·경쟁 통계를 분리했습니다. 경기 시간은 종료 순간에 멈춥니다.
+- 현재: 정확한 승패무와 멈추는 경기 시간
 - 위치: `apps/web/src/i18n.ts:648`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0642
 
-- 현재: 일반게임 재경기와 탈주 방지
+- 현재: 게스트 상대 결과를 포함한 승패무 기록을 바로잡고 일반·경쟁 통계를 분리했습니다. 경기 시간은 종료 순간에 멈춥니다.
 - 위치: `apps/web/src/i18n.ts:649`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0643
 
-- 현재: 일반게임은 두 플레이어가 동의하면 같은 상대와 재경기할 수 있습니다. 온라인 대전 중 이동할 때는 기권 확인을 거칩니다.
+- 현재: 일반게임 재경기와 탈주 방지
 - 위치: `apps/web/src/i18n.ts:650`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0644
 
-- 현재: 일간·주간 퀘스트
+- 현재: 일반게임은 두 플레이어가 동의하면 같은 상대와 재경기할 수 있습니다. 온라인 대전 중 이동할 때는 기권 확인을 거칩니다.
 - 위치: `apps/web/src/i18n.ts:651`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0645
 
-- 현재: 일간 퀘스트 완료 상자와 주간 출석·경기·승리 보상을 추가하고 첫 승리 수령 상태를 수정했습니다.
+- 현재: 일간·주간 퀘스트
 - 위치: `apps/web/src/i18n.ts:652`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0646
 
-- 현재: 닉네임 변경과 전적 화면
+- 현재: 일간 퀘스트 완료 상자와 주간 출석·경기·승리 보상을 추가하고 첫 승리 수령 상태를 수정했습니다.
 - 위치: `apps/web/src/i18n.ts:653`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0647
 
-- 현재: 닉네임을 14일마다 변경할 수 있으며 전적을 전체·일반·경쟁으로 나눠 확인할 수 있습니다.
+- 현재: 닉네임 변경과 전적 화면
 - 위치: `apps/web/src/i18n.ts:654`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0648
 
-- 현재: 상점 경제와 구매 확인
+- 현재: 닉네임을 14일마다 변경할 수 있으며 전적을 전체·일반·경쟁으로 나눠 확인할 수 있습니다.
 - 위치: `apps/web/src/i18n.ts:655`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0649
 
-- 현재: 팔레트 상자와 등급별 스킨 가격을 조정하고 구매 확인 및 쿠폰 보상 결과 화면을 추가했습니다.
+- 현재: 상점 경제와 구매 확인
 - 위치: `apps/web/src/i18n.ts:656`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0650
 
-- 현재: 모바일 가독성과 안내 개선
+- 현재: 팔레트 상자와 등급별 스킨 가격을 조정하고 구매 확인 및 쿠폰 보상 결과 화면을 추가했습니다.
 - 위치: `apps/web/src/i18n.ts:657`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0651
 
-- 현재: 화이트 모드 메뉴, 상단 바, 플레이 버튼, 튜토리얼, 패치노트와 결과 화면의 모바일 배치를 개선했습니다.
+- 현재: 모바일 가독성과 안내 개선
 - 위치: `apps/web/src/i18n.ts:658`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0652
 
-- 현재: NICKNAME_CHANGE_COOLDOWN
+- 현재: 화이트 모드 메뉴, 상단 바, 플레이 버튼, 튜토리얼, 패치노트와 결과 화면의 모바일 배치를 개선했습니다.
 - 위치: `apps/web/src/i18n.ts:659`
+- 사용: 사용 위치 없음
+- 수정안:
+
+### T-0653
+
+- 현재: NICKNAME_CHANGE_COOLDOWN
+- 위치: `apps/web/src/i18n.ts:660`
 - 사용: 사용 위치 없음
 - 수정안:
 
@@ -5314,21 +5321,21 @@
 
 - 현재: TANGO
 - 종류: JSX 본문
-- 위치: `apps/web/src/pages/LobbyPage.tsx:115`
+- 위치: `apps/web/src/pages/LobbyPage.tsx:119`
 - 수정안:
 
 ### H-0103
 
 - 현재: PLAY
 - 종류: JSX 본문
-- 위치: `apps/web/src/pages/LobbyPage.tsx:132`
+- 위치: `apps/web/src/pages/LobbyPage.tsx:136`
 - 수정안:
 
 ### H-0104
 
 - 현재: AI
 - 종류: JSX 본문
-- 위치: `apps/web/src/pages/LobbyPage.tsx:143`
+- 위치: `apps/web/src/pages/LobbyPage.tsx:147`
 - 수정안:
 
 ### H-0105

@@ -4,7 +4,15 @@ import hardAlphaModel from "./hard-alpha-model.json";
 
 export type AiDifficulty = "easy" | "normal" | "hard";
 const isPromotedAiAvailable = hardAlphaModel.available === true;
-export const isHardAiAvailable = false;
+export const isHardAiAvailable = isPromotedAiAvailable && hardAlphaModel.version >= 2;
+export const normalAiSettings = {
+  immediateScoreChance: 0.85,
+  threatBlockChance: 0.6,
+  replyRiskCheckChance: 0.5,
+  riskCandidateLimit: 6,
+  finalCandidateLimit: 3,
+  rankWeights: [0.55, 0.3, 0.15],
+} as const;
 
 const adjacentPotential = (
   state: GameState,
@@ -119,7 +127,7 @@ const denseFloat32 = (
   return relu ? Math.max(0, value) : value;
 });
 
-const hardAlphaPolicy = (state: GameState): number[] | null => {
+const hardAlphaInference = (state: GameState): { policy: number[]; value: number } | null => {
   if (!isPromotedAiAvailable) return null;
   const parameters = hardAlphaState();
   const currentIndex = state.players.findIndex((player) => player.id === state.currentPlayerId);
@@ -134,8 +142,24 @@ const hardAlphaPolicy = (state: GameState): number[] | null => {
   for (let index = 0; index < 25; index += 1) input.push(state.players[1 - currentIndex]!.score / state.config.targetScore);
   const hidden1 = denseFloat32(input, parameters["trunk.1.weight"]!, parameters["trunk.1.bias"]!, 128, true);
   const hidden2 = denseFloat32(hidden1, parameters["trunk.3.weight"]!, parameters["trunk.3.bias"]!, 128, true);
-  return denseFloat32(hidden2, parameters["policy.weight"]!, parameters["policy.bias"]!, 75);
+  const policy = denseFloat32(hidden2, parameters["policy.weight"]!, parameters["policy.bias"]!, 75);
+  const valueHiddenWeights = parameters["value.0.weight"];
+  const valueHiddenBias = parameters["value.0.bias"];
+  const valueOutputWeights = parameters["value.2.weight"];
+  const valueOutputBias = parameters["value.2.bias"];
+  const value = valueHiddenWeights && valueHiddenBias && valueOutputWeights && valueOutputBias
+    ? Math.tanh(denseFloat32(
+      denseFloat32(hidden2, valueHiddenWeights, valueHiddenBias, 64, true),
+      valueOutputWeights,
+      valueOutputBias,
+      1,
+    )[0] ?? 0)
+    : 0;
+  return { policy, value };
 };
+
+const hardAlphaPolicy = (state: GameState): number[] | null =>
+  hardAlphaInference(state)?.policy ?? null;
 
 const opponentReplyRisk = (state: GameState, move: ValidMove): number => {
   const evaluationTime = state.turnTimer?.startedAt ?? Date.now();
@@ -150,6 +174,181 @@ const opponentReplyRisk = (state: GameState, move: ValidMove): number => {
     });
     return Math.max(risk, replyResult.ok ? replyResult.move.earnedScore : 0);
   }, 0);
+};
+
+const chooseWeightedRankedMove = (
+  candidates: Array<{ move: ValidMove; score: number }>,
+  random: () => number,
+): ValidMove | null => {
+  const ranked = [...candidates]
+    .sort((left, right) => right.score - left.score)
+    .slice(0, normalAiSettings.finalCandidateLimit);
+  if (ranked.length === 0) return null;
+
+  const weights = normalAiSettings.rankWeights.slice(0, ranked.length);
+  const totalWeight = weights.reduce((total, weight) => total + weight, 0);
+  let roll = random() * totalWeight;
+  for (let index = 0; index < ranked.length; index += 1) {
+    roll -= weights[index] ?? 0;
+    if (roll <= 0) return ranked[index]?.move ?? ranked[0]!.move;
+  }
+  return ranked.at(-1)?.move ?? ranked[0]!.move;
+};
+
+const hardSearchSettings = {
+  depth: 3,
+  rootCandidateLimit: 10,
+  branchCandidateLimit: 7,
+  timeBudgetMs: 140,
+} as const;
+
+const movePolicyIndex = (state: GameState, move: ValidMove): number =>
+  (move.row * state.config.boardSize + move.col) * state.config.colors.length
+    + state.config.colors.indexOf(move.color);
+
+const hardSearchCandidates = (
+  state: GameState,
+  limit: number,
+  evaluationTime: number,
+): ValidMove[] => {
+  if (state.currentPlayerId === null) return [];
+  const policy = hardAlphaPolicy(state);
+  const ranked = getValidMoves(state).map((move) => {
+    const result = placeTile(state, {
+      ...move,
+      playerId: state.currentPlayerId!,
+      createdAt: evaluationTime,
+    });
+    return {
+      move,
+      earnedScore: result.ok ? result.move.earnedScore : 0,
+      wins: result.ok && result.state.status === "finished" ? 1 : 0,
+      policy: policy?.[movePolicyIndex(state, move)] ?? 0,
+    };
+  }).sort((left, right) =>
+    right.wins - left.wins
+    || right.policy - left.policy
+    || right.earnedScore - left.earnedScore);
+
+  const bestImmediate = Math.max(0, ...ranked.map((candidate) => candidate.earnedScore));
+  const mustConsider = ranked.filter((candidate) =>
+    candidate.wins === 1
+    || (bestImmediate > 0 && candidate.earnedScore === bestImmediate));
+  const selected = [...mustConsider, ...ranked.slice(0, limit)];
+  const seen = new Set<string>();
+  return selected.filter(({ move }) => {
+    const key = `${move.row}:${move.col}:${move.color}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  }).slice(0, Math.max(limit, mustConsider.length)).map((candidate) => candidate.move);
+};
+
+const hardLeafValue = (state: GameState, rootPlayerId: string): number => {
+  if (state.status === "finished") {
+    return state.winnerId === rootPlayerId ? 100_000 : -100_000;
+  }
+  const rootIndex = state.players.findIndex((player) => player.id === rootPlayerId);
+  if (rootIndex < 0) return 0;
+  const opponentIndex = 1 - rootIndex;
+  const scoreDifference =
+    state.players[rootIndex]!.score - state.players[opponentIndex]!.score;
+  const inference = hardAlphaInference(state);
+  const currentPerspective = state.currentPlayerId === rootPlayerId ? 1 : -1;
+  return scoreDifference * 1_000 + (inference?.value ?? 0) * currentPerspective * 120;
+};
+
+const hardMinimax = (
+  state: GameState,
+  rootPlayerId: string,
+  depth: number,
+  evaluationTime: number,
+  deadline: number,
+  alpha: number,
+  beta: number,
+): number => {
+  if (depth === 0 || state.status === "finished" || Date.now() >= deadline) {
+    return hardLeafValue(state, rootPlayerId);
+  }
+  const maximizing = state.currentPlayerId === rootPlayerId;
+  const candidates = hardSearchCandidates(
+    state,
+    hardSearchSettings.branchCandidateLimit,
+    evaluationTime,
+  );
+  if (candidates.length === 0 || state.currentPlayerId === null) {
+    return hardLeafValue(state, rootPlayerId);
+  }
+
+  let best = maximizing ? Number.NEGATIVE_INFINITY : Number.POSITIVE_INFINITY;
+  for (const move of candidates) {
+    const result = placeTile(state, {
+      ...move,
+      playerId: state.currentPlayerId,
+      createdAt: evaluationTime,
+    });
+    if (!result.ok) continue;
+    const value = hardMinimax(
+      result.state,
+      rootPlayerId,
+      depth - 1,
+      evaluationTime,
+      deadline,
+      alpha,
+      beta,
+    );
+    if (maximizing) {
+      best = Math.max(best, value);
+      alpha = Math.max(alpha, best);
+    } else {
+      best = Math.min(best, value);
+      beta = Math.min(beta, best);
+    }
+    if (beta <= alpha || Date.now() >= deadline) break;
+  }
+  return Number.isFinite(best) ? best : hardLeafValue(state, rootPlayerId);
+};
+
+const chooseHardMove = (
+  state: GameState,
+  random: () => number,
+): ValidMove | null => {
+  const rootPlayerId = state.currentPlayerId;
+  if (rootPlayerId === null) return null;
+  const evaluationTime = state.turnTimer?.startedAt ?? Date.now();
+  const deadline = Date.now() + hardSearchSettings.timeBudgetMs;
+  const candidates = hardSearchCandidates(
+    state,
+    hardSearchSettings.rootCandidateLimit,
+    evaluationTime,
+  );
+  let bestValue = Number.NEGATIVE_INFINITY;
+  let bestMoves: ValidMove[] = [];
+  for (const move of candidates) {
+    const result = placeTile(state, {
+      ...move,
+      playerId: rootPlayerId,
+      createdAt: evaluationTime,
+    });
+    if (!result.ok) continue;
+    const value = hardMinimax(
+      result.state,
+      rootPlayerId,
+      hardSearchSettings.depth - 1,
+      evaluationTime,
+      deadline,
+      Number.NEGATIVE_INFINITY,
+      Number.POSITIVE_INFINITY,
+    );
+    if (value > bestValue) {
+      bestValue = value;
+      bestMoves = [move];
+    } else if (value === bestValue) {
+      bestMoves.push(move);
+    }
+    if (Date.now() >= deadline && bestMoves.length > 0) break;
+  }
+  return bestMoves[Math.floor(random() * bestMoves.length)] ?? candidates[0] ?? null;
 };
 
 export const chooseAiMove = (
@@ -190,33 +389,48 @@ export const chooseAiMove = (
   }
 
   const learnedPolicy = hardAlphaPolicy(state);
-  if (learnedPolicy !== null) {
-    const policyCandidates = candidates.map((candidate) => ({
-      ...candidate,
-      score: learnedPolicy[(candidate.move.row * state.config.boardSize + candidate.move.col) * state.config.colors.length
-        + state.config.colors.indexOf(candidate.move.color)] ?? Number.NEGATIVE_INFINITY,
-    }));
+  const policyCandidates = candidates.map((candidate) => ({
+    ...candidate,
+    score: learnedPolicy === null
+      ? (candidate.features[0] ?? 0) * 8
+        + (candidate.features[1] ?? 0) * 3
+        + (candidate.features[2] ?? 0) * 0.5
+        + (candidate.features[3] ?? 0) * 0.1
+      : learnedPolicy[
+        (candidate.move.row * state.config.boardSize + candidate.move.col) * state.config.colors.length
+          + state.config.colors.indexOf(candidate.move.color)
+      ] ?? Number.NEGATIVE_INFINITY,
+  }));
+
+  if (difficulty === "normal") {
     const bestImmediate = Math.max(...policyCandidates.map((candidate) => candidate.features[0] ?? 0));
-    const tactical = bestImmediate > 0
+    const scoringMoves = bestImmediate > 0
       ? policyCandidates.filter((candidate) => candidate.features[0] === bestImmediate)
-      : policyCandidates.some((candidate) => candidate.features[1] === 1)
-        ? policyCandidates.filter((candidate) => candidate.features[1] === 1)
+      : [];
+    const blockingMoves = policyCandidates.filter((candidate) => candidate.features[1] === 1);
+    const focused = scoringMoves.length > 0 && random() < normalAiSettings.immediateScoreChance
+      ? scoringMoves
+      : blockingMoves.length > 0 && random() < normalAiSettings.threatBlockChance
+        ? blockingMoves
         : policyCandidates;
-    const withRisk = tactical.map((candidate) => ({
-      ...candidate,
-      risk: opponentReplyRisk(state, candidate.move),
-    }));
-    const minimumRisk = Math.min(...withRisk.map((candidate) => candidate.risk));
-    const scored = withRisk.filter((candidate) => candidate.risk === minimumRisk);
-    const bestScore = Math.max(...scored.map((candidate) => candidate.score));
-    const bestMoves = scored.filter((candidate) => candidate.score === bestScore);
-    return bestMoves[Math.floor(random() * bestMoves.length)]?.move ?? bestMoves[0]?.move ?? null;
+    let considered = [...focused]
+      .sort((left, right) => right.score - left.score)
+      .slice(0, normalAiSettings.riskCandidateLimit);
+
+    if (considered.length > 1 && random() < normalAiSettings.replyRiskCheckChance) {
+      const withRisk = considered.map((candidate) => ({
+        ...candidate,
+        risk: opponentReplyRisk(state, candidate.move),
+      }));
+      const minimumRisk = Math.min(...withRisk.map((candidate) => candidate.risk));
+      considered = withRisk.filter((candidate) => candidate.risk === minimumRisk);
+    }
+
+    return chooseWeightedRankedMove(considered, random);
   }
-  const bestImmediate = Math.max(...candidates.map((candidate) => candidate.features[0] ?? 0));
-  const tactical = bestImmediate > 0
-    ? candidates.filter((candidate) => candidate.features[0] === bestImmediate)
-    : candidates.some((candidate) => candidate.features[1] === 1)
-      ? candidates.filter((candidate) => candidate.features[1] === 1)
-      : candidates;
-  return tactical[Math.floor(random() * tactical.length)]?.move ?? tactical[0]?.move ?? null;
+
+  if (difficulty === "hard") {
+    return chooseHardMove(state, random);
+  }
+  return null;
 };

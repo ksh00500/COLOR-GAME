@@ -290,6 +290,7 @@ const messages: Record<string, Message> = {
   "{score}/{target}점": { en: "{score}/{target} points", ja: "{score}/{target}点", es: "{score}/{target} puntos", "pt-BR": "{score}/{target} pontos" },
   "{seconds}초 남음": { en: "{seconds} seconds remaining", ja: "残り{seconds}秒", es: "Quedan {seconds} segundos", "pt-BR": "{seconds} segundos restantes" },
   "AI 대전 설정": { en: "AI match settings", ja: "AI対戦設定", es: "Ajustes de partida contra IA", "pt-BR": "Configurações da partida contra IA" },
+  "Easy·Normal·Hard 세 가지 AI 난이도를 플레이할 수 있습니다.": { en: "Play against three AI levels: Easy, Normal, and Hard.", ja: "Easy・Normal・Hardの3段階のAIと対戦できます。", es: "Juega contra tres niveles de IA: Easy, Normal y Hard.", "pt-BR": "Jogue contra três níveis de IA: Easy, Normal e Hard." },
   "아직 준비중입니다.": { en: "Coming soon.", ja: "準備中です。", es: "Próximamente.", "pt-BR": "Em breve." },
   "선공 설정": { en: "First player settings", ja: "先手設定", es: "Ajustes del primer jugador", "pt-BR": "Configuração do primeiro jogador" },
   "선공": { en: "First", ja: "先手", es: "Primero", "pt-BR": "Primeiro" },

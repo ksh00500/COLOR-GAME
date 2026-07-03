@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import type { AiDifficulty } from "@color-game/ai-engine";
+import { isHardAiAvailable, type AiDifficulty } from "@color-game/ai-engine";
 import { fetchEconomy, getAuthToken, type EconomyOverview } from "../api";
 import { AppSidebar } from "../components/AppSidebar";
 import { EconomyQuestGrid } from "../components/EconomyQuestGrid";
@@ -19,7 +19,11 @@ const readAiSettings = (): { difficulty: AiDifficulty; firstPlayer: FirstPlayer 
       firstPlayer?: FirstPlayer;
     };
     return {
-      difficulty: parsed.difficulty === "normal" ? "normal" : "easy",
+      difficulty: parsed.difficulty === "hard" && isHardAiAvailable
+        ? "hard"
+        : parsed.difficulty === "normal"
+          ? "normal"
+          : "easy",
       firstPlayer: parsed.firstPlayer === "ai" || parsed.firstPlayer === "random"
         ? parsed.firstPlayer
         : "human",
@@ -34,7 +38,7 @@ const modes = [
     id: "ai",
     index: "01",
     title: "AI 대전",
-    description: "쉬운 Easy와 학습 모델 Normal을 플레이할 수 있습니다.",
+    description: "Easy·Normal·Hard 세 가지 AI 난이도를 플레이할 수 있습니다.",
     state: "PLAYABLE",
     accent: "burgundy",
   },
@@ -142,7 +146,7 @@ export function LobbyPage() {
               <div className="quick-config" aria-label={t("AI 대전 설정")}>
                 <span>AI</span>
                 {(["easy", "normal", "hard"] as const).map((level) => {
-                  const locked = level === "hard";
+                  const locked = level === "hard" && !isHardAiAvailable;
                   return (
                     <button
                       key={level}

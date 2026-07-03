@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { createInitialGame, DEFAULT_GAME_CONFIG } from "@color-game/game-core";
+import {
+  createInitialGame,
+  DEFAULT_GAME_CONFIG,
+  getValidMoves,
+  placeTile,
+} from "@color-game/game-core";
 import type { GameState } from "@color-game/shared-types";
-import { chooseAiMove, isHardAiAvailable } from "./index";
+import { chooseAiMove, isHardAiAvailable, normalAiSettings } from "./index";
 
 const aiState = (): GameState => ({
   ...createInitialGame(
@@ -85,11 +90,80 @@ describe("chooseAiMove", () => {
     if (move !== null) expect(state.board[move.row]?.[move.col]).toBeNull();
   });
 
-  it("keeps Hard locked while still returning a safe fallback move if called directly", () => {
-    expect(isHardAiAvailable).toBe(false);
+  it("keeps Normal between Easy and Hard with probabilistic tactical decisions", () => {
+    expect(normalAiSettings).toMatchObject({
+      immediateScoreChance: 0.85,
+      threatBlockChance: 0.6,
+      replyRiskCheckChance: 0.5,
+      finalCandidateLimit: 3,
+    });
+  });
+
+  it("lets Normal choose among several strong candidates instead of always taking one move", () => {
+    const state = createInitialGame(
+      { ...DEFAULT_GAME_CONFIG, turnTimeLimitSeconds: null },
+      { firstPlayerId: "player2" },
+    );
+    const first = chooseAiMove(state, "normal", () => 0);
+    const alternate = chooseAiMove(state, "normal", () => 0.99);
+
+    expect(first).not.toBeNull();
+    expect(alternate).not.toBeNull();
+    expect(alternate).not.toEqual(first);
+  });
+
+  it("enables the promoted policy-value Hard model", () => {
+    expect(isHardAiAvailable).toBe(true);
     const state = aiState();
     const move = chooseAiMove(state, "hard", () => 0);
     expect(move).not.toBeNull();
     if (move !== null) expect(state.board[move.row]?.[move.col]).toBeNull();
+  });
+
+  it("rejects a tempting immediate score when deeper search finds a safer line", () => {
+    const state: GameState = {
+      ...createInitialGame(
+        { ...DEFAULT_GAME_CONFIG, turnTimeLimitSeconds: null },
+        { firstPlayerId: "player2" },
+      ),
+      board: [
+        ["colorA", "colorC", null, "colorC", "colorC"],
+        ["colorB", "colorA", "colorC", null, "colorB"],
+        ["colorC", "colorA", "colorC", "colorA", null],
+        ["colorB", "colorC", "colorB", "colorB", null],
+        ["colorB", "colorB", "colorA", "colorB", null],
+      ],
+      players: [
+        { ...aiState().players[0], score: 6 },
+        { ...aiState().players[1], score: 5 },
+      ],
+      currentPlayerId: "player2",
+      turnNumber: 45,
+    };
+    const moves = getValidMoves(state);
+    const immediateScores = moves.map((move) => {
+      const result = placeTile(state, {
+        ...move,
+        playerId: state.currentPlayerId!,
+        createdAt: 1,
+      });
+      return result.ok ? result.move.earnedScore : -1;
+    });
+    const move = chooseAiMove(state, "hard", () => 0);
+    expect(move).not.toBeNull();
+    if (move === null) return;
+    const selectedIndex = moves.findIndex((candidate) =>
+      candidate.row === move.row
+      && candidate.col === move.col
+      && candidate.color === move.color);
+
+    expect(Math.max(...immediateScores)).toBe(3);
+    expect(immediateScores[selectedIndex]).toBe(2);
+  });
+
+  it("keeps a Hard decision within the bounded mobile move budget", () => {
+    const startedAt = performance.now();
+    expect(chooseAiMove(aiState(), "hard", () => 0)).not.toBeNull();
+    expect(performance.now() - startedAt).toBeLessThan(250);
   });
 });

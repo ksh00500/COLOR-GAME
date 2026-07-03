@@ -19,6 +19,24 @@ PRESETS = {
     "standard": dict(games=300, simulations=96, epochs=8, evaluation_games=100, batch=256),
     "deep": dict(games=1000, simulations=192, epochs=12, evaluation_games=200, batch=256),
 }
+TRAP_CURRICULUM_REPEATS = 3
+
+
+def earned_score(state, action):
+    next_state = state.play(int(action))
+    return next_state.scores[state.current] - state.scores[state.current]
+
+
+def greedy_rejection_repeats(state, policy):
+    legal = state.legal_actions()
+    if not len(legal):
+        return 1
+    chosen = int(max(legal, key=lambda action: float(policy[int(action)])))
+    if float(policy[chosen]) < 0.15:
+        return 1
+    best_immediate = max(earned_score(state, action) for action in legal)
+    chosen_immediate = earned_score(state, chosen)
+    return TRAP_CURRICULUM_REPEATS if best_immediate > chosen_immediate else 1
 
 
 def self_play(model, simulations, device, rng):
@@ -31,10 +49,21 @@ def self_play(model, simulations, device, rng):
         temperature = 1.0 if turn < 20 else 0.25
         adjusted = np.power(policy + 1e-10, 1 / temperature)
         adjusted /= adjusted.sum()
-        history.append((state.encoded(), policy, state.current))
+        history.append((
+            state.encoded(),
+            policy,
+            state.current,
+            greedy_rejection_repeats(state, policy),
+        ))
         state = state.play(int(rng.choice(len(adjusted), p=adjusted)))
-    return [(encoded, policy, 0.0 if state.winner is None else (1.0 if state.winner == player else -1.0))
-            for encoded, policy, player in history]
+    examples = []
+    trap_positions = 0
+    for encoded, policy, player, repeats in history:
+        value = 0.0 if state.winner is None else (1.0 if state.winner == player else -1.0)
+        examples.extend((encoded, policy, value) for _ in range(repeats))
+        if repeats > 1:
+            trap_positions += 1
+    return examples, trap_positions
 
 
 def train_epoch(model, optimizer, replay, batch_size, device, rng):
@@ -80,11 +109,11 @@ def export_model(model, path: Path, metadata):
     arrays = {
         name: tensor.detach().cpu().numpy().astype(np.float32)
         for name, tensor in model.state_dict().items()
-        if name.startswith("trunk.") or name.startswith("policy.")
+        if name.startswith("trunk.") or name.startswith("policy.") or name.startswith("value.")
     }
     state = {name: base64.b64encode(array.tobytes()).decode("ascii") for name, array in arrays.items()}
     shapes = {name: list(array.shape) for name, array in arrays.items()}
-    path.write_text(json.dumps({"version": 1, "available": True, "architecture": "mlp-policy-value-v1",
+    path.write_text(json.dumps({"version": 2, "available": True, "architecture": "mlp-policy-value-v2",
                                 "hidden": model.hidden, "metadata": metadata, "shapes": shapes,
                                 "state": state}, separators=(",", ":")), encoding="utf-8")
 
@@ -122,10 +151,12 @@ def main():
     optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3, weight_decay=1e-4)
     replay = []
     completed_games = 0
+    trap_curriculum_positions = 0
     if args.resume and checkpoint_path.exists():
         checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=False)
         model.load_state_dict(checkpoint["model"]); optimizer.load_state_dict(checkpoint["optimizer"])
         replay = checkpoint["replay"]; completed_games = checkpoint["completed_games"]
+        trap_curriculum_positions = checkpoint.get("trap_curriculum_positions", 0)
     print(json.dumps({"device": str(device), "preset": args.preset, **config, "resumedGames": completed_games}))
 
     if completed_games == 0:
@@ -137,7 +168,9 @@ def main():
 
     model.eval()
     for game_number in range(completed_games, config["games"]):
-        replay.extend(self_play(model, config["simulations"], device, rng))
+        game_examples, game_traps = self_play(model, config["simulations"], device, rng)
+        replay.extend(game_examples)
+        trap_curriculum_positions += game_traps
         replay = replay[-100_000:]
         completed_games = game_number + 1
         if completed_games % 10 == 0 or completed_games == config["games"]:
@@ -145,8 +178,10 @@ def main():
             interim_loss = train_epoch(model, optimizer, replay + interim_humans, config["batch"], device, rng)
             model.eval()
             torch.save({"model": model.state_dict(), "optimizer": optimizer.state_dict(),
-                        "replay": replay, "completed_games": completed_games}, checkpoint_path)
+                        "replay": replay, "completed_games": completed_games,
+                        "trap_curriculum_positions": trap_curriculum_positions}, checkpoint_path)
             print(json.dumps({"selfPlayGames": completed_games, "positions": len(replay),
+                              "trapCurriculumPositions": trap_curriculum_positions,
                               "interimLoss": round(interim_loss, 5)}))
 
     human_target = max(1, round(len(replay) * 3 / 7))
@@ -166,13 +201,16 @@ def main():
               "humanGames": human_games, "availableHumanPositions": available_human_positions,
               "selfPlayPositions": len(replay), "humanTrainingPositions": len(humans),
               "trainingPositions": len(combined), "humanDataRatio": 0.30, "selfPlayDataRatio": 0.70,
+              "trapCurriculumPositions": trap_curriculum_positions,
+              "trapCurriculumRepeats": TRAP_CURRICULUM_REPEATS,
               "evaluationGames": config["evaluation_games"],
               "wins": wins, "draws": draws, "losses": losses, "winRate": win_rate,
               "promotionThreshold": 0.55, "eligibleForPromotion": eligible}
     export_model(model, args.output / "candidate-model.json", report)
     (args.output / "evaluation.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     torch.save({"model": model.state_dict(), "optimizer": optimizer.state_dict(),
-                "replay": replay, "completed_games": completed_games}, checkpoint_path)
+                "replay": replay, "completed_games": completed_games,
+                "trap_curriculum_positions": trap_curriculum_positions}, checkpoint_path)
     print(json.dumps(report))
 
 
