@@ -6,12 +6,12 @@ export type AiDifficulty = "easy" | "normal" | "hard";
 const isPromotedAiAvailable = hardAlphaModel.available === true;
 export const isHardAiAvailable = isPromotedAiAvailable && hardAlphaModel.version >= 2;
 export const normalAiSettings = {
-  immediateScoreChance: 0.85,
-  threatBlockChance: 0.6,
-  replyRiskCheckChance: 0.5,
+  immediateScoreChance: 0.72,
+  threatBlockChance: 0.38,
+  replyRiskCheckChance: 0.32,
   riskCandidateLimit: 6,
   finalCandidateLimit: 3,
-  rankWeights: [0.55, 0.3, 0.15],
+  rankWeights: [0.5, 0.3, 0.2],
 } as const;
 
 const adjacentPotential = (

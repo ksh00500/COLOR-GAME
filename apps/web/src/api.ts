@@ -126,6 +126,15 @@ export interface EconomyOverview {
     endsAt: string;
     items: CosmeticItem[];
   };
+  attendance: {
+    dayKey: string;
+    weekKey: string;
+    weekStartsAt: string;
+    weekEndsAt: string;
+    attendedToday: boolean;
+    weeklyCount: number;
+    weeklyGoal: number;
+  };
   catalog: CosmeticItem[];
   inventory: CosmeticItem[];
   loadout: Partial<Record<TileLoadoutSlot, string>>;

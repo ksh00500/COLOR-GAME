@@ -1891,10 +1891,15 @@ fieldset legend {
   transition: opacity var(--duration) ease, transform var(--duration) ease;
 }
 
-.game-board-frame.interactive .board-cell.empty:hover .tile-preview,
-.game-board-frame.interactive .board-cell.empty:focus-visible .tile-preview {
+.game-board-frame.interactive.pointer-active .board-cell.empty:hover .tile-preview,
+.game-board-frame.interactive.keyboard-active .board-cell.empty:focus-visible .tile-preview {
   opacity: 0.38;
   transform: scale(0.96);
+}
+
+.board-cell.scoring.opponent-last::before,
+.board-cell.scoring.opponent-last::after {
+  opacity: 0;
 }
 
 .board-cell.placed .tile-face {

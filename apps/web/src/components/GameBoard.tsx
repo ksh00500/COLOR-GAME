@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Board, Position, TileColorId } from "@color-game/shared-types";
 import { useI18n } from "../i18n";
 
@@ -45,6 +45,7 @@ export function GameBoard({
 }: GameBoardProps) {
   const { t } = useI18n();
   const boardRef = useRef<HTMLDivElement>(null);
+  const [inputMode, setInputMode] = useState<"keyboard" | "pointer">("keyboard");
   const size = board.length;
 
   useEffect(() => {
@@ -66,12 +67,13 @@ export function GameBoard({
 
     if (next !== undefined) {
       const [nextRow, nextCol] = next;
+      setInputMode("keyboard");
       onFocusedIndexChange(nextRow * size + nextCol);
     }
   };
 
   return (
-    <div className={`game-board-frame ${canPlay ? "interactive" : "locked"} ${isClearing ? "clearing" : ""}`}>
+    <div className={`game-board-frame ${canPlay ? "interactive" : "locked"} ${isClearing ? "clearing" : ""} ${inputMode}-active`}>
       <div
         className="game-board"
         ref={boardRef}
@@ -106,6 +108,10 @@ export function GameBoard({
                 aria-label={label}
                 aria-disabled={!canPlay || cell !== null}
                 onFocus={() => onFocusedIndexChange(index)}
+                onMouseEnter={() => {
+                  setInputMode("pointer");
+                  onFocusedIndexChange(index);
+                }}
                 onClick={() => onPlace({ row: rowIndex, col: colIndex })}
                 onKeyDown={(event) => {
                   if (event.key.startsWith("Arrow")) {

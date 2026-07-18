@@ -283,7 +283,14 @@ export function GamePage() {
       if (!canHumanPlay) return;
       const target = event.target as HTMLElement | null;
       if (target?.tagName === "INPUT") return;
-      const color = ({ "1": "colorA", "2": "colorB", "3": "colorC" } as const)[event.key as "1" | "2" | "3"];
+      const color = ({
+        "1": "colorA",
+        "2": "colorB",
+        "3": "colorC",
+        q: "colorA",
+        w: "colorB",
+        e: "colorC",
+      } as const)[event.key.toLocaleLowerCase() as "1" | "2" | "3" | "q" | "w" | "e"];
       if (color !== undefined) {
         setSelectedColors((current) => ({ ...current, [HUMAN_ID]: color }));
       }
@@ -393,7 +400,7 @@ export function GamePage() {
               targetScore={game.config.targetScore}
               remainingSeconds={humanTurn ? remainingSeconds : null}
               scoreDelta={scoreNotice?.playerId === HUMAN_ID ? scoreNotice.score : null}
-              descriptor={t("게스트 플레이어")}
+              descriptor={human.isGuest ? t("게스트 플레이어") : t("내 계정")}
             />
 
             <button className="resign-button" type="button" onClick={() => setResignOpen(true)} disabled={game.status !== "playing"}>

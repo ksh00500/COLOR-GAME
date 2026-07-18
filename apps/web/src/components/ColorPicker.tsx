@@ -9,9 +9,9 @@ interface ColorPickerProps {
 }
 
 const colorOptions: Array<{ id: TileColorId; name: string; shortcut: string; shape: string }> = [
-  { id: "colorA", name: "버건디", shortcut: "1", shape: "●" },
-  { id: "colorB", name: "네이비", shortcut: "2", shape: "▲" },
-  { id: "colorC", name: "딥그린", shortcut: "3", shape: "■" },
+  { id: "colorA", name: "버건디", shortcut: "1/Q", shape: "●" },
+  { id: "colorB", name: "네이비", shortcut: "2/W", shape: "▲" },
+  { id: "colorC", name: "딥그린", shortcut: "3/E", shape: "■" },
 ];
 
 export function ColorPicker({ selected, disabled, showShapes = false, onSelect }: ColorPickerProps) {
@@ -20,7 +20,7 @@ export function ColorPicker({ selected, disabled, showShapes = false, onSelect }
     <section className="color-picker" aria-label={t("타일 색상 선택")}>
       <div className="picker-label">
         <span>SELECT COLOR</span>
-        <small>{t("숫자키 1 · 2 · 3")}</small>
+        <small>{t("숫자키 1 · 2 · 3 또는 Q · W · E")}</small>
       </div>
       <div className="color-options">
         {colorOptions.map((option) => (

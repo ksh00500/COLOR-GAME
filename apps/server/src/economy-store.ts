@@ -77,6 +77,15 @@ export interface EconomyOverview {
     endsAt: string;
     items: EconomyCatalogItem[];
   };
+  attendance: {
+    dayKey: string;
+    weekKey: string;
+    weekStartsAt: string;
+    weekEndsAt: string;
+    attendedToday: boolean;
+    weeklyCount: number;
+    weeklyGoal: number;
+  };
   catalog: EconomyCatalogItem[];
   inventory: EconomyCatalogItem[];
   loadout: Partial<Record<TileLoadoutSlot, string>>;
@@ -315,6 +324,22 @@ export const seoulWeek = (now = new Date()): { weekKey: string; startsAt: Date; 
   const startsAt = new Date(midnightUtc - daysSinceMonday * 86_400_000 - 9 * 60 * 60 * 1000);
   return {
     weekKey: new Date(midnightUtc - daysSinceMonday * 86_400_000).toISOString().slice(0, 10),
+    startsAt,
+    endsAt: new Date(startsAt.getTime() + 7 * 86_400_000),
+  };
+};
+
+export const seoulQuestWeek = (now = new Date()): { weekKey: string; startsAt: Date; endsAt: Date } => {
+  const shifted = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+  const midnightUtc = Date.UTC(
+    shifted.getUTCFullYear(),
+    shifted.getUTCMonth(),
+    shifted.getUTCDate(),
+  );
+  const daysSinceSunday = shifted.getUTCDay();
+  const startsAt = new Date(midnightUtc - daysSinceSunday * 86_400_000 - 9 * 60 * 60 * 1000);
+  return {
+    weekKey: new Date(midnightUtc - daysSinceSunday * 86_400_000).toISOString().slice(0, 10),
     startsAt,
     endsAt: new Date(startsAt.getTime() + 7 * 86_400_000),
   };
@@ -643,7 +668,8 @@ export class PostgresEconomyStore implements EconomyStore {
     accountId: string,
   ): Promise<EconomyOverview> {
     await this.ensureAccount(client, accountId);
-    const week = await this.ensureWeeklyRotation(client);
+    const storeWeek = await this.ensureWeeklyRotation(client);
+    const questWeek = seoulQuestWeek();
     const dayKey = seoulDayKey();
     const loadout = await this.readLoadout(client, accountId);
     const [
@@ -679,7 +705,7 @@ export class PostgresEconomyStore implements EconomyStore {
         accountId,
         `join weekly_store_items w on w.cosmetic_id = c.id
          where w.week_key = $2 and c.active order by w.display_order`,
-        [week.weekKey],
+        [storeWeek.weekKey],
       ),
       this.readCatalog(
         client,
@@ -739,17 +765,17 @@ export class PostgresEconomyStore implements EconomyStore {
       client.query<{ count: string }>(
         `select count(*)::text as count from attendance_days
          where account_id = $1 and attended_on >= $2::date and attended_on < $3::date`,
-        [accountId, week.weekKey, seoulDayKey(week.endsAt)],
+        [accountId, questWeek.weekKey, seoulDayKey(questWeek.endsAt)],
       ),
       client.query<{ count: string }>(
         `select count(*)::text as count from economy_match_rewards
          where account_id = $1 and day_key >= $2 and day_key < $3`,
-        [accountId, week.weekKey, seoulDayKey(week.endsAt)],
+        [accountId, questWeek.weekKey, seoulDayKey(questWeek.endsAt)],
       ),
       client.query<{ count: string }>(
         `select count(*)::text as count from economy_match_rewards
          where account_id = $1 and day_key >= $2 and day_key < $3 and won`,
-        [accountId, week.weekKey, seoulDayKey(week.endsAt)],
+        [accountId, questWeek.weekKey, seoulDayKey(questWeek.endsAt)],
       ),
       client.query<{ id: "founder_pack" | "premium_pack"; reference_price_krw: number; bonus_chips: number }>(
         `select id, reference_price_krw, bonus_chips from monetization_products where active`,
@@ -777,16 +803,16 @@ export class PostgresEconomyStore implements EconomyStore {
       (quest) => quest.quest_key === "daily_complete" && quest.cycle_key === dayKey,
     );
     const weeklyAttendanceQuest = quests.find(
-      (quest) => quest.quest_key === "weekly_attendance" && quest.cycle_key === week.weekKey,
+      (quest) => quest.quest_key === "weekly_attendance" && quest.cycle_key === questWeek.weekKey,
     );
     const weeklyMatchesQuest = quests.find(
-      (quest) => quest.quest_key === "weekly_matches" && quest.cycle_key === week.weekKey,
+      (quest) => quest.quest_key === "weekly_matches" && quest.cycle_key === questWeek.weekKey,
     );
     const weeklyWinsQuest = quests.find(
-      (quest) => quest.quest_key === "weekly_wins" && quest.cycle_key === week.weekKey,
+      (quest) => quest.quest_key === "weekly_wins" && quest.cycle_key === questWeek.weekKey,
     );
     const weeklyComplete = quests.find(
-      (quest) => quest.quest_key === "weekly_complete" && quest.cycle_key === week.weekKey,
+      (quest) => quest.quest_key === "weekly_complete" && quest.cycle_key === questWeek.weekKey,
     );
     const dailyObjectivesComplete = attendedToday && matchProgress >= 5 && firstWin !== undefined;
     const weeklyObjectivesComplete =
@@ -823,9 +849,18 @@ export class PostgresEconomyStore implements EconomyStore {
       boxTickets: ticketResult.rows[0]?.quantity ?? 0,
       fragments,
       weeklyStore: {
-        weekKey: week.weekKey,
-        endsAt: week.endsAt.toISOString(),
+        weekKey: storeWeek.weekKey,
+        endsAt: storeWeek.endsAt.toISOString(),
         items: catalogWithLoadout(weeklyRows),
+      },
+      attendance: {
+        dayKey,
+        weekKey: questWeek.weekKey,
+        weekStartsAt: questWeek.startsAt.toISOString(),
+        weekEndsAt: questWeek.endsAt.toISOString(),
+        attendedToday,
+        weeklyCount: weeklyAttendanceProgress,
+        weeklyGoal: weeklyQuestGoals.attendance,
       },
       catalog: catalogWithLoadout(catalogRows),
       inventory: catalogWithLoadout(inventoryRows),
@@ -890,7 +925,7 @@ export class PostgresEconomyStore implements EconomyStore {
         {
           key: "weekly_attendance",
           period: "weekly",
-          cycleKey: week.weekKey,
+          cycleKey: questWeek.weekKey,
           rewardChips: 50,
           rewardBoxTickets: 0,
           claimed: weeklyAttendanceQuest?.status === "claimed",
@@ -903,7 +938,7 @@ export class PostgresEconomyStore implements EconomyStore {
         {
           key: "weekly_matches",
           period: "weekly",
-          cycleKey: week.weekKey,
+          cycleKey: questWeek.weekKey,
           rewardChips: 100,
           rewardBoxTickets: 0,
           claimed: weeklyMatchesQuest?.status === "claimed",
@@ -916,7 +951,7 @@ export class PostgresEconomyStore implements EconomyStore {
         {
           key: "weekly_wins",
           period: "weekly",
-          cycleKey: week.weekKey,
+          cycleKey: questWeek.weekKey,
           rewardChips: 150,
           rewardBoxTickets: 0,
           claimed: weeklyWinsQuest?.status === "claimed",
@@ -929,7 +964,7 @@ export class PostgresEconomyStore implements EconomyStore {
         {
           key: "weekly_complete",
           period: "weekly",
-          cycleKey: week.weekKey,
+          cycleKey: questWeek.weekKey,
           rewardChips: 0,
           rewardBoxTickets: 1,
           claimed: weeklyComplete?.status === "claimed",

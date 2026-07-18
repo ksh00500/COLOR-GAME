@@ -4,43 +4,18 @@ import {
   authChangedEvent,
   claimEconomyQuest,
   fetchEconomy,
-  fetchMe,
   getAuthToken,
-  type Account,
   type EconomyOverview,
 } from "../api";
 import { useI18n } from "../i18n";
 
 type AttendanceState = {
-  account: Account;
   economy: EconomyOverview;
   claimed: boolean;
 };
 
 const attendanceReward = (economy: EconomyOverview) =>
   economy.quests.find((quest) => quest.key === "attendance");
-
-const seoulDay = (date = new Date()) => {
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Seoul",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(date);
-  const value = (type: Intl.DateTimeFormatPartTypes) =>
-    parts.find((part) => part.type === type)?.value ?? "";
-  return `${value("year")}-${value("month")}-${value("day")}`;
-};
-
-const projectedStreak = (account: Account) => {
-  const today = seoulDay();
-  if (account.lastAttendanceDate === today) return account.attendanceStreak;
-  const yesterday = new Date(`${today}T00:00:00.000Z`);
-  yesterday.setUTCDate(yesterday.getUTCDate() - 1);
-  return account.lastAttendanceDate === yesterday.toISOString().slice(0, 10)
-    ? account.attendanceStreak + 1
-    : 1;
-};
 
 export function AttendanceCheckInModal() {
   const { t, formatNumber } = useI18n();
@@ -55,10 +30,10 @@ export function AttendanceCheckInModal() {
     }
 
     try {
-      const [account, economy] = await Promise.all([fetchMe(), fetchEconomy()]);
+      const economy = await fetchEconomy({ force: true });
       const reward = attendanceReward(economy);
       if (reward?.claimable) {
-        setAttendance({ account, economy, claimed: false });
+        setAttendance({ economy, claimed: false });
       } else {
         setAttendance(null);
       }
@@ -79,8 +54,7 @@ export function AttendanceCheckInModal() {
     setMessage(null);
     try {
       const result = await claimEconomyQuest("attendance");
-      const account = result.account ?? attendance.account;
-      setAttendance({ account, economy: result.economy, claimed: true });
+      setAttendance({ economy: result.economy, claimed: true });
     } catch (error) {
       setMessage(error instanceof ApiError ? error.code : "보상을 받지 못했습니다.");
     } finally {
@@ -91,10 +65,11 @@ export function AttendanceCheckInModal() {
   if (attendance === null) return null;
 
   const reward = attendanceReward(attendance.economy);
-  const streak = attendance.claimed
-    ? attendance.account.attendanceStreak
-    : projectedStreak(attendance.account);
-  const progress = Math.max(1, ((streak || 1) - 1) % 7 + 1);
+  const weeklyCount = attendance.economy.attendance.weeklyCount;
+  const projectedCount = attendance.claimed || attendance.economy.attendance.attendedToday
+    ? weeklyCount
+    : weeklyCount + 1;
+  const progress = Math.min(7, Math.max(1, projectedCount));
 
   return (
     <div className="modal-backdrop attendance-backdrop" role="presentation">
@@ -118,12 +93,12 @@ export function AttendanceCheckInModal() {
         </p>
         <div className="attendance-streak">
           <span>
-            <small>{t("현재 연속 출석")}</small>
-            <strong>{t("{days}일", { days: formatNumber(streak) })}</strong>
+            <small>{t("이번 주 출석")}</small>
+            <strong>{t("{count}회", { count: formatNumber(progress) })}</strong>
           </span>
-          <small>{t("7일마다 추가 20칩")}</small>
+          <small>{t("이번 주 {count}번째 출석 보상", { count: formatNumber(progress) })}</small>
         </div>
-        <div className="attendance-week" aria-label={t("7일 출석 진행도")}>
+        <div className="attendance-week" aria-label={t("이번 주 출석 진행도")}>
           {Array.from({ length: 7 }, (_, index) => (
             <span
               key={index}

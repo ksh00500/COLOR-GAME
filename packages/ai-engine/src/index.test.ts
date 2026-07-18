@@ -92,9 +92,9 @@ describe("chooseAiMove", () => {
 
   it("keeps Normal between Easy and Hard with probabilistic tactical decisions", () => {
     expect(normalAiSettings).toMatchObject({
-      immediateScoreChance: 0.85,
-      threatBlockChance: 0.6,
-      replyRiskCheckChance: 0.5,
+      immediateScoreChance: 0.72,
+      threatBlockChance: 0.38,
+      replyRiskCheckChance: 0.32,
       finalCandidateLimit: 3,
     });
   });

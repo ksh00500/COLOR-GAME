@@ -71,7 +71,7 @@ export const patchNoteReleases: PatchNoteRelease[] = [
       {
         tag: "ECONOMY",
         title: "무료 컬러 칩 경제 시작",
-        body: "신규 계정, 출석, 연속 출석, 일반·경쟁전과 첫 승리 보상을 추가했습니다. 광고와 유료 상품은 정식 출시 전까지 잠금 상태로 유지됩니다.",
+        body: "신규 계정, 출석, 주간 출석, 일반·경쟁전과 첫 승리 보상을 추가했습니다. 광고와 유료 상품은 정식 출시 전까지 잠금 상태로 유지됩니다.",
       },
       {
         tag: "COSMETIC",
@@ -86,7 +86,7 @@ export const patchNoteReleases: PatchNoteRelease[] = [
       {
         tag: "ATTENDANCE",
         title: "로그인 출석 팝업",
-        body: "로그인하면 오늘의 출석 팝업이 열립니다. 7일 진행도와 연속 출석을 확인하고 컬러 칩 보상을 바로 받을 수 있습니다.",
+        body: "로그인하면 오늘의 출석 팝업이 열립니다. 이번 주 출석 진행도를 확인하고 컬러 칩 보상을 바로 받을 수 있습니다.",
       },
       {
         tag: "COUPON",

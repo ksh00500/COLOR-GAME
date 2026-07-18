@@ -8,6 +8,7 @@ import {
   fetchAuthMethods,
   getAuthToken,
   getCachedAccount,
+  fetchEconomy,
   fetchLeaderboard,
   fetchMatches,
   fetchMe,
@@ -19,6 +20,7 @@ import {
   updateDisplayName,
   type Account,
   type AuthMethods,
+  type EconomyOverview,
   type MatchHistoryItem,
   type PublicProfile,
 } from "../api";
@@ -106,6 +108,7 @@ export function AccountPage({ deletionEntry = false }: { deletionEntry?: boolean
   const [nicknameDraft, setNicknameDraft] = useState("");
   const [nicknameBusy, setNicknameBusy] = useState(false);
   const [authMethods, setAuthMethods] = useState<AuthMethods>({ password: true, google: false });
+  const [economySummary, setEconomySummary] = useState<EconomyOverview | null>(null);
   const [pendingGoogleToken, setPendingGoogleToken] = useState<string | null>(null);
   const [googleStep, setGoogleStep] = useState<"register" | "link" | null>(null);
   const [googlePassword, setGooglePassword] = useState("");
@@ -132,14 +135,16 @@ export function AccountPage({ deletionEntry = false }: { deletionEntry?: boolean
   }, [deletionEntry]);
 
   async function refreshAccountData(nextAccount: Account) {
-    const [nextMatches, leaderboard, methods] = await Promise.all([
+    const [nextMatches, leaderboard, methods, economy] = await Promise.all([
       fetchMatches(nextAccount.id),
       fetchLeaderboard().catch(() => [] as PublicProfile[]),
       fetchAuthMethods().catch(() => ({ password: true, google: false })),
+      fetchEconomy({ force: true }).catch(() => null),
     ]);
     setMatches(nextMatches);
     setLeaderboardRank(findLeaderboardRank(leaderboard, nextAccount.id));
     setAuthMethods(methods);
+    setEconomySummary(economy);
   }
 
   const acceptAccount = useCallback(async (nextAccount: Account) => {
@@ -231,6 +236,7 @@ export function AccountPage({ deletionEntry = false }: { deletionEntry?: boolean
     setAccount(null);
     setMatches([]);
     setLeaderboardRank(null);
+    setEconomySummary(null);
     setPendingGoogleToken(null);
     setGoogleStep(null);
   };
@@ -247,6 +253,7 @@ export function AccountPage({ deletionEntry = false }: { deletionEntry?: boolean
       setAccount(null);
       setMatches([]);
       setLeaderboardRank(null);
+      setEconomySummary(null);
       setMessage("계정이 삭제되었습니다.");
     } catch (error) {
       setMessage(error instanceof ApiError ? error.code : "계정 삭제 요청을 처리하지 못했습니다.");
@@ -392,8 +399,14 @@ export function AccountPage({ deletionEntry = false }: { deletionEntry?: boolean
                 <span><small>{t("승")}</small><strong>{formatNumber(allMatchStats.wins)}</strong></span>
                 <span><small>{t("패")}</small><strong>{formatNumber(allMatchStats.losses)}</strong></span>
                 <span><small>{t("무")}</small><strong>{formatNumber(allMatchStats.draws)}</strong></span>
-                <span><small>{t("연속 출석")}</small><strong>{t("{days}일", { days: formatNumber(account.attendanceStreak) })}</strong></span>
-                <span><small>{t("최장 출석")}</small><strong>{t("{days}일", { days: formatNumber(account.longestAttendanceStreak) })}</strong></span>
+                <span>
+                  <small>{t("이번 주 출석")}</small>
+                  <strong>{t("{count}회", { count: formatNumber(economySummary?.attendance.weeklyCount ?? 0) })}</strong>
+                </span>
+                <span>
+                  <small>{t("최근 출석")}</small>
+                  <strong>{account.lastAttendanceDate ?? "-"}</strong>
+                </span>
               </div>
               <nav className="account-tabs" aria-label={t("마이페이지 메뉴")}>
                 {([

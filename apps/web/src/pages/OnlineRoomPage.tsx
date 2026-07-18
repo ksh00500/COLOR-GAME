@@ -382,7 +382,14 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
       if (!canPlay || playerId === null) return;
       const target = event.target as HTMLElement | null;
       if (target?.tagName === "INPUT") return;
-      const color = ({ "1": "colorA", "2": "colorB", "3": "colorC" } as const)[event.key as "1" | "2" | "3"];
+      const color = ({
+        "1": "colorA",
+        "2": "colorB",
+        "3": "colorC",
+        q: "colorA",
+        w: "colorB",
+        e: "colorC",
+      } as const)[event.key.toLocaleLowerCase() as "1" | "2" | "3" | "q" | "w" | "e"];
       if (color !== undefined) {
         setSelectedColors((current) => ({ ...current, [playerId]: color }));
       }
@@ -847,7 +854,11 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
               targetScore={game.config.targetScore}
               remainingSeconds={opponentTurn ? remainingSeconds : null}
               scoreDelta={scoreNotice?.playerId === opponent.id ? scoreNotice.score : null}
-              descriptor={opponent.connectionStatus === "connected" ? t("온라인 상대") : t("연결 끊김")}
+              descriptor={opponent.connectionStatus !== "connected"
+                ? t("연결 끊김")
+                : opponent.isGuest
+                  ? t("게스트 플레이어")
+                  : t("온라인 상대")}
             />
 
             <div className={`turn-banner ${myTurn ? "mine" : "theirs"}${turnCueActive ? " turn-ready-effect" : ""}`} role="status" aria-live="polite">
@@ -872,7 +883,7 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
               targetScore={game.config.targetScore}
               remainingSeconds={myTurn ? remainingSeconds : null}
               scoreDelta={scoreNotice?.playerId === me.id ? scoreNotice.score : null}
-              descriptor={t("나")}
+              descriptor={me.isGuest ? t("게스트 플레이어") : t("내 계정")}
             />
             <button className="resign-button" type="button" onClick={() => setResignOpen(true)} disabled={game.status !== "playing" || busyLabel !== null}>
               {t("대전 포기")}
