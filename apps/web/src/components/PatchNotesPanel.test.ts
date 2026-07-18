@@ -5,17 +5,16 @@ import {
 } from "./PatchNotesPanel";
 
 describe("patch notes", () => {
-  it("publishes the 20260701 match and mobile update as the latest release", () => {
-    expect(latestPatchNote.version).toBe("20260701-v1.2.1");
-    expect(latestPatchNote.entries).toHaveLength(6);
+  it("publishes the 20260718 attendance and control update as the latest release", () => {
+    expect(latestPatchNote.version).toBe("20260718-v1.2.2");
+    expect(latestPatchNote.entries).toHaveLength(5);
     expect(latestPatchNote.entries.map((entry) => entry.tag)).toEqual([
-      "MATCH",
-      "REMATCH",
+      "CHECK-IN",
       "QUEST",
-      "ACCOUNT",
-      "STORE",
-      "UI",
+      "CONTROL",
+      "ONLINE",
+      "AI",
     ]);
-    expect(patchNoteReleases[1]?.version).toBe("20260630-v1.1.2");
+    expect(patchNoteReleases[1]?.version).toBe("20260701-v1.2.1");
   });
 });

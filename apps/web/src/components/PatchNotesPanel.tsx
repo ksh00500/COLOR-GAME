@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { useI18n } from "../i18n";
 
-const latestPatchVersion = "20260701-v1.2.1";
+const latestPatchVersion = "20260718-v1.2.2";
 const patchNotesKey = `tango-patch-notes-seen-${latestPatchVersion}`;
 const patchNotesOpenEvent = "tango:open-patch-notes";
 
@@ -26,6 +26,39 @@ export interface PatchNoteRelease {
 export const patchNoteReleases: PatchNoteRelease[] = [
   {
     version: latestPatchVersion,
+    title: "주간 출석과 조작감 개선",
+    date: "2026-07-18",
+    summary: "출석 보상을 주간 누적 방식으로 정리하고, 타일 선택·온라인 표기·Normal AI와 다국어 문구를 다듬은 패치입니다.",
+    entries: [
+      {
+        tag: "CHECK-IN",
+        title: "이번 주 출석 횟수 기준으로 변경",
+        body: "연속 출석 대신 이번 주 출석 횟수를 보여주도록 바꿨습니다. 주간 출석은 일요일 00:00 KST에 초기화됩니다.",
+      },
+      {
+        tag: "QUEST",
+        title: "주간 퀘스트 기준 정리",
+        body: "주간 출석·온라인 경기·온라인 승리 퀘스트가 같은 주간 기준으로 계산되도록 정리했습니다. 미수령 보상은 그대로 유지됩니다.",
+      },
+      {
+        tag: "CONTROL",
+        title: "타일 선택과 보드 표시 개선",
+        body: "기존 1·2·3 단축키에 Q·W·E 보조 단축키를 추가했습니다. 키보드 이동과 마우스 hover 표시가 겹쳐 보이던 문제도 수정했습니다.",
+      },
+      {
+        tag: "ONLINE",
+        title: "온라인 대전 플레이어 표기 수정",
+        body: "로그인한 플레이어가 현재 차례 카드에서 게스트로 보이던 문제를 수정했습니다. 게스트 표기는 실제 게스트에게만 표시됩니다.",
+      },
+      {
+        tag: "AI",
+        title: "Normal AI 성향 완화",
+        body: "Normal AI가 득점 차단에 지나치게 치우치지 않도록 방어 성향을 낮췄습니다. Easy처럼 무너지지는 않게 균형을 유지했습니다.",
+      },
+    ],
+  },
+  {
+    version: "20260701-v1.2.1",
     title: "대전 기록과 모바일 경험 개선",
     date: "2026-07-01",
     summary: "전적 판정, 재경기, 퀘스트와 상점 경제를 바로잡고 모바일 화면과 게임 종료 흐름을 다듬은 통합 패치입니다.",
