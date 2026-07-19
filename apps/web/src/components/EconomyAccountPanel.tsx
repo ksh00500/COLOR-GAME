@@ -2,56 +2,26 @@ import { useEffect, useState } from "react";
 import {
   ApiError,
   combineCosmeticFragments,
-  equipTileColor,
   fetchEconomy,
   redeemCoupon,
-  resetTileColor,
-  type CosmeticItem,
   type CosmeticOutcome,
   type CosmeticRarity,
   type CouponRedemptionResult,
   type EconomyOverview,
-  type TileLoadoutSlot,
 } from "../api";
-import { localizedCosmeticName } from "../cosmetic-localization";
 import { useI18n } from "../i18n";
+import { localizedCosmeticName } from "../cosmetic-localization";
 import { EconomyQuestGrid } from "./EconomyQuestGrid";
 import { TileSkinPreview } from "./TileSkinPreview";
 import { CosmeticOutcomeModal } from "./CosmeticOutcomeModal";
 import { loadoutChangedEvent } from "./CosmeticLoadoutBridge";
+import { TilePalettePanel } from "./TilePalettePanel";
+
+export { filterOwnedTileItems } from "./TilePalettePanel";
 
 export type AccountEconomyTab = "tiles" | "quests" | "records" | "benefits";
 
 const rarities: CosmeticRarity[] = ["common", "rare", "epic", "legendary"];
-type TileRarityFilter = "all" | CosmeticRarity;
-
-export const filterOwnedTileItems = (
-  items: CosmeticItem[],
-  locale: string,
-  query: string,
-  rarity: TileRarityFilter,
-) => {
-  const normalizedQuery = query.trim().toLocaleLowerCase(locale);
-  return items.filter((item) => {
-    if (rarity !== "all" && item.rarity !== rarity) return false;
-    if (normalizedQuery === "") return true;
-    return [
-      localizedCosmeticName(item, locale),
-      item.nameKo,
-      item.nameEn,
-    ].some((name) => name.toLocaleLowerCase(locale).includes(normalizedQuery));
-  });
-};
-
-const tileSlots: Array<{
-  key: TileLoadoutSlot;
-  label: string;
-  defaultName: string;
-}> = [
-  { key: "colorA", label: "빨강 슬롯", defaultName: "기본 버건디" },
-  { key: "colorB", label: "파랑 슬롯", defaultName: "기본 네이비" },
-  { key: "colorC", label: "초록 슬롯", defaultName: "기본 그린" },
-];
 
 export function EconomyAccountPanel({ activeTab }: { activeTab: AccountEconomyTab }) {
   const { t, locale, formatNumber, formatDate } = useI18n();
@@ -59,16 +29,9 @@ export function EconomyAccountPanel({ activeTab }: { activeTab: AccountEconomyTa
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [outcome, setOutcome] = useState<CosmeticOutcome | null>(null);
-  const [selectedSlot, setSelectedSlot] = useState<TileLoadoutSlot>("colorA");
   const [couponCode, setCouponCode] = useState("");
   const [couponResult, setCouponResult] = useState<CouponRedemptionResult | null>(null);
   const [ledgerExpanded, setLedgerExpanded] = useState(false);
-  const [tileQuery, setTileQuery] = useState("");
-  const [tileRarity, setTileRarity] = useState<TileRarityFilter>("all");
-  const [similarWarning, setSimilarWarning] = useState<{
-    slot: TileLoadoutSlot;
-    item: CosmeticItem;
-  } | null>(null);
 
   useEffect(() => {
     void fetchEconomy().then(setEconomy).catch(() => undefined);
@@ -88,39 +51,6 @@ export function EconomyAccountPanel({ activeTab }: { activeTab: AccountEconomyTa
       setEconomy(result.overview);
     } catch (error) {
       setMessage(error instanceof ApiError ? error.code : "파편을 합성하지 못했습니다.");
-    } finally {
-      setBusy(null);
-    }
-  };
-
-  const equip = async (
-    slot: TileLoadoutSlot,
-    item: CosmeticItem,
-    allowSimilar = false,
-  ) => {
-    setBusy(`${slot}:${item.id}`);
-    setMessage(null);
-    try {
-      applyEconomy(await equipTileColor(slot, item.id, allowSimilar));
-      setSimilarWarning(null);
-    } catch (error) {
-      if (error instanceof ApiError && error.code === "TILE_COLORS_TOO_SIMILAR" && !allowSimilar) {
-        setSimilarWarning({ slot, item });
-      } else {
-        setMessage(error instanceof ApiError ? error.code : "스킨을 장착하지 못했습니다.");
-      }
-    } finally {
-      setBusy(null);
-    }
-  };
-
-  const reset = async (slot: TileLoadoutSlot) => {
-    setBusy(`reset:${slot}`);
-    setMessage(null);
-    try {
-      applyEconomy(await resetTileColor(slot));
-    } catch (error) {
-      setMessage(error instanceof ApiError ? error.code : "기본 타일로 복원하지 못했습니다.");
     } finally {
       setBusy(null);
     }
@@ -147,120 +77,10 @@ export function EconomyAccountPanel({ activeTab }: { activeTab: AccountEconomyTa
     return <section className="economy-account-panel loading">{t("상점을 불러오는 중입니다.")}</section>;
   }
 
-  const ownedTiles = economy.inventory.filter((item) => item.equipSlot === "tile_color");
-  const filteredOwnedTiles = filterOwnedTileItems(ownedTiles, locale, tileQuery, tileRarity);
-
   return (
     <section className="economy-account-panel">
       {activeTab === "tiles" && (
-        <>
-          <div className="economy-account-heading">
-            <div>
-              <p className="eyebrow">TILE LOADOUT</p>
-              <h3>{t("세 가지 기본 색을 내 타일로 바꾸세요")}</h3>
-            </div>
-            <strong className="mini-chip-balance">◆ {formatNumber(economy.wallet.colorChips)}</strong>
-          </div>
-
-          <div className="tile-loadout-grid">
-            {tileSlots.map((slot) => {
-              const item = ownedTiles.find((entry) => entry.id === economy.loadout[slot.key]);
-              return (
-                <article className={selectedSlot === slot.key ? "selected" : ""} key={slot.key}>
-                  <button type="button" onClick={() => setSelectedSlot(slot.key)}>
-                    <TileSkinPreview
-                      {...(item ? { item } : {})}
-                      defaultSlot={slot.key}
-                      label={t(slot.label)}
-                    />
-                    <span>
-                      <small>{t(slot.label)}</small>
-                      <strong>{item ? localizedCosmeticName(item, locale) : t(slot.defaultName)}</strong>
-                    </span>
-                  </button>
-                  <button
-                    className="loadout-reset"
-                    type="button"
-                    disabled={!item || busy !== null}
-                    onClick={() => void reset(slot.key)}
-                  >
-                    {t("기본으로 복원")}
-                  </button>
-                </article>
-              );
-            })}
-          </div>
-
-          <div className="inventory-heading">
-            <div>
-              <h3>{t("보유 타일")}</h3>
-              <p>{t("타일 하나를 선택한 슬롯에 장착합니다.")}</p>
-            </div>
-            <strong>{t(tileSlots.find((slot) => slot.key === selectedSlot)?.label ?? "빨강 슬롯")}</strong>
-          </div>
-          <div className="owned-tile-tools">
-            <label className="owned-tile-search">
-              <span>{t("타일 이름 검색")}</span>
-              <input
-                type="search"
-                value={tileQuery}
-                placeholder={t("이름으로 검색")}
-                onChange={(event) => setTileQuery(event.target.value)}
-              />
-            </label>
-            <div className="owned-tile-rarity-filter" role="group" aria-label={t("보유 타일 등급 필터")}>
-              <button
-                type="button"
-                className={tileRarity === "all" ? "active" : ""}
-                onClick={() => setTileRarity("all")}
-              >
-                {t("모두")} <small>{ownedTiles.length}</small>
-              </button>
-              {rarities.map((rarity) => (
-                <button
-                  key={rarity}
-                  type="button"
-                  className={tileRarity === rarity ? "active" : ""}
-                  onClick={() => setTileRarity(rarity)}
-                >
-                  {t(rarity)} <small>{ownedTiles.filter((item) => item.rarity === rarity).length}</small>
-                </button>
-              ))}
-            </div>
-          </div>
-          {ownedTiles.length === 0 ? (
-            <p className="online-message">{t("아직 보유한 스킨이 없습니다. 상점에서 첫 스킨을 만나보세요.")}</p>
-          ) : filteredOwnedTiles.length === 0 ? (
-            <p className="online-message">{t("검색 조건에 맞는 보유 타일이 없습니다.")}</p>
-          ) : (
-            <div className="owned-tile-grid">
-              {filteredOwnedTiles.map((item) => {
-                const equippedHere = economy.loadout[selectedSlot] === item.id;
-                const equippedElsewhere = item.equippedSlots.some((slot) => slot !== selectedSlot);
-                return (
-                  <article key={item.id}>
-                    <TileSkinPreview item={item} label={localizedCosmeticName(item, locale)} />
-                    <span>
-                      <strong>{localizedCosmeticName(item, locale)}</strong>
-                      <small>{t(item.rarity)} · {t(item.visualKind)}</small>
-                    </span>
-                    <button
-                      type="button"
-                      className={equippedHere ? "active" : ""}
-                      disabled={equippedHere || equippedElsewhere || busy !== null}
-                      onClick={() => void equip(selectedSlot, item)}
-                    >
-                      {equippedHere ? t("장착 중") : equippedElsewhere ? t("다른 슬롯 사용 중") : t("장착")}
-                    </button>
-                    {item.isNew && (
-                      <span className="new-cosmetic-badge" title={t("새로 획득한 스킨")}>!</span>
-                    )}
-                  </article>
-                );
-              })}
-            </div>
-          )}
-        </>
+        <TilePalettePanel economy={economy} onEconomyChange={setEconomy} />
       )}
 
       {activeTab === "quests" && (
@@ -415,20 +235,6 @@ export function EconomyAccountPanel({ activeTab }: { activeTab: AccountEconomyTa
         </div>
       )}
 
-      {similarWarning && (
-        <div className="modal-backdrop" role="presentation" onMouseDown={() => setSimilarWarning(null)}>
-          <section className="confirm-panel tile-similarity-panel" role="dialog" aria-modal="true" onMouseDown={(event) => event.stopPropagation()}>
-            <p className="eyebrow">COLOR WARNING</p>
-            <TileSkinPreview item={similarWarning.item} label={localizedCosmeticName(similarWarning.item, locale)} />
-            <h2>{t("기존 타일과 색이 비슷합니다.")}</h2>
-            <p>{t("색각 보조 도형은 유지됩니다. 그래도 이 조합을 사용하시겠어요?")}</p>
-            <div className="confirm-actions">
-              <button className="secondary-action" type="button" onClick={() => setSimilarWarning(null)}>{t("취소")}</button>
-              <button className="primary-action" type="button" onClick={() => void equip(similarWarning.slot, similarWarning.item, true)}>{t("그래도 장착")}</button>
-            </div>
-          </section>
-        </div>
-      )}
     </section>
   );
 }

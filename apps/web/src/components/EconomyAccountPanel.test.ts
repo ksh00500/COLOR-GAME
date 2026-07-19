@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import type { CosmeticItem, CosmeticRarity } from "../api";
+import type { CosmeticItem, CosmeticRarity, TilePalettePreset } from "../api";
 import { filterOwnedTileItems } from "./EconomyAccountPanel";
+import { firstEmptyPaletteSlot, tileLoadoutsEqual } from "./TilePalettePanel";
 
 const tile = (
   id: string,
@@ -52,5 +53,31 @@ describe("owned tile filters", () => {
       .toEqual(["aurora"]);
     expect(filterOwnedTileItems(ownedTiles, "en", "aur", "common"))
       .toEqual([]);
+  });
+});
+
+describe("tile palette helpers", () => {
+  const palette = (slotIndex: number): TilePalettePreset => ({
+    slotIndex,
+    name: null,
+    loadout: { colorA: `tile-${slotIndex}` },
+  });
+
+  it("compares all three tile slots as one loadout", () => {
+    expect(tileLoadoutsEqual(
+      { colorA: "red", colorB: "blue", colorC: "green" },
+      { colorA: "red", colorB: "blue", colorC: "green" },
+    )).toBe(true);
+    expect(tileLoadoutsEqual(
+      { colorA: "red", colorB: "blue", colorC: "green" },
+      { colorA: "red", colorB: "blue" },
+    )).toBe(false);
+    expect(tileLoadoutsEqual({}, {})).toBe(true);
+  });
+
+  it("enforces the three custom palette slots", () => {
+    expect(firstEmptyPaletteSlot([])).toBe(1);
+    expect(firstEmptyPaletteSlot([palette(1), palette(3)])).toBe(2);
+    expect(firstEmptyPaletteSlot([palette(1), palette(2), palette(3)])).toBeNull();
   });
 });

@@ -18,6 +18,12 @@ export type CosmeticEquipSlot =
   | "profile_badge"
   | "profile_title";
 export type TileLoadoutSlot = "colorA" | "colorB" | "colorC";
+export type TileLoadout = Partial<Record<TileLoadoutSlot, string>>;
+export interface TilePalettePreset {
+  slotIndex: number;
+  name: string | null;
+  loadout: TileLoadout;
+}
 export type QuestKey =
   | "welcome"
   | "attendance"
@@ -88,7 +94,8 @@ export interface EconomyOverview {
   };
   catalog: EconomyCatalogItem[];
   inventory: EconomyCatalogItem[];
-  loadout: Partial<Record<TileLoadoutSlot, string>>;
+  loadout: TileLoadout;
+  tilePalettes: TilePalettePreset[];
   upcomingCategories: Array<Exclude<CosmeticCategory, "tile_color">>;
   quests: EconomyQuest[];
   ledger: Array<{
@@ -181,6 +188,25 @@ export interface EconomyStore {
     slot: TileLoadoutSlot,
     attendanceStreak?: number,
   ): Promise<EconomyOverview>;
+  equipTileLoadout(
+    accountId: string,
+    loadout: TileLoadout,
+    allowSimilar?: boolean,
+    attendanceStreak?: number,
+  ): Promise<EconomyOverview>;
+  saveTilePalette(
+    accountId: string,
+    slotIndex: number,
+    name: string | null,
+    loadout: TileLoadout,
+    allowSimilar?: boolean,
+    attendanceStreak?: number,
+  ): Promise<EconomyOverview>;
+  deleteTilePalette(
+    accountId: string,
+    slotIndex: number,
+    attendanceStreak?: number,
+  ): Promise<EconomyOverview>;
   hasEntitlement(accountId: string, entitlement: "founder" | "premium"): Promise<boolean>;
   recordFinishedRoom(room: RoomSnapshot, rewardIdentities?: RewardIdentities): Promise<void>;
 }
@@ -259,6 +285,11 @@ interface LoadoutRow {
   tile_color_a_id: string | null;
   tile_color_b_id: string | null;
   tile_color_c_id: string | null;
+}
+
+interface TilePaletteRow extends LoadoutRow {
+  slot_index: number;
+  name: string | null;
 }
 
 interface QuestRow {
@@ -485,6 +516,9 @@ export class NullEconomyStore implements EconomyStore {
   async combineFragments(): Promise<BoxOutcome> { throw new Error("DATABASE_DISABLED"); }
   async equipTileColor(): Promise<EconomyOverview> { throw new Error("DATABASE_DISABLED"); }
   async resetTileColor(): Promise<EconomyOverview> { throw new Error("DATABASE_DISABLED"); }
+  async equipTileLoadout(): Promise<EconomyOverview> { throw new Error("DATABASE_DISABLED"); }
+  async saveTilePalette(): Promise<EconomyOverview> { throw new Error("DATABASE_DISABLED"); }
+  async deleteTilePalette(): Promise<EconomyOverview> { throw new Error("DATABASE_DISABLED"); }
   async hasEntitlement(): Promise<boolean> { return false; }
   async recordFinishedRoom(): Promise<void> {}
 }
@@ -649,18 +683,34 @@ export class PostgresEconomyStore implements EconomyStore {
     return result.rows;
   }
 
-  private async readLoadout(client: PoolClient, accountId: string): Promise<Partial<Record<TileLoadoutSlot, string>>> {
+  private loadoutFromRow(row: LoadoutRow | undefined): TileLoadout {
+    const loadout: TileLoadout = {};
+    if (row?.tile_color_a_id) loadout.colorA = row.tile_color_a_id;
+    if (row?.tile_color_b_id) loadout.colorB = row.tile_color_b_id;
+    if (row?.tile_color_c_id) loadout.colorC = row.tile_color_c_id;
+    return loadout;
+  }
+
+  private async readLoadout(client: PoolClient, accountId: string): Promise<TileLoadout> {
     const result = await client.query<LoadoutRow>(
       `select tile_color_a_id, tile_color_b_id, tile_color_c_id
        from account_loadouts where account_id = $1`,
       [accountId],
     );
-    const row = result.rows[0];
-    const loadout: Partial<Record<TileLoadoutSlot, string>> = {};
-    if (row?.tile_color_a_id) loadout.colorA = row.tile_color_a_id;
-    if (row?.tile_color_b_id) loadout.colorB = row.tile_color_b_id;
-    if (row?.tile_color_c_id) loadout.colorC = row.tile_color_c_id;
-    return loadout;
+    return this.loadoutFromRow(result.rows[0]);
+  }
+
+  private async readTilePalettes(client: PoolClient, accountId: string): Promise<TilePalettePreset[]> {
+    const result = await client.query<TilePaletteRow>(
+      `select slot_index, name, tile_color_a_id, tile_color_b_id, tile_color_c_id
+       from account_tile_palettes where account_id = $1 order by slot_index`,
+      [accountId],
+    );
+    return result.rows.map((row) => ({
+      slotIndex: row.slot_index,
+      name: row.name,
+      loadout: this.loadoutFromRow(row),
+    }));
   }
 
   private async overviewWithClient(
@@ -690,6 +740,7 @@ export class PostgresEconomyStore implements EconomyStore {
       weeklyMatches,
       weeklyWins,
       products,
+      tilePalettes,
     ] = await Promise.all([
       client.query<WalletRow>(`select * from economy_wallets where account_id = $1`, [accountId]),
       client.query<{ quantity: number }>(
@@ -780,6 +831,7 @@ export class PostgresEconomyStore implements EconomyStore {
       client.query<{ id: "founder_pack" | "premium_pack"; reference_price_krw: number; bonus_chips: number }>(
         `select id, reference_price_krw, bonus_chips from monetization_products where active`,
       ),
+      this.readTilePalettes(client, accountId),
     ]);
 
     const fragments = Object.fromEntries(rarities.map((rarity) => [rarity, 0])) as Record<CosmeticRarity, number>;
@@ -865,6 +917,7 @@ export class PostgresEconomyStore implements EconomyStore {
       catalog: catalogWithLoadout(catalogRows),
       inventory: catalogWithLoadout(inventoryRows),
       loadout,
+      tilePalettes,
       upcomingCategories: ["placement_effect", "score_effect", "profile", "victory_effect"],
       quests: [
         {
@@ -1358,6 +1411,83 @@ export class PostgresEconomyStore implements EconomyStore {
     };
   }
 
+  private async validateOwnedTileLoadout(
+    client: PoolClient,
+    accountId: string,
+    loadout: TileLoadout,
+    allowSimilar: boolean,
+  ): Promise<string[]> {
+    const selectedIds = Object.values(loadout);
+    const uniqueIds = [...new Set(selectedIds)];
+    const selectedRows = uniqueIds.length === 0
+      ? []
+      : (await client.query<{ id: string; representative_color: string | null }>(
+          `select c.id, c.representative_color
+           from cosmetic_catalog c
+           join account_cosmetics ac on ac.cosmetic_id = c.id
+           where ac.account_id = $1 and c.id = any($2::text[]) and c.active
+             and c.equip_slot = 'tile_color' and c.availability in ('active', 'pack_only')`,
+          [accountId, uniqueIds],
+        )).rows;
+    if (
+      selectedRows.length !== uniqueIds.length
+      || selectedRows.some((row) => row.representative_color === null)
+    ) {
+      throw new Error("COSMETIC_NOT_OWNED");
+    }
+    const selectedById = new Map(
+      selectedRows.map((row) => [row.id, row.representative_color as string]),
+    );
+    validateTileColorCombination(
+      (["colorA", "colorB", "colorC"] as const).map((slot) => {
+        const id = loadout[slot];
+        return id === undefined
+          ? {
+              id: `default:${slot}`,
+              representativeColor: defaultTileSafetyColors[slot],
+              slot,
+            }
+          : {
+              id,
+              representativeColor: selectedById.get(id) ?? defaultTileSafetyColors[slot],
+              slot,
+            };
+      }),
+      allowSimilar,
+    );
+    return uniqueIds;
+  }
+
+  private async writeTileLoadout(
+    client: PoolClient,
+    accountId: string,
+    loadout: TileLoadout,
+    selectedIds: string[],
+  ): Promise<void> {
+    await client.query(
+      `update account_loadouts
+       set tile_color_a_id = $2,
+           tile_color_b_id = $3,
+           tile_color_c_id = $4,
+           updated_at = now()
+       where account_id = $1`,
+      [
+        accountId,
+        loadout.colorA ?? null,
+        loadout.colorB ?? null,
+        loadout.colorC ?? null,
+      ],
+    );
+    if (selectedIds.length > 0) {
+      await client.query(
+        `update account_cosmetics
+         set first_equipped_at = coalesce(first_equipped_at, now())
+         where account_id = $1 and cosmetic_id = any($2::text[])`,
+        [accountId, selectedIds],
+      );
+    }
+  }
+
   async equipTileColor(
     accountId: string,
     slot: TileLoadoutSlot,
@@ -1369,61 +1499,84 @@ export class PostgresEconomyStore implements EconomyStore {
     try {
       await client.query("begin");
       await this.ensureAccount(client, accountId);
-      const item = await client.query<{ id: string; representative_color: string | null }>(
-        `select c.id, c.representative_color
-         from cosmetic_catalog c
-         join account_cosmetics ac on ac.cosmetic_id = c.id
-         where ac.account_id = $1 and c.id = $2 and c.active
-           and c.equip_slot = 'tile_color' and c.availability in ('active', 'pack_only')`,
-        [accountId, cosmeticId],
-      );
-      const selected = item.rows[0];
-      if (selected === undefined || selected.representative_color === null) {
-        throw new Error("COSMETIC_NOT_OWNED");
-      }
       const current = await this.readLoadout(client, accountId);
       current[slot] = cosmeticId;
-      const selectedIds = Object.values(current);
-      const selectedRows = selectedIds.length === 0
-        ? []
-        : (await client.query<{ id: string; representative_color: string }>(
-            `select id, representative_color from cosmetic_catalog
-             where id = any($1::text[]) and representative_color is not null`,
-            [selectedIds],
-          )).rows;
-      const selectedById = new Map(selectedRows.map((row) => [row.id, row.representative_color]));
-      validateTileColorCombination(
-        (["colorA", "colorB", "colorC"] as const).map((loadoutSlot) => {
-          const id = current[loadoutSlot];
-          return id === undefined
-            ? {
-                id: `default:${loadoutSlot}`,
-                representativeColor: defaultTileSafetyColors[loadoutSlot],
-                slot: loadoutSlot,
-              }
-            : {
-                id,
-                representativeColor: selectedById.get(id) ?? defaultTileSafetyColors[loadoutSlot],
-                slot: loadoutSlot,
-              };
-        }),
+      const selectedIds = await this.validateOwnedTileLoadout(
+        client,
+        accountId,
+        current,
         allowSimilar,
       );
-      const column: Record<TileLoadoutSlot, string> = {
-        colorA: "tile_color_a_id",
-        colorB: "tile_color_b_id",
-        colorC: "tile_color_c_id",
-      };
-      await client.query(
-        `update account_loadouts set ${column[slot]} = $2, updated_at = now()
-         where account_id = $1`,
-        [accountId, cosmeticId],
+      await this.writeTileLoadout(client, accountId, current, selectedIds);
+      await client.query("commit");
+    } catch (error) {
+      await client.query("rollback");
+      throw error;
+    } finally {
+      client.release();
+    }
+    return this.getOverview(accountId, attendanceStreak);
+  }
+
+  async equipTileLoadout(
+    accountId: string,
+    loadout: TileLoadout,
+    allowSimilar = false,
+    attendanceStreak = 0,
+  ): Promise<EconomyOverview> {
+    const client = await this.pool.connect();
+    try {
+      await client.query("begin");
+      await this.ensureAccount(client, accountId);
+      const selectedIds = await this.validateOwnedTileLoadout(
+        client,
+        accountId,
+        loadout,
+        allowSimilar,
       );
+      await this.writeTileLoadout(client, accountId, loadout, selectedIds);
+      await client.query("commit");
+    } catch (error) {
+      await client.query("rollback");
+      throw error;
+    } finally {
+      client.release();
+    }
+    return this.getOverview(accountId, attendanceStreak);
+  }
+
+  async saveTilePalette(
+    accountId: string,
+    slotIndex: number,
+    name: string | null,
+    loadout: TileLoadout,
+    allowSimilar = false,
+    attendanceStreak = 0,
+  ): Promise<EconomyOverview> {
+    const client = await this.pool.connect();
+    try {
+      await client.query("begin");
+      await this.ensureAccount(client, accountId);
+      await this.validateOwnedTileLoadout(client, accountId, loadout, allowSimilar);
       await client.query(
-        `update account_cosmetics
-         set first_equipped_at = coalesce(first_equipped_at, now())
-         where account_id = $1 and cosmetic_id = $2`,
-        [accountId, cosmeticId],
+        `insert into account_tile_palettes (
+           account_id, slot_index, name,
+           tile_color_a_id, tile_color_b_id, tile_color_c_id
+         ) values ($1, $2, $3, $4, $5, $6)
+         on conflict (account_id, slot_index) do update set
+           name = excluded.name,
+           tile_color_a_id = excluded.tile_color_a_id,
+           tile_color_b_id = excluded.tile_color_b_id,
+           tile_color_c_id = excluded.tile_color_c_id,
+           updated_at = now()`,
+        [
+          accountId,
+          slotIndex,
+          name,
+          loadout.colorA ?? null,
+          loadout.colorB ?? null,
+          loadout.colorC ?? null,
+        ],
       );
       await client.query("commit");
     } catch (error) {
@@ -1432,6 +1585,18 @@ export class PostgresEconomyStore implements EconomyStore {
     } finally {
       client.release();
     }
+    return this.getOverview(accountId, attendanceStreak);
+  }
+
+  async deleteTilePalette(
+    accountId: string,
+    slotIndex: number,
+    attendanceStreak = 0,
+  ): Promise<EconomyOverview> {
+    await this.pool.query(
+      `delete from account_tile_palettes where account_id = $1 and slot_index = $2`,
+      [accountId, slotIndex],
+    );
     return this.getOverview(accountId, attendanceStreak);
   }
 

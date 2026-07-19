@@ -34,6 +34,7 @@ import {
   type CosmeticRarity,
   type EconomyStore,
   seoulDayKey,
+  type TileLoadout,
   type TileLoadoutSlot,
 } from "./economy-store.js";
 import {
@@ -150,6 +151,31 @@ const tileEquipSchema = cosmeticIdSchema.extend({
 const tileLoadoutParamsSchema = z.object({
   slot: z.enum(["colorA", "colorB", "colorC"]),
 });
+
+const tileLoadoutSchema = z.object({
+  colorA: z.string().trim().min(1).max(80).nullable().optional(),
+  colorB: z.string().trim().min(1).max(80).nullable().optional(),
+  colorC: z.string().trim().min(1).max(80).nullable().optional(),
+}).strict();
+
+const tileBatchEquipSchema = z.object({
+  loadout: tileLoadoutSchema,
+  allowSimilar: z.boolean().optional().default(false),
+});
+
+const tilePaletteParamsSchema = z.object({
+  slotIndex: z.coerce.number().int().min(1).max(3),
+});
+
+const tilePaletteSaveSchema = tileBatchEquipSchema.extend({
+  name: z.string().trim().min(1).max(24).nullable().optional().default(null),
+});
+
+const normalizeTileLoadout = (
+  loadout: z.infer<typeof tileLoadoutSchema>,
+): TileLoadout => Object.fromEntries(
+  Object.entries(loadout).filter((entry): entry is [TileLoadoutSlot, string] => typeof entry[1] === "string"),
+) as TileLoadout;
 
 const fragmentCombineSchema = z.object({
   rarity: z.enum(["common", "rare", "epic", "legendary"]),
@@ -1403,6 +1429,87 @@ export const createServer = (options: ServerOptions = {}) => {
         economy: await economyStore.resetTileColor(
           account.id,
           params.data.slot as TileLoadoutSlot,
+          account.attendanceStreak,
+        ),
+      };
+    } catch (error) {
+      const mapped = economyErrorStatus(error);
+      return reply.code(mapped.status).send({ code: mapped.code });
+    }
+  });
+
+  app.put("/economy/loadout/tiles", async (request, reply) => {
+    const account = await authenticateToken(bearerToken(request.headers.authorization));
+    if (account === null || !economyStore.enabled) {
+      return reply.code(401).send({ code: "UNAUTHORIZED", message: "Sign in is required." });
+    }
+    const parsed = tileBatchEquipSchema.merge(economyTimeZoneSchema).safeParse(request.body ?? {});
+    if (!parsed.success) {
+      return reply.code(400).send({ code: "INVALID_REQUEST" });
+    }
+    try {
+      return {
+        economy: await economyStore.equipTileLoadout(
+          account.id,
+          normalizeTileLoadout(parsed.data.loadout),
+          parsed.data.allowSimilar,
+          account.attendanceStreak,
+        ),
+      };
+    } catch (error) {
+      if (error instanceof TileColorSimilarityError) {
+        return reply.code(409).send({ code: error.code, conflicts: error.conflicts });
+      }
+      const mapped = economyErrorStatus(error);
+      return reply.code(mapped.status).send({ code: mapped.code });
+    }
+  });
+
+  app.put("/economy/tile-palettes/:slotIndex", async (request, reply) => {
+    const account = await authenticateToken(bearerToken(request.headers.authorization));
+    if (account === null || !economyStore.enabled) {
+      return reply.code(401).send({ code: "UNAUTHORIZED", message: "Sign in is required." });
+    }
+    const params = tilePaletteParamsSchema.safeParse(request.params);
+    const body = tilePaletteSaveSchema.merge(economyTimeZoneSchema).safeParse(request.body ?? {});
+    if (!params.success || !body.success) {
+      return reply.code(400).send({ code: "INVALID_REQUEST" });
+    }
+    try {
+      return {
+        economy: await economyStore.saveTilePalette(
+          account.id,
+          params.data.slotIndex,
+          body.data.name,
+          normalizeTileLoadout(body.data.loadout),
+          body.data.allowSimilar,
+          account.attendanceStreak,
+        ),
+      };
+    } catch (error) {
+      if (error instanceof TileColorSimilarityError) {
+        return reply.code(409).send({ code: error.code, conflicts: error.conflicts });
+      }
+      const mapped = economyErrorStatus(error);
+      return reply.code(mapped.status).send({ code: mapped.code });
+    }
+  });
+
+  app.delete("/economy/tile-palettes/:slotIndex", async (request, reply) => {
+    const account = await authenticateToken(bearerToken(request.headers.authorization));
+    if (account === null || !economyStore.enabled) {
+      return reply.code(401).send({ code: "UNAUTHORIZED", message: "Sign in is required." });
+    }
+    const params = tilePaletteParamsSchema.safeParse(request.params);
+    const body = economyTimeZoneSchema.safeParse(request.body ?? {});
+    if (!params.success || !body.success) {
+      return reply.code(400).send({ code: "INVALID_REQUEST" });
+    }
+    try {
+      return {
+        economy: await economyStore.deleteTilePalette(
+          account.id,
+          params.data.slotIndex,
           account.attendanceStreak,
         ),
       };

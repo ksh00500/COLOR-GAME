@@ -91,6 +91,13 @@ export type CosmeticEquipSlot =
   | "profile_badge"
   | "profile_title";
 export type TileLoadoutSlot = "colorA" | "colorB" | "colorC";
+export type TileLoadout = Partial<Record<TileLoadoutSlot, string>>;
+
+export interface TilePalettePreset {
+  slotIndex: number;
+  name: string | null;
+  loadout: TileLoadout;
+}
 
 export interface CosmeticItem {
   id: string;
@@ -137,7 +144,8 @@ export interface EconomyOverview {
   };
   catalog: CosmeticItem[];
   inventory: CosmeticItem[];
-  loadout: Partial<Record<TileLoadoutSlot, string>>;
+  loadout: TileLoadout;
+  tilePalettes: TilePalettePreset[];
   upcomingCategories: Array<Exclude<CosmeticCategory, "tile_color">>;
   quests: Array<{
     key:
@@ -607,6 +615,47 @@ export const resetTileColor = async (
 ): Promise<EconomyOverview> => {
   const data = await request<{ economy: EconomyOverview }>(
     `/economy/loadout/tile/${slot}`,
+    {
+      method: "DELETE",
+      body: JSON.stringify({ timeZone: browserTimeZone() }),
+    },
+  );
+  economyCache = data.economy;
+  return data.economy;
+};
+
+export const equipTileLoadout = async (
+  loadout: TileLoadout,
+  allowSimilar = false,
+): Promise<EconomyOverview> => {
+  const data = await request<{ economy: EconomyOverview }>("/economy/loadout/tiles", {
+    method: "PUT",
+    body: JSON.stringify({ loadout, allowSimilar, timeZone: browserTimeZone() }),
+  });
+  economyCache = data.economy;
+  return data.economy;
+};
+
+export const saveTilePalette = async (
+  slotIndex: number,
+  name: string | null,
+  loadout: TileLoadout,
+  allowSimilar = false,
+): Promise<EconomyOverview> => {
+  const data = await request<{ economy: EconomyOverview }>(
+    `/economy/tile-palettes/${slotIndex}`,
+    {
+      method: "PUT",
+      body: JSON.stringify({ name, loadout, allowSimilar, timeZone: browserTimeZone() }),
+    },
+  );
+  economyCache = data.economy;
+  return data.economy;
+};
+
+export const deleteTilePalette = async (slotIndex: number): Promise<EconomyOverview> => {
+  const data = await request<{ economy: EconomyOverview }>(
+    `/economy/tile-palettes/${slotIndex}`,
     {
       method: "DELETE",
       body: JSON.stringify({ timeZone: browserTimeZone() }),

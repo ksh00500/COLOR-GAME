@@ -230,4 +230,16 @@ describe("economy policy", () => {
     expect(migration).toContain("when 'epic' then 1500");
     expect(migration).toContain("when 'legendary' then 5000");
   });
+
+  it("stores three account palette presets and preserves the current loadout", () => {
+    const migrationPath = fileURLToPath(
+      new URL("../db/migrations/014_tile_palette_presets.sql", import.meta.url),
+    );
+    const migration = readFileSync(migrationPath, "utf8");
+    expect(migration).toContain("create table if not exists account_tile_palettes");
+    expect(migration).toContain("references accounts(id) on delete cascade");
+    expect(migration).toContain("check (slot_index between 1 and 3)");
+    expect(migration).toContain("from account_loadouts");
+    expect(migration).toContain("on conflict (account_id, slot_index) do nothing");
+  });
 });
