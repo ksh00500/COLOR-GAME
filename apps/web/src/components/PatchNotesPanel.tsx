@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { useI18n } from "../i18n";
 
-const latestPatchVersion = "20260719-v1.2.3";
+const latestPatchVersion = "20260719-v1.2.4";
 const patchNotesKey = `tango-patch-notes-seen-${latestPatchVersion}`;
 const patchNotesOpenEvent = "tango:open-patch-notes";
 
@@ -26,6 +26,29 @@ export interface PatchNoteRelease {
 export const patchNoteReleases: PatchNoteRelease[] = [
   {
     version: latestPatchVersion,
+    title: "계정과 사설방 화면 정리",
+    date: "2026-07-19",
+    summary: "마이페이지의 날짜와 계정 안내를 알아보기 쉽게 바꾸고 사설방 생성 화면을 간결하게 다듬은 패치입니다.",
+    entries: [
+      {
+        tag: "ACCOUNT",
+        title: "출석 날짜와 닉네임 안내 개선",
+        body: "최근 출석을 KST 기준 날짜로 표시하고, 닉네임을 바꾸기 전에 14일 재변경 제한을 확인할 수 있도록 안내를 추가했습니다.",
+      },
+      {
+        tag: "AUTH",
+        title: "로그인과 계정 버튼 정리",
+        body: "Google 로그인 버튼을 둥근 형태로 바꾸고 로그아웃과 계정 삭제 버튼의 높이와 위치를 맞췄습니다.",
+      },
+      {
+        tag: "PRIVATE",
+        title: "사설방 생성 화면 간소화",
+        body: "방 생성에 필요하지 않은 닉네임 확인 카드와 아바타 선택을 제거했습니다. 계정 또는 게스트 정보는 자동으로 적용됩니다.",
+      },
+    ],
+  },
+  {
+    version: "20260719-v1.2.3",
     title: "3색 팔레트 일괄 장착",
     date: "2026-07-19",
     summary: "보유 타일 세 개를 하나의 팔레트로 저장하고 웹과 모바일에서 한 번에 장착할 수 있도록 개선한 패치입니다.",

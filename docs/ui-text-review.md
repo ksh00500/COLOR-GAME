@@ -1,7 +1,7 @@
 # Tango UI 문구 전체 검토본
 
 - 다시 생성: `node scripts/extract-ui-copy.mjs`
-- 번역 원문: 717개
+- 번역 원문: 726개
 - 코드 직접 표시 문구: 140개
 - 동적 조합 문구 후보: 15개
 - 번역 사전 누락 호출: 0개
@@ -74,7 +74,7 @@
 
 - 현재: Google 계정 연결
 - 위치: `apps/web/src/i18n.ts:13`
-- 사용: `apps/web/src/pages/AccountPage.tsx:376`, `apps/web/src/pages/AccountPage.tsx:556`
+- 사용: `apps/web/src/pages/AccountPage.tsx:376`, `apps/web/src/pages/AccountPage.tsx:559`
 - 수정안:
 
 ### T-0007
@@ -95,14 +95,14 @@
 
 - 현재: 연결 해제
 - 위치: `apps/web/src/i18n.ts:16`
-- 사용: `apps/web/src/pages/AccountPage.tsx:543`
+- 사용: `apps/web/src/pages/AccountPage.tsx:546`
 - 수정안:
 
 ### T-0010
 
 - 현재: Google 로그인을 다시 사용할 수 없으며 모든 데이터가 즉시 삭제됩니다.
 - 위치: `apps/web/src/i18n.ts:17`
-- 사용: `apps/web/src/pages/AccountPage.tsx:588`
+- 사용: `apps/web/src/pages/AccountPage.tsx:591`
 - 수정안:
 
 ### T-0011
@@ -221,7 +221,7 @@
 
 - 현재: 개인정보 처리방침
 - 위치: `apps/web/src/i18n.ts:34`
-- 사용: `apps/web/src/pages/AccountPage.tsx:561`, `apps/web/src/pages/PrivacyPage.tsx:17`
+- 사용: `apps/web/src/pages/AccountPage.tsx:564`, `apps/web/src/pages/PrivacyPage.tsx:17`
 - 수정안:
 
 ### T-0028
@@ -242,7 +242,7 @@
 
 - 현재: 설정
 - 위치: `apps/web/src/i18n.ts:37`
-- 사용: `apps/web/src/components/AppSidebar.tsx:30`, `apps/web/src/components/AppSidebar.tsx:45`, `apps/web/src/pages/GamePage.tsx:348`, `apps/web/src/pages/OnlineRoomPage.tsx:824`
+- 사용: `apps/web/src/components/AppSidebar.tsx:30`, `apps/web/src/components/AppSidebar.tsx:45`, `apps/web/src/pages/GamePage.tsx:348`, `apps/web/src/pages/OnlineRoomPage.tsx:782`
 - 수정안:
 
 ### T-0031
@@ -620,7 +620,7 @@
 
 - 현재: 대기 중
 - 위치: `apps/web/src/i18n.ts:91`
-- 사용: `apps/web/src/pages/MatchmakingPage.tsx:161`, `apps/web/src/pages/OnlineRoomPage.tsx:763`
+- 사용: `apps/web/src/pages/MatchmakingPage.tsx:161`, `apps/web/src/pages/OnlineRoomPage.tsx:721`
 - 수정안:
 
 ### T-0085
@@ -697,14 +697,14 @@
 
 - 현재: 사용할 플레이어 정보
 - 위치: `apps/web/src/i18n.ts:102`
-- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:665`
+- 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0096
 
 - 현재: 사설방 닉네임
 - 위치: `apps/web/src/i18n.ts:103`
-- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:670`
+- 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0097
@@ -725,105 +725,105 @@
 
 - 현재: 아바타
 - 위치: `apps/web/src/i18n.ts:106`
-- 사용: `apps/web/src/pages/AccountPage.tsx:327`, `apps/web/src/pages/OnlineRoomPage.tsx:680`
+- 사용: `apps/web/src/pages/AccountPage.tsx:327`
 - 수정안:
 
 ### T-0100
 
 - 현재: 새 사설방 만들기
 - 위치: `apps/web/src/i18n.ts:107`
-- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:742`
+- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:700`
 - 수정안:
 
 ### T-0101
 
 - 현재: 초대 코드
 - 위치: `apps/web/src/i18n.ts:108`
-- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:748`
+- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:706`
 - 수정안:
 
 ### T-0102
 
 - 현재: 참가
 - 위치: `apps/web/src/i18n.ts:109`
-- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:752`
+- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:710`
 - 수정안:
 
 ### T-0103
 
 - 현재: 초대 링크 공유
 - 위치: `apps/web/src/i18n.ts:110`
-- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:769`
+- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:727`
 - 수정안:
 
 ### T-0104
 
 - 현재: 관전 링크 공유
 - 위치: `apps/web/src/i18n.ts:111`
-- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:770`, `apps/web/src/pages/OnlineRoomPage.tsx:919`, `apps/web/src/pages/SpectatePage.tsx:82`
+- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:728`, `apps/web/src/pages/OnlineRoomPage.tsx:877`, `apps/web/src/pages/SpectatePage.tsx:82`
 - 수정안:
 
 ### T-0105
 
 - 현재: 준비 완료
 - 위치: `apps/web/src/i18n.ts:112`
-- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:773`
+- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:731`
 - 수정안:
 
 ### T-0106
 
 - 현재: 준비 취소
 - 위치: `apps/web/src/i18n.ts:113`
-- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:773`
+- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:731`
 - 수정안:
 
 ### T-0107
 
 - 현재: 내 차례
 - 위치: `apps/web/src/i18n.ts:114`
-- 사용: `apps/web/src/pages/GamePage.tsx:329`, `apps/web/src/pages/OnlineRoomPage.tsx:795`
+- 사용: `apps/web/src/pages/GamePage.tsx:329`, `apps/web/src/pages/OnlineRoomPage.tsx:753`
 - 수정안:
 
 ### T-0108
 
 - 현재: 대전 종료
 - 위치: `apps/web/src/i18n.ts:115`
-- 사용: `apps/web/src/pages/GamePage.tsx:327`, `apps/web/src/pages/OnlineRoomPage.tsx:793`
+- 사용: `apps/web/src/pages/GamePage.tsx:327`, `apps/web/src/pages/OnlineRoomPage.tsx:751`
 - 수정안:
 
 ### T-0109
 
 - 현재: 로비
 - 위치: `apps/web/src/i18n.ts:116`
-- 사용: `apps/web/src/pages/GamePage.tsx:340`, `apps/web/src/pages/OnlineRoomPage.tsx:815`
+- 사용: `apps/web/src/pages/GamePage.tsx:340`, `apps/web/src/pages/OnlineRoomPage.tsx:773`
 - 수정안:
 
 ### T-0110
 
 - 현재: 규칙
 - 위치: `apps/web/src/i18n.ts:117`
-- 사용: `apps/web/src/pages/GamePage.tsx:347`, `apps/web/src/pages/OnlineRoomPage.tsx:823`
+- 사용: `apps/web/src/pages/GamePage.tsx:347`, `apps/web/src/pages/OnlineRoomPage.tsx:781`
 - 수정안:
 
 ### T-0111
 
 - 현재: 관전 공유
 - 위치: `apps/web/src/i18n.ts:118`
-- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:822`
+- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:780`
 - 수정안:
 
 ### T-0112
 
 - 현재: 대전 포기
 - 위치: `apps/web/src/i18n.ts:119`
-- 사용: `apps/web/src/pages/GamePage.tsx:407`, `apps/web/src/pages/OnlineRoomPage.tsx:889`
+- 사용: `apps/web/src/pages/GamePage.tsx:407`, `apps/web/src/pages/OnlineRoomPage.tsx:847`
 - 수정안:
 
 ### T-0113
 
 - 현재: 대전 리플레이 보기
 - 위치: `apps/web/src/i18n.ts:120`
-- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:957`
+- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:915`
 - 수정안:
 
 ### T-0114
@@ -879,14 +879,14 @@
 
 - 현재: 계정 삭제
 - 위치: `apps/web/src/i18n.ts:128`
-- 사용: `apps/web/src/pages/AccountPage.tsx:563`
+- 사용: `apps/web/src/pages/AccountPage.tsx:566`
 - 수정안:
 
 ### T-0122
 
 - 현재: 계정을 영구 삭제할까요?
 - 위치: `apps/web/src/i18n.ts:129`
-- 사용: `apps/web/src/pages/AccountPage.tsx:575`
+- 사용: `apps/web/src/pages/AccountPage.tsx:578`
 - 수정안:
 
 ### T-0123
@@ -900,14 +900,14 @@
 
 - 현재: 현재 비밀번호
 - 위치: `apps/web/src/i18n.ts:131`
-- 사용: `apps/web/src/pages/AccountPage.tsx:372`, `apps/web/src/pages/AccountPage.tsx:552`, `apps/web/src/pages/AccountPage.tsx:579`
+- 사용: `apps/web/src/pages/AccountPage.tsx:372`, `apps/web/src/pages/AccountPage.tsx:555`, `apps/web/src/pages/AccountPage.tsx:582`
 - 수정안:
 
 ### T-0125
 
 - 현재: 취소
 - 위치: `apps/web/src/i18n.ts:132`
-- 사용: `apps/web/src/components/TilePalettePanel.tsx:512`, `apps/web/src/components/TilePalettePanel.tsx:542`, `apps/web/src/pages/AccountPage.tsx:592`, `apps/web/src/pages/StorePage.tsx:395`
+- 사용: `apps/web/src/components/TilePalettePanel.tsx:512`, `apps/web/src/components/TilePalettePanel.tsx:542`, `apps/web/src/pages/AccountPage.tsx:595`, `apps/web/src/pages/StorePage.tsx:395`
 - 수정안:
 
 ### T-0126
@@ -1040,7 +1040,7 @@
 
 - 현재: 로그아웃
 - 위치: `apps/web/src/i18n.ts:151`
-- 사용: `apps/web/src/pages/AccountPage.tsx:562`
+- 사용: `apps/web/src/pages/AccountPage.tsx:565`
 - 수정안:
 
 ### T-0145
@@ -1194,35 +1194,35 @@
 
 - 현재: 친구와 같은 색을 두고, 서로 다른 순간을 노리세요.
 - 위치: `apps/web/src/i18n.ts:173`
-- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:660`
+- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:648`
 - 수정안:
 
 ### T-0167
 
 - 현재: 초대 코드를 공유하세요
 - 위치: `apps/web/src/i18n.ts:174`
-- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:764`
+- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:722`
 - 수정안:
 
 ### T-0168
 
 - 현재: {name} 차례
 - 위치: `apps/web/src/i18n.ts:175`
-- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:796`
+- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:754`
 - 수정안:
 
 ### T-0169
 
 - 현재: 서버가 수를 검증합니다.
 - 위치: `apps/web/src/i18n.ts:176`
-- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:867`
+- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:825`
 - 수정안:
 
 ### T-0170
 
 - 현재: 상대의 수를 기다리는 중입니다.
 - 위치: `apps/web/src/i18n.ts:177`
-- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:867`
+- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:825`
 - 수정안:
 
 ### T-0171
@@ -1257,21 +1257,21 @@
 
 - 현재: 게스트 플레이어
 - 위치: `apps/web/src/i18n.ts:182`
-- 사용: `apps/web/src/pages/GamePage.tsx:403`, `apps/web/src/pages/OnlineRoomPage.tsx:860`, `apps/web/src/pages/OnlineRoomPage.tsx:886`
+- 사용: `apps/web/src/pages/GamePage.tsx:403`, `apps/web/src/pages/OnlineRoomPage.tsx:818`, `apps/web/src/pages/OnlineRoomPage.tsx:844`
 - 수정안:
 
 ### T-0176
 
 - 현재: 내 계정
 - 위치: `apps/web/src/i18n.ts:183`
-- 사용: `apps/web/src/pages/GamePage.tsx:403`, `apps/web/src/pages/OnlineRoomPage.tsx:886`
+- 사용: `apps/web/src/pages/GamePage.tsx:403`, `apps/web/src/pages/OnlineRoomPage.tsx:844`
 - 수정안:
 
 ### T-0177
 
 - 현재: 게임을 포기하시겠습니까?
 - 위치: `apps/web/src/i18n.ts:184`
-- 사용: `apps/web/src/pages/GamePage.tsx:417`, `apps/web/src/pages/OnlineRoomPage.tsx:899`
+- 사용: `apps/web/src/pages/GamePage.tsx:417`, `apps/web/src/pages/OnlineRoomPage.tsx:857`
 - 수정안:
 
 ### T-0178
@@ -1285,14 +1285,14 @@
 
 - 현재: 계속하기
 - 위치: `apps/web/src/i18n.ts:186`
-- 사용: `apps/web/src/components/AttendanceCheckInModal.tsx:115`, `apps/web/src/pages/GamePage.tsx:420`, `apps/web/src/pages/OnlineRoomPage.tsx:902`
+- 사용: `apps/web/src/components/AttendanceCheckInModal.tsx:115`, `apps/web/src/pages/GamePage.tsx:420`, `apps/web/src/pages/OnlineRoomPage.tsx:860`
 - 수정안:
 
 ### T-0180
 
 - 현재: 기권하기
 - 위치: `apps/web/src/i18n.ts:187`
-- 사용: `apps/web/src/pages/GamePage.tsx:424`, `apps/web/src/pages/OnlineRoomPage.tsx:903`
+- 사용: `apps/web/src/pages/GamePage.tsx:424`, `apps/web/src/pages/OnlineRoomPage.tsx:861`
 - 수정안:
 
 ### T-0181
@@ -1460,7 +1460,7 @@
 
 - 현재: 메인으로
 - 위치: `apps/web/src/i18n.ts:211`
-- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:951`
+- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:909`
 - 수정안:
 
 ### T-0205
@@ -1474,7 +1474,7 @@
 
 - 현재: 새 방 만들기
 - 위치: `apps/web/src/i18n.ts:213`
-- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:945`
+- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:903`
 - 수정안:
 
 ### T-0207
@@ -1789,56 +1789,56 @@
 
 - 현재: 게임을 준비하고 있습니다
 - 위치: `apps/web/src/i18n.ts:258`
-- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:633`
+- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:621`
 - 수정안:
 
 ### T-0252
 
 - 현재: 매칭으로 돌아가기
 - 위치: `apps/web/src/i18n.ts:259`
-- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:641`
+- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:629`
 - 수정안:
 
 ### T-0253
 
 - 현재: 방을 만들면 6자리 초대 코드가 생성됩니다. 두 플레이어가 모두 준비하면 서버가 선공, 턴, 점수, 승패를 처리합니다.
 - 위치: `apps/web/src/i18n.ts:260`
-- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:661`
+- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:649`
 - 수정안:
 
 ### T-0254
 
 - 현재: 온라인 상대
 - 위치: `apps/web/src/i18n.ts:261`
-- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:861`
+- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:819`
 - 수정안:
 
 ### T-0255
 
 - 현재: 연결 끊김
 - 위치: `apps/web/src/i18n.ts:262`
-- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:858`
+- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:816`
 - 수정안:
 
 ### T-0256
 
 - 현재: 현재 온라인 대전은 패배로 종료됩니다.
 - 위치: `apps/web/src/i18n.ts:263`
-- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:900`
+- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:858`
 - 수정안:
 
 ### T-0257
 
 - 현재: Tango 초대
 - 위치: `apps/web/src/i18n.ts:264`
-- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:586`, `apps/web/src/pages/OnlineRoomPage.tsx:602`
+- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:574`, `apps/web/src/pages/OnlineRoomPage.tsx:590`
 - 수정안:
 
 ### T-0258
 
 - 현재: Tango 관전
 - 위치: `apps/web/src/i18n.ts:265`
-- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:586`, `apps/web/src/pages/OnlineRoomPage.tsx:602`, `apps/web/src/pages/SpectatePage.tsx:53`
+- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:574`, `apps/web/src/pages/OnlineRoomPage.tsx:590`, `apps/web/src/pages/SpectatePage.tsx:53`
 - 수정안:
 
 ### T-0259
@@ -1852,14 +1852,14 @@
 
 - 현재: 초대 링크로 대전에 참가하세요.
 - 위치: `apps/web/src/i18n.ts:267`
-- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:587`, `apps/web/src/pages/OnlineRoomPage.tsx:603`
+- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:575`, `apps/web/src/pages/OnlineRoomPage.tsx:591`
 - 수정안:
 
 ### T-0261
 
 - 현재: 진행 중인 대전을 함께 보세요.
 - 위치: `apps/web/src/i18n.ts:268`
-- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:587`, `apps/web/src/pages/OnlineRoomPage.tsx:603`, `apps/web/src/pages/SpectatePage.tsx:53`
+- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:575`, `apps/web/src/pages/OnlineRoomPage.tsx:591`, `apps/web/src/pages/SpectatePage.tsx:53`
 - 수정안:
 
 ### T-0262
@@ -1992,7 +1992,7 @@
 
 - 현재: 온라인 대전 정보
 - 위치: `apps/web/src/i18n.ts:287`
-- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:850`
+- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:808`
 - 수정안:
 
 ### T-0281
@@ -2699,28 +2699,28 @@
 
 - 현재: 경기를 유지한 채 링크를 복사할 수 있습니다.
 - 위치: `apps/web/src/i18n.ts:388`
-- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:920`
+- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:878`
 - 수정안:
 
 ### T-0382
 
 - 현재: 공유 링크
 - 위치: `apps/web/src/i18n.ts:389`
-- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:923`
+- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:881`
 - 수정안:
 
 ### T-0383
 
 - 현재: 닫기
 - 위치: `apps/web/src/i18n.ts:390`
-- 사용: `apps/web/src/components/TilePalettePanel.tsx:399`, `apps/web/src/pages/OnlineRoomPage.tsx:929`
+- 사용: `apps/web/src/components/TilePalettePanel.tsx:399`, `apps/web/src/pages/OnlineRoomPage.tsx:887`
 - 수정안:
 
 ### T-0384
 
 - 현재: 링크 복사
 - 위치: `apps/web/src/i18n.ts:391`
-- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:930`
+- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:888`
 - 수정안:
 
 ### T-0385
@@ -2741,7 +2741,7 @@
 
 - 현재: 패치노트 닫기
 - 위치: `apps/web/src/i18n.ts:394`
-- 사용: `apps/web/src/components/PatchNotesPanel.tsx:272`
+- 사용: `apps/web/src/components/PatchNotesPanel.tsx:295`
 - 수정안:
 
 ### T-0388
@@ -2888,7 +2888,7 @@
 
 - 현재: 확인했어요
 - 위치: `apps/web/src/i18n.ts:415`
-- 사용: `apps/web/src/components/CosmeticOutcomeModal.tsx:52`, `apps/web/src/components/EconomyAccountPanel.tsx:233`, `apps/web/src/components/PatchNotesPanel.tsx:291`
+- 사용: `apps/web/src/components/CosmeticOutcomeModal.tsx:52`, `apps/web/src/components/EconomyAccountPanel.tsx:233`, `apps/web/src/components/PatchNotesPanel.tsx:314`
 - 수정안:
 
 ### T-0409
@@ -3588,42 +3588,42 @@
 
 - 현재: 커스텀 방 설정
 - 위치: `apps/web/src/i18n.ts:515`
-- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:696`
+- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:654`
 - 수정안:
 
 ### T-0509
 
 - 현재: 목표 점수
 - 위치: `apps/web/src/i18n.ts:516`
-- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:698`
+- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:656`
 - 수정안:
 
 ### T-0510
 
 - 현재: 턴 제한시간
 - 위치: `apps/web/src/i18n.ts:517`
-- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:714`
+- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:672`
 - 수정안:
 
 ### T-0511
 
 - 현재: 초
 - 위치: `apps/web/src/i18n.ts:518`
-- 사용: `apps/web/src/components/ResultPanel.tsx:74`, `apps/web/src/pages/OnlineRoomPage.tsx:724`
+- 사용: `apps/web/src/components/ResultPanel.tsx:74`, `apps/web/src/pages/OnlineRoomPage.tsx:682`
 - 수정안:
 
 ### T-0512
 
 - 현재: 기본 사설방은 무료이며, 시간과 목표 점수 설정은 프리미엄 전용입니다.
 - 위치: `apps/web/src/i18n.ts:519`
-- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:738`
+- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:696`
 - 수정안:
 
 ### T-0513
 
 - 현재: 관전 허용
 - 위치: `apps/web/src/i18n.ts:520`
-- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:730`
+- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:688`
 - 수정안:
 
 ### T-0514
@@ -4554,7 +4554,7 @@
 
 - 현재: 계정, 출석 기록, 컬러 칩 원장과 보유 스킨, 연결된 경기 기록과 리플레이가 삭제되며 복구할 수 없습니다.
 - 위치: `apps/web/src/i18n.ts:653`
-- 사용: `apps/web/src/pages/AccountPage.tsx:576`
+- 사용: `apps/web/src/pages/AccountPage.tsx:579`
 - 수정안:
 
 ### T-0647
@@ -4659,7 +4659,7 @@
 
 - 현재: 재경기
 - 위치: `apps/web/src/i18n.ts:668`
-- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:945`
+- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:903`
 - 수정안:
 
 ### T-0662
@@ -4706,351 +4706,414 @@
 
 ### T-0668
 
-- 현재: {date}부터 다시 변경할 수 있습니다.
+- 현재: 닉네임을 변경하면 14일 동안 다시 변경할 수 없습니다.
 - 위치: `apps/web/src/i18n.ts:675`
-- 사용: `apps/web/src/pages/AccountPage.tsx:500`
+- 사용: `apps/web/src/pages/AccountPage.tsx:504`
 - 수정안:
 
 ### T-0669
 
-- 현재: 변경
+- 현재: 계정과 사설방 화면 정리
 - 위치: `apps/web/src/i18n.ts:676`
-- 사용: `apps/web/src/pages/AccountPage.tsx:523`
+- 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0670
 
-- 현재: 전적 모드
+- 현재: 마이페이지의 날짜와 계정 안내를 알아보기 쉽게 바꾸고 사설방 생성 화면을 간결하게 다듬은 패치입니다.
 - 위치: `apps/web/src/i18n.ts:677`
-- 사용: `apps/web/src/pages/AccountPage.tsx:433`
+- 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0671
 
-- 현재: 목표 점수 달성
+- 현재: 출석 날짜와 닉네임 안내 개선
 - 위치: `apps/web/src/i18n.ts:678`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0672
 
-- 현재: 무승부 종료
+- 현재: 최근 출석을 KST 기준 날짜로 표시하고, 닉네임을 바꾸기 전에 14일 재변경 제한을 확인할 수 있도록 안내를 추가했습니다.
 - 위치: `apps/web/src/i18n.ts:679`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0673
 
-- 현재: 제한 시간 종료
+- 현재: 로그인과 계정 버튼 정리
 - 위치: `apps/web/src/i18n.ts:680`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0674
 
-- 현재: 기권으로 종료
+- 현재: Google 로그인 버튼을 둥근 형태로 바꾸고 로그아웃과 계정 삭제 버튼의 높이와 위치를 맞췄습니다.
 - 위치: `apps/web/src/i18n.ts:681`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0675
 
-- 현재: 연결 끊김으로 종료
+- 현재: 사설방 생성 화면 간소화
 - 위치: `apps/web/src/i18n.ts:682`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0676
 
-- 현재: 구매 확정
+- 현재: 방 생성에 필요하지 않은 닉네임 확인 카드와 아바타 선택을 제거했습니다. 계정 또는 게스트 정보는 자동으로 적용됩니다.
 - 위치: `apps/web/src/i18n.ts:683`
-- 사용: `apps/web/src/pages/StorePage.tsx:402`
+- 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0677
 
-- 현재: {chips}칩을 사용해 이 타일을 구매할까요?
+- 현재: {date}부터 다시 변경할 수 있습니다.
 - 위치: `apps/web/src/i18n.ts:684`
-- 사용: `apps/web/src/pages/StorePage.tsx:390`
+- 사용: `apps/web/src/pages/AccountPage.tsx:500`
 - 수정안:
 
 ### T-0678
 
-- 현재: 보유 칩 {chips}
+- 현재: 변경
 - 위치: `apps/web/src/i18n.ts:685`
-- 사용: `apps/web/src/pages/StorePage.tsx:393`
+- 사용: `apps/web/src/pages/AccountPage.tsx:526`
 - 수정안:
 
 ### T-0679
 
-- 현재: 보유 중 · 파편으로 전환
+- 현재: 전적 모드
 - 위치: `apps/web/src/i18n.ts:686`
-- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:228`
+- 사용: `apps/web/src/pages/AccountPage.tsx:433`
 - 수정안:
 
 ### T-0680
 
-- 현재: 상자
+- 현재: 목표 점수 달성
 - 위치: `apps/web/src/i18n.ts:687`
-- 사용: `apps/web/src/components/EconomyQuestGrid.tsx:84`
+- 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0681
 
-- 현재: 영구 프리미엄
+- 현재: 무승부 종료
 - 위치: `apps/web/src/i18n.ts:688`
-- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:219`
+- 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0682
 
-- 현재: 쿠폰 보상을 받았습니다.
+- 현재: 제한 시간 종료
 - 위치: `apps/web/src/i18n.ts:689`
-- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:206`
+- 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0683
 
-- 현재: 확인
+- 현재: 기권으로 종료
 - 위치: `apps/web/src/i18n.ts:690`
-- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:951`
+- 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0684
 
-- 현재: 퀘스트 기간
+- 현재: 연결 끊김으로 종료
 - 위치: `apps/web/src/i18n.ts:691`
-- 사용: `apps/web/src/components/EconomyQuestGrid.tsx:63`
+- 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0685
 
-- 현재: 주간
+- 현재: 구매 확정
 - 위치: `apps/web/src/i18n.ts:692`
-- 사용: `apps/web/src/components/EconomyQuestGrid.tsx:65`
+- 사용: `apps/web/src/pages/StorePage.tsx:402`
 - 수정안:
 
 ### T-0686
 
-- 현재: 오늘의 퀘스트 완료
+- 현재: {chips}칩을 사용해 이 타일을 구매할까요?
 - 위치: `apps/web/src/i18n.ts:693`
-- 사용: 사용 위치 없음
+- 사용: `apps/web/src/pages/StorePage.tsx:390`
 - 수정안:
 
 ### T-0687
 
-- 현재: 주간 출석 5일
+- 현재: 보유 칩 {chips}
 - 위치: `apps/web/src/i18n.ts:694`
-- 사용: 사용 위치 없음
+- 사용: `apps/web/src/pages/StorePage.tsx:393`
 - 수정안:
 
 ### T-0688
 
-- 현재: 주간 온라인 20경기
+- 현재: 보유 중 · 파편으로 전환
 - 위치: `apps/web/src/i18n.ts:695`
-- 사용: 사용 위치 없음
+- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:228`
 - 수정안:
 
 ### T-0689
 
-- 현재: 주간 온라인 10승
+- 현재: 상자
 - 위치: `apps/web/src/i18n.ts:696`
-- 사용: 사용 위치 없음
+- 사용: `apps/web/src/components/EconomyQuestGrid.tsx:84`
 - 수정안:
 
 ### T-0690
 
-- 현재: 주간 퀘스트 완료
+- 현재: 영구 프리미엄
 - 위치: `apps/web/src/i18n.ts:697`
-- 사용: 사용 위치 없음
+- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:219`
 - 수정안:
 
 ### T-0691
 
-- 현재: 주간 출석과 조작감 개선
+- 현재: 쿠폰 보상을 받았습니다.
 - 위치: `apps/web/src/i18n.ts:698`
-- 사용: 사용 위치 없음
+- 사용: `apps/web/src/components/EconomyAccountPanel.tsx:206`
 - 수정안:
 
 ### T-0692
 
-- 현재: 출석 보상을 주간 누적 방식으로 정리하고, 타일 선택·온라인 표기·Normal AI와 다국어 문구를 다듬은 패치입니다.
+- 현재: 확인
 - 위치: `apps/web/src/i18n.ts:699`
-- 사용: 사용 위치 없음
+- 사용: `apps/web/src/pages/OnlineRoomPage.tsx:909`
 - 수정안:
 
 ### T-0693
 
-- 현재: 이번 주 출석 횟수 기준으로 변경
+- 현재: 퀘스트 기간
 - 위치: `apps/web/src/i18n.ts:700`
-- 사용: 사용 위치 없음
+- 사용: `apps/web/src/components/EconomyQuestGrid.tsx:63`
 - 수정안:
 
 ### T-0694
 
-- 현재: 연속 출석 대신 이번 주 출석 횟수를 보여주도록 바꿨습니다. 주간 출석은 일요일 00:00 KST에 초기화됩니다.
+- 현재: 주간
 - 위치: `apps/web/src/i18n.ts:701`
-- 사용: 사용 위치 없음
+- 사용: `apps/web/src/components/EconomyQuestGrid.tsx:65`
 - 수정안:
 
 ### T-0695
 
-- 현재: 주간 퀘스트 기준 정리
+- 현재: 오늘의 퀘스트 완료
 - 위치: `apps/web/src/i18n.ts:702`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0696
 
-- 현재: 주간 출석·온라인 경기·온라인 승리 퀘스트가 같은 주간 기준으로 계산되도록 정리했습니다. 미수령 보상은 그대로 유지됩니다.
+- 현재: 주간 출석 5일
 - 위치: `apps/web/src/i18n.ts:703`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0697
 
-- 현재: 타일 선택과 보드 표시 개선
+- 현재: 주간 온라인 20경기
 - 위치: `apps/web/src/i18n.ts:704`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0698
 
-- 현재: 기존 1·2·3 단축키에 Q·W·E 보조 단축키를 추가했습니다. 키보드 이동과 마우스 hover 표시가 겹쳐 보이던 문제도 수정했습니다.
+- 현재: 주간 온라인 10승
 - 위치: `apps/web/src/i18n.ts:705`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0699
 
-- 현재: 온라인 대전 플레이어 표기 수정
+- 현재: 주간 퀘스트 완료
 - 위치: `apps/web/src/i18n.ts:706`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0700
 
-- 현재: 로그인한 플레이어가 현재 차례 카드에서 게스트로 보이던 문제를 수정했습니다. 게스트 표기는 실제 게스트에게만 표시됩니다.
+- 현재: 주간 출석과 조작감 개선
 - 위치: `apps/web/src/i18n.ts:707`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0701
 
-- 현재: Normal AI 성향 완화
+- 현재: 출석 보상을 주간 누적 방식으로 정리하고, 타일 선택·온라인 표기·Normal AI와 다국어 문구를 다듬은 패치입니다.
 - 위치: `apps/web/src/i18n.ts:708`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0702
 
-- 현재: Normal AI가 득점 차단에 지나치게 치우치지 않도록 방어 성향을 낮췄습니다. Easy처럼 무너지지는 않게 균형을 유지했습니다.
+- 현재: 이번 주 출석 횟수 기준으로 변경
 - 위치: `apps/web/src/i18n.ts:709`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0703
 
-- 현재: 대전 기록과 모바일 경험 개선
+- 현재: 연속 출석 대신 이번 주 출석 횟수를 보여주도록 바꿨습니다. 주간 출석은 일요일 00:00 KST에 초기화됩니다.
 - 위치: `apps/web/src/i18n.ts:710`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0704
 
-- 현재: 전적 판정, 재경기, 퀘스트와 상점 경제를 바로잡고 모바일 화면과 게임 종료 흐름을 다듬은 통합 패치입니다.
+- 현재: 주간 퀘스트 기준 정리
 - 위치: `apps/web/src/i18n.ts:711`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0705
 
-- 현재: 정확한 승패무와 멈추는 경기 시간
+- 현재: 주간 출석·온라인 경기·온라인 승리 퀘스트가 같은 주간 기준으로 계산되도록 정리했습니다. 미수령 보상은 그대로 유지됩니다.
 - 위치: `apps/web/src/i18n.ts:712`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0706
 
-- 현재: 게스트 상대 결과를 포함한 승패무 기록을 바로잡고 일반·경쟁 통계를 분리했습니다. 경기 시간은 종료 순간에 멈춥니다.
+- 현재: 타일 선택과 보드 표시 개선
 - 위치: `apps/web/src/i18n.ts:713`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0707
 
-- 현재: 일반게임 재경기와 탈주 방지
+- 현재: 기존 1·2·3 단축키에 Q·W·E 보조 단축키를 추가했습니다. 키보드 이동과 마우스 hover 표시가 겹쳐 보이던 문제도 수정했습니다.
 - 위치: `apps/web/src/i18n.ts:714`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0708
 
-- 현재: 일반게임은 두 플레이어가 동의하면 같은 상대와 재경기할 수 있습니다. 온라인 대전 중 이동할 때는 기권 확인을 거칩니다.
+- 현재: 온라인 대전 플레이어 표기 수정
 - 위치: `apps/web/src/i18n.ts:715`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0709
 
-- 현재: 일간·주간 퀘스트
+- 현재: 로그인한 플레이어가 현재 차례 카드에서 게스트로 보이던 문제를 수정했습니다. 게스트 표기는 실제 게스트에게만 표시됩니다.
 - 위치: `apps/web/src/i18n.ts:716`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0710
 
-- 현재: 일간 퀘스트 완료 상자와 주간 출석·경기·승리 보상을 추가하고 첫 승리 수령 상태를 수정했습니다.
+- 현재: Normal AI 성향 완화
 - 위치: `apps/web/src/i18n.ts:717`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0711
 
-- 현재: 닉네임 변경과 전적 화면
+- 현재: Normal AI가 득점 차단에 지나치게 치우치지 않도록 방어 성향을 낮췄습니다. Easy처럼 무너지지는 않게 균형을 유지했습니다.
 - 위치: `apps/web/src/i18n.ts:718`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0712
 
-- 현재: 닉네임을 14일마다 변경할 수 있으며 전적을 전체·일반·경쟁으로 나눠 확인할 수 있습니다.
+- 현재: 대전 기록과 모바일 경험 개선
 - 위치: `apps/web/src/i18n.ts:719`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0713
 
-- 현재: 상점 경제와 구매 확인
+- 현재: 전적 판정, 재경기, 퀘스트와 상점 경제를 바로잡고 모바일 화면과 게임 종료 흐름을 다듬은 통합 패치입니다.
 - 위치: `apps/web/src/i18n.ts:720`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0714
 
-- 현재: 팔레트 상자와 등급별 스킨 가격을 조정하고 구매 확인 및 쿠폰 보상 결과 화면을 추가했습니다.
+- 현재: 정확한 승패무와 멈추는 경기 시간
 - 위치: `apps/web/src/i18n.ts:721`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0715
 
-- 현재: 모바일 가독성과 안내 개선
+- 현재: 게스트 상대 결과를 포함한 승패무 기록을 바로잡고 일반·경쟁 통계를 분리했습니다. 경기 시간은 종료 순간에 멈춥니다.
 - 위치: `apps/web/src/i18n.ts:722`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0716
 
-- 현재: 화이트 모드 메뉴, 상단 바, 플레이 버튼, 튜토리얼, 패치노트와 결과 화면의 모바일 배치를 개선했습니다.
+- 현재: 일반게임 재경기와 탈주 방지
 - 위치: `apps/web/src/i18n.ts:723`
 - 사용: 사용 위치 없음
 - 수정안:
 
 ### T-0717
 
-- 현재: NICKNAME_CHANGE_COOLDOWN
+- 현재: 일반게임은 두 플레이어가 동의하면 같은 상대와 재경기할 수 있습니다. 온라인 대전 중 이동할 때는 기권 확인을 거칩니다.
 - 위치: `apps/web/src/i18n.ts:724`
+- 사용: 사용 위치 없음
+- 수정안:
+
+### T-0718
+
+- 현재: 일간·주간 퀘스트
+- 위치: `apps/web/src/i18n.ts:725`
+- 사용: 사용 위치 없음
+- 수정안:
+
+### T-0719
+
+- 현재: 일간 퀘스트 완료 상자와 주간 출석·경기·승리 보상을 추가하고 첫 승리 수령 상태를 수정했습니다.
+- 위치: `apps/web/src/i18n.ts:726`
+- 사용: 사용 위치 없음
+- 수정안:
+
+### T-0720
+
+- 현재: 닉네임 변경과 전적 화면
+- 위치: `apps/web/src/i18n.ts:727`
+- 사용: 사용 위치 없음
+- 수정안:
+
+### T-0721
+
+- 현재: 닉네임을 14일마다 변경할 수 있으며 전적을 전체·일반·경쟁으로 나눠 확인할 수 있습니다.
+- 위치: `apps/web/src/i18n.ts:728`
+- 사용: 사용 위치 없음
+- 수정안:
+
+### T-0722
+
+- 현재: 상점 경제와 구매 확인
+- 위치: `apps/web/src/i18n.ts:729`
+- 사용: 사용 위치 없음
+- 수정안:
+
+### T-0723
+
+- 현재: 팔레트 상자와 등급별 스킨 가격을 조정하고 구매 확인 및 쿠폰 보상 결과 화면을 추가했습니다.
+- 위치: `apps/web/src/i18n.ts:730`
+- 사용: 사용 위치 없음
+- 수정안:
+
+### T-0724
+
+- 현재: 모바일 가독성과 안내 개선
+- 위치: `apps/web/src/i18n.ts:731`
+- 사용: 사용 위치 없음
+- 수정안:
+
+### T-0725
+
+- 현재: 화이트 모드 메뉴, 상단 바, 플레이 버튼, 튜토리얼, 패치노트와 결과 화면의 모바일 배치를 개선했습니다.
+- 위치: `apps/web/src/i18n.ts:732`
+- 사용: 사용 위치 없음
+- 수정안:
+
+### T-0726
+
+- 현재: NICKNAME_CHANGE_COOLDOWN
+- 위치: `apps/web/src/i18n.ts:733`
 - 사용: 사용 위치 없음
 - 수정안:
 
@@ -5139,7 +5202,7 @@
 
 - 현재: PATCH NOTES
 - 종류: JSX 본문
-- 위치: `apps/web/src/components/PatchNotesPanel.tsx:269`
+- 위치: `apps/web/src/components/PatchNotesPanel.tsx:292`
 - 수정안:
 
 ### H-0013
@@ -5251,14 +5314,14 @@
 
 - 현재: Google
 - 종류: JSX 본문
-- 위치: `apps/web/src/pages/AccountPage.tsx:529`
+- 위치: `apps/web/src/pages/AccountPage.tsx:532`
 - 수정안:
 
 ### H-0029
 
 - 현재: DELETE ACCOUNT
 - 종류: JSX 본문
-- 위치: `apps/web/src/pages/AccountPage.tsx:574`
+- 위치: `apps/web/src/pages/AccountPage.tsx:577`
 - 수정안:
 
 ### H-0030
@@ -5860,70 +5923,70 @@
 
 - 현재: 매칭 정보를 찾지 못했습니다. 다시 매칭을 시작해 주세요.
 - 종류: setMessage 상태 문구
-- 위치: `apps/web/src/pages/OnlineRoomPage.tsx:305`
+- 위치: `apps/web/src/pages/OnlineRoomPage.tsx:301`
 - 수정안:
 
 ### H-0116
 
 - 현재: 온라인 서버에 연결하지 못했습니다. 서버가 실행 중인지 확인해 주세요.
 - 종류: setMessage 상태 문구
-- 위치: `apps/web/src/pages/OnlineRoomPage.tsx:311`
+- 위치: `apps/web/src/pages/OnlineRoomPage.tsx:307`
 - 수정안:
 
 ### H-0117
 
 - 현재: PRIVATE ONLINE ROOM
 - 종류: JSX 본문
-- 위치: `apps/web/src/pages/OnlineRoomPage.tsx:659`
+- 위치: `apps/web/src/pages/OnlineRoomPage.tsx:647`
 - 수정안:
 
 ### H-0118
 
 - 현재: 🔒 PREMIUM
 - 종류: JSX 본문
-- 위치: `apps/web/src/pages/OnlineRoomPage.tsx:696`
+- 위치: `apps/web/src/pages/OnlineRoomPage.tsx:654`
 - 수정안:
 
 ### H-0119
 
 - 현재: ROOM CODE
 - 종류: JSX 본문
-- 위치: `apps/web/src/pages/OnlineRoomPage.tsx:758`
+- 위치: `apps/web/src/pages/OnlineRoomPage.tsx:716`
 - 수정안:
 
 ### H-0120
 
 - 현재: TURN
 - 종류: JSX 본문
-- 위치: `apps/web/src/pages/OnlineRoomPage.tsx:819`
+- 위치: `apps/web/src/pages/OnlineRoomPage.tsx:777`
 - 수정안:
 
 ### H-0121
 
 - 현재: SERVER AUTHORITATIVE FIELD
 - 종류: JSX 본문
-- 위치: `apps/web/src/pages/OnlineRoomPage.tsx:831`
+- 위치: `apps/web/src/pages/OnlineRoomPage.tsx:789`
 - 수정안:
 
 ### H-0122
 
 - 현재: ROOM
 - 종류: JSX 본문
-- 위치: `apps/web/src/pages/OnlineRoomPage.tsx:832`
+- 위치: `apps/web/src/pages/OnlineRoomPage.tsx:790`
 - 수정안:
 
 ### H-0123
 
 - 현재: CONFIRM RESIGNATION
 - 종류: JSX 본문
-- 위치: `apps/web/src/pages/OnlineRoomPage.tsx:898`
+- 위치: `apps/web/src/pages/OnlineRoomPage.tsx:856`
 - 수정안:
 
 ### H-0124
 
 - 현재: SHARE MATCH
 - 종류: JSX 본문
-- 위치: `apps/web/src/pages/OnlineRoomPage.tsx:918`
+- 위치: `apps/web/src/pages/OnlineRoomPage.tsx:876`
 - 수정안:
 
 ### H-0125

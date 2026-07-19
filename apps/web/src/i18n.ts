@@ -672,6 +672,15 @@ const messages: Record<string, Message> = {
   "계정 정보를 불러오는 중입니다.": { en: "Loading account information.", ja: "アカウント情報を読み込んでいます。", es: "Cargando la información de la cuenta.", "pt-BR": "Carregando informações da conta." },
   "닉네임 변경": { en: "Change nickname", ja: "ニックネーム変更", es: "Cambiar apodo", "pt-BR": "Alterar apelido" },
   "닉네임을 변경할 수 있습니다.": { en: "You can change your nickname.", ja: "ニックネームを変更できます。", es: "Puedes cambiar tu apodo.", "pt-BR": "Você pode alterar seu apelido." },
+  "닉네임을 변경하면 14일 동안 다시 변경할 수 없습니다.": { en: "After changing your nickname, you cannot change it again for 14 days.", ja: "ニックネームを変更すると、14日間は再変更できません。", es: "Después de cambiar tu apodo, no podrás volver a cambiarlo durante 14 días.", "pt-BR": "Depois de alterar seu apelido, você não poderá alterá-lo novamente por 14 dias." },
+  "계정과 사설방 화면 정리": { en: "Account and private-room cleanup", ja: "アカウントとプライベートルーム画面の整理", es: "Mejoras de cuenta y sala privada", "pt-BR": "Ajustes de conta e sala privada" },
+  "마이페이지의 날짜와 계정 안내를 알아보기 쉽게 바꾸고 사설방 생성 화면을 간결하게 다듬은 패치입니다.": { en: "This update makes account dates and guidance clearer and simplifies private-room creation.", ja: "マイページの日付と案内を見やすくし、プライベートルーム作成画面を簡潔にしました。", es: "Esta actualización aclara las fechas y avisos de la cuenta y simplifica la creación de salas privadas.", "pt-BR": "Esta atualização deixa datas e avisos da conta mais claros e simplifica a criação de salas privadas." },
+  "출석 날짜와 닉네임 안내 개선": { en: "Clearer check-in dates and nickname guidance", ja: "出席日とニックネーム案内の改善", es: "Fechas de asistencia y avisos de apodo", "pt-BR": "Datas de presença e aviso de apelido" },
+  "최근 출석을 KST 기준 날짜로 표시하고, 닉네임을 바꾸기 전에 14일 재변경 제한을 확인할 수 있도록 안내를 추가했습니다.": { en: "Latest check-in now uses a KST date, and the 14-day nickname cooldown is shown before a change.", ja: "最近の出席をKST基準の日付で表示し、変更前に14日間のニックネーム再変更制限を案内します。", es: "El último registro usa la fecha KST y se avisa del límite de 14 días antes de cambiar el apodo.", "pt-BR": "O último check-in usa a data KST e o limite de 14 dias é avisado antes da alteração do apelido." },
+  "로그인과 계정 버튼 정리": { en: "Refined sign-in and account buttons", ja: "ログインとアカウントボタンの整理", es: "Botones de acceso y cuenta mejorados", "pt-BR": "Botões de login e conta ajustados" },
+  "Google 로그인 버튼을 둥근 형태로 바꾸고 로그아웃과 계정 삭제 버튼의 높이와 위치를 맞췄습니다.": { en: "The Google sign-in button is now rounded, and sign-out and account deletion actions are aligned.", ja: "Googleログインボタンを丸くし、ログアウトとアカウント削除ボタンの高さと位置を揃えました。", es: "El botón de Google ahora es redondeado y las acciones de cerrar sesión y eliminar cuenta están alineadas.", "pt-BR": "O botão do Google ficou arredondado e as ações de sair e excluir conta foram alinhadas." },
+  "사설방 생성 화면 간소화": { en: "Simplified private-room creation", ja: "プライベートルーム作成画面の簡素化", es: "Creación de sala privada simplificada", "pt-BR": "Criação de sala privada simplificada" },
+  "방 생성에 필요하지 않은 닉네임 확인 카드와 아바타 선택을 제거했습니다. 계정 또는 게스트 정보는 자동으로 적용됩니다.": { en: "The unnecessary nickname card and avatar selector were removed. Account or guest details are applied automatically.", ja: "不要なニックネーム確認カードとアバター選択を削除し、アカウントまたはゲスト情報を自動適用します。", es: "Se eliminaron la tarjeta de apodo y el selector de avatar innecesarios. Los datos de cuenta o invitado se aplican automáticamente.", "pt-BR": "O cartão de apelido e o seletor de avatar desnecessários foram removidos. Os dados da conta ou convidado são aplicados automaticamente." },
   "{date}부터 다시 변경할 수 있습니다.": { en: "You can change it again from {date}.", ja: "{date}から再度変更できます。", es: "Podrás cambiarlo de nuevo a partir del {date}.", "pt-BR": "Você poderá alterar novamente a partir de {date}." },
   "변경": { en: "Change", ja: "変更", es: "Cambiar", "pt-BR": "Alterar" },
   "전적 모드": { en: "Match record mode", ja: "戦績モード", es: "Modo de historial", "pt-BR": "Modo de histórico" },
@@ -753,6 +762,12 @@ export const useI18n = () => {
       year: "numeric",
       month: "short",
       day: "numeric",
+    }).format(new Date(value)),
+    formatKstDate: (value: string | number | Date) => new Intl.DateTimeFormat(locale, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      timeZone: "Asia/Seoul",
     }).format(new Date(value)),
   }), [locale]);
 };

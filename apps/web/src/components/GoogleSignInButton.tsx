@@ -28,7 +28,7 @@ interface GoogleAccountsApi {
         theme: "outline";
         size: "large";
         text: "signin_with";
-        shape: "rectangular";
+        shape: "pill";
         width: number;
       },
     ): void;
@@ -102,7 +102,7 @@ export function GoogleSignInButton({
           theme: "outline",
           size: "large",
           text: "signin_with",
-          shape: "rectangular",
+          shape: "pill",
           width: Math.min(360, containerRef.current.clientWidth || 360),
         });
       })

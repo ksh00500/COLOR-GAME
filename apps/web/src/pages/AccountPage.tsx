@@ -82,7 +82,7 @@ const statsForAccount = (
 };
 
 export function AccountPage({ deletionEntry = false }: { deletionEntry?: boolean }) {
-  const { t, formatNumber } = useI18n();
+  const { t, formatNumber, formatDate, formatKstDate } = useI18n();
   const [mode, setMode] = useState<AuthMode>("login");
   const [account, setAccount] = useState<Account | null>(
     () => getAuthToken() === null ? null : getCachedAccount(),
@@ -405,7 +405,7 @@ export function AccountPage({ deletionEntry = false }: { deletionEntry?: boolean
                 </span>
                 <span>
                   <small>{t("최근 출석")}</small>
-                  <strong>{account.lastAttendanceDate ?? "-"}</strong>
+                  <strong>{account.lastAttendanceDate === null ? "-" : formatKstDate(account.lastAttendanceDate)}</strong>
                 </span>
               </div>
               <nav className="account-tabs" aria-label={t("마이페이지 메뉴")}>
@@ -498,8 +498,11 @@ export function AccountPage({ deletionEntry = false }: { deletionEntry?: boolean
                       <p>{account.displayNameChangeAvailableAt === null || new Date(account.displayNameChangeAvailableAt) <= new Date()
                         ? t("닉네임을 변경할 수 있습니다.")
                         : t("{date}부터 다시 변경할 수 있습니다.", {
-                            date: new Date(account.displayNameChangeAvailableAt).toLocaleDateString(),
+                            date: formatDate(account.displayNameChangeAvailableAt),
                           })}</p>
+                      <p className="nickname-cooldown-notice">
+                        {t("닉네임을 변경하면 14일 동안 다시 변경할 수 없습니다.")}
+                      </p>
                     </div>
                     <div className="nickname-change-form">
                       <input

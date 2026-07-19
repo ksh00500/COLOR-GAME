@@ -76,10 +76,6 @@ const readProfile = (): PlayerProfile => {
   }
 };
 
-const saveProfile = (profile: PlayerProfile) => {
-  window.localStorage.setItem(profileKey, JSON.stringify(profile));
-};
-
 const saveRoomPlayer = (code: string, playerId: string) => {
   window.localStorage.setItem(`${roomPlayerPrefix}${code}`, playerId);
 };
@@ -403,14 +399,6 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
     return Math.max(0, Math.ceil((game.turnTimer.expiresAt - now) / 1_000));
   }, [game?.turnTimer, now]);
 
-  const updateProfile = (patch: Partial<PlayerProfile>) => {
-    setProfile((current) => {
-      const next = { ...current, ...patch, isGuest: current.isGuest };
-      saveProfile(next);
-      return next;
-    });
-  };
-
   const createRoom = () => {
     const socket = socketRef.current;
     if (socket === null) return;
@@ -662,36 +650,6 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
           </div>
 
           <div className="online-card">
-            <section className="private-room-identity" aria-label={t("사용할 플레이어 정보")}>
-              <span className={`avatar ${profile.avatarId}`} aria-hidden="true">
-                {profile.nickname.slice(0, 1).toUpperCase()}
-              </span>
-              <span>
-                <small>{t("사설방 닉네임")}</small>
-                <strong>{profile.nickname}</strong>
-                <small>
-                  {t(profile.isGuest
-                    ? "게스트 닉네임은 이 기기에서 자동으로 정해집니다."
-                    : "Tango 계정의 닉네임을 사용합니다.")}
-                </small>
-              </span>
-            </section>
-            <fieldset>
-              <legend>{t("아바타")}</legend>
-              <div className="segmented-control two-up">
-                {(["orbit", "prism"] as const).map((avatarId) => (
-                  <button
-                    key={avatarId}
-                    type="button"
-                    className={profile.avatarId === avatarId ? "active" : ""}
-                    onClick={() => updateProfile({ avatarId })}
-                  >
-                    {avatarId === "orbit" ? "Orbit" : "Prism"}
-                  </button>
-                ))}
-              </div>
-            </fieldset>
-
             <fieldset className="premium-room-settings">
               <legend>{t("커스텀 방 설정")} {!hasPremium && <span>🔒 PREMIUM</span>}</legend>
               <label>
