@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.ksh.tangogame",
+      "sha256_cert_fingerprints": [
+        "8A:85:CD:B9:CF:2B:64:63:9C:40:22:27:6B:CD:0B:F8:7F:00:80:72:B9:47:2C:0E:FF:6D:D7:AE:4A:87:95:96"
+      ]
+    }
+  }
+]
