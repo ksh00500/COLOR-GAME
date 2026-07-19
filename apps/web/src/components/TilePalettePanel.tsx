@@ -7,6 +7,7 @@ import {
   type CosmeticItem,
   type CosmeticRarity,
   type EconomyOverview,
+  type TileColorConflict,
   type TileLoadout,
   type TileLoadoutSlot,
   type TilePalettePreset,
@@ -64,10 +65,12 @@ function PaletteTileStrip({
   inventory,
   loadout,
   label,
+  conflictSlots,
 }: {
   inventory: CosmeticItem[];
   loadout: TileLoadout;
   label: string;
+  conflictSlots?: ReadonlySet<TileLoadoutSlot>;
 }) {
   const { t, locale } = useI18n();
   return (
@@ -75,7 +78,7 @@ function PaletteTileStrip({
       {tileSlots.map((slot) => {
         const item = itemForSlot(inventory, loadout, slot.key);
         return (
-          <div className="palette-tile-mini" key={slot.key}>
+          <div className={`palette-tile-mini${conflictSlots?.has(slot.key) ? " conflict" : ""}`} key={slot.key}>
             <TileSkinPreview
               {...(item ? { item } : {})}
               defaultSlot={slot.key}
@@ -92,6 +95,20 @@ function PaletteTileStrip({
 type PendingAction =
   | { kind: "equip"; loadout: TileLoadout }
   | { kind: "save"; loadout: TileLoadout; slotIndex: number; name: string | null };
+
+export const tileColorConflictsFromDetails = (details: unknown): TileColorConflict[] => {
+  if (details === null || typeof details !== "object" || !("conflicts" in details)) return [];
+  const conflicts = (details as { conflicts?: unknown }).conflicts;
+  if (!Array.isArray(conflicts)) return [];
+  return conflicts.filter((conflict): conflict is TileColorConflict => {
+    if (conflict === null || typeof conflict !== "object") return false;
+    const candidate = conflict as { slots?: unknown; distance?: unknown };
+    return Array.isArray(candidate.slots)
+      && candidate.slots.length === 2
+      && candidate.slots.every((slot) => tileSlots.some((entry) => entry.key === slot))
+      && typeof candidate.distance === "number";
+  });
+};
 
 export function TilePalettePanel({
   economy,
@@ -112,6 +129,7 @@ export function TilePalettePanel({
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
+  const [similarityConflicts, setSimilarityConflicts] = useState<TileColorConflict[]>([]);
   const [editorOpen, setEditorOpen] = useState(false);
   const [savePickerOpen, setSavePickerOpen] = useState(false);
   const [editingNameSlot, setEditingNameSlot] = useState<number | null>(null);
@@ -158,6 +176,7 @@ export function TilePalettePanel({
           );
       applyEconomy(next);
       setPendingAction(null);
+      setSimilarityConflicts([]);
       setSavePickerOpen(false);
       if (action.kind === "equip") {
         setDraftLoadout({ ...next.loadout });
@@ -166,6 +185,7 @@ export function TilePalettePanel({
     } catch (error) {
       if (error instanceof ApiError && error.code === "TILE_COLORS_TOO_SIMILAR" && !allowSimilar) {
         setPendingAction(action);
+        setSimilarityConflicts(tileColorConflictsFromDetails(error.details));
       } else {
         setMessage(error instanceof ApiError ? error.code : "팔레트를 저장하지 못했습니다.");
       }
@@ -495,14 +515,31 @@ export function TilePalettePanel({
       )}
 
       {pendingAction && (
-        <div className="modal-backdrop" role="presentation" onMouseDown={() => setPendingAction(null)}>
+        <div className="modal-backdrop" role="presentation" onMouseDown={() => { setPendingAction(null); setSimilarityConflicts([]); }}>
           <section className="confirm-panel tile-similarity-panel" role="dialog" aria-modal="true" onMouseDown={(event) => event.stopPropagation()}>
             <p className="eyebrow">COLOR WARNING</p>
-            <PaletteTileStrip inventory={ownedTiles} loadout={pendingAction.loadout} label={t("선택한 팔레트")} />
-            <h2>{t("팔레트 안에 비슷한 색이 있습니다.")}</h2>
+            <PaletteTileStrip
+              inventory={ownedTiles}
+              loadout={pendingAction.loadout}
+              label={t("선택한 팔레트")}
+              conflictSlots={new Set(similarityConflicts.flatMap((conflict) => conflict.slots))}
+            />
+            <h2>{t("다른 슬롯과 구분하기 어려운 색입니다.")}</h2>
+            <p>{t("최종 팔레트의 세 타일을 서로 비교한 결과입니다. 게임 중 헷갈릴 수 있습니다.")}</p>
+            {similarityConflicts.length > 0 && (
+              <ul className="palette-conflict-list">
+                {similarityConflicts.map((conflict) => (
+                  <li key={conflict.slots.join(":")}>
+                    {t(tileSlots.find((slot) => slot.key === conflict.slots[0])?.label ?? conflict.slots[0])}
+                    <span aria-hidden="true">↔</span>
+                    {t(tileSlots.find((slot) => slot.key === conflict.slots[1])?.label ?? conflict.slots[1])}
+                  </li>
+                ))}
+              </ul>
+            )}
             <p>{t("색각 보조 도형은 유지됩니다. 그래도 이 조합을 사용하시겠어요?")}</p>
             <div className="confirm-actions">
-              <button className="secondary-action" type="button" onClick={() => setPendingAction(null)}>{t("취소")}</button>
+              <button className="secondary-action" type="button" onClick={() => { setPendingAction(null); setSimilarityConflicts([]); }}>{t("취소")}</button>
               <button className="primary-action" type="button" onClick={() => void runAction(pendingAction, true)}>{pendingAction.kind === "equip" ? t("그래도 장착") : t("그래도 저장")}</button>
             </div>
           </section>

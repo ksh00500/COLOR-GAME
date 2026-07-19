@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { useI18n } from "../i18n";
 
-const latestPatchVersion = "20260718-v1.2.2";
+const latestPatchVersion = "20260719-v1.2.3";
 const patchNotesKey = `tango-patch-notes-seen-${latestPatchVersion}`;
 const patchNotesOpenEvent = "tango:open-patch-notes";
 
@@ -26,6 +26,34 @@ export interface PatchNoteRelease {
 export const patchNoteReleases: PatchNoteRelease[] = [
   {
     version: latestPatchVersion,
+    title: "3색 팔레트 일괄 장착",
+    date: "2026-07-19",
+    summary: "보유 타일 세 개를 하나의 팔레트로 저장하고 웹과 모바일에서 한 번에 장착할 수 있도록 개선한 패치입니다.",
+    entries: [
+      {
+        tag: "PALETTE",
+        title: "사용자 팔레트 3개 저장",
+        body: "기본 팔레트와 별도로 세 가지 사용자 팔레트를 저장할 수 있습니다. 기존 장착 조합은 첫 번째 팔레트로 안전하게 보존됩니다.",
+      },
+      {
+        tag: "EQUIP",
+        title: "세 타일 한 번에 장착",
+        body: "빨강·파랑·초록 슬롯을 임시로 조합한 뒤 한 번에 적용할 수 있습니다. 적용 전에는 현재 게임 타일이 바뀌지 않습니다.",
+      },
+      {
+        tag: "MOBILE",
+        title: "모바일 전용 타일 선택창",
+        body: "모바일에서 선택 슬롯, 검색, 등급 필터와 3열 타일 목록을 한 화면에서 편하게 사용할 수 있도록 배치를 정리했습니다.",
+      },
+      {
+        tag: "COLOR",
+        title: "구분하기 어려운 색상 안내",
+        body: "최종 팔레트의 세 색을 서로 비교해 비슷한 슬롯을 정확히 표시합니다. 확인 후 원하는 조합을 그대로 장착할 수도 있습니다.",
+      },
+    ],
+  },
+  {
+    version: "20260718-v1.2.2",
     title: "주간 출석과 조작감 개선",
     date: "2026-07-18",
     summary: "출석 보상을 주간 누적 방식으로 정리하고, 타일 선택·온라인 표기·Normal AI와 다국어 문구를 다듬은 패치입니다.",

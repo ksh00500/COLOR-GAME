@@ -9198,6 +9198,42 @@ kbd {
   background: var(--app-accent);
 }
 
+.tile-similarity-panel .palette-tile-mini.conflict .tile-skin-preview {
+  outline: 3px solid #d34a59;
+  outline-offset: 3px;
+}
+
+.tile-similarity-panel .palette-tile-mini.conflict small {
+  color: #d34a59;
+  font-weight: 900;
+}
+
+.palette-conflict-list {
+  display: grid;
+  gap: 0.45rem;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.palette-conflict-list li {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.7rem;
+  padding: 0.65rem 0.8rem;
+  border: 1px solid color-mix(in srgb, #d34a59 55%, var(--app-line));
+  border-radius: 12px;
+  color: var(--app-ink);
+  background: color-mix(in srgb, #d34a59 8%, var(--app-panel-strong));
+  font-weight: 900;
+}
+
+.palette-conflict-list span {
+  color: #d34a59;
+}
+
 .palette-editor-actions {
   display: grid;
   grid-template-columns: minmax(130px, 0.7fr) minmax(150px, 0.85fr) minmax(180px, 1fr);

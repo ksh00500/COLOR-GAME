@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { CosmeticItem, CosmeticRarity, TilePalettePreset } from "../api";
 import { filterOwnedTileItems } from "./EconomyAccountPanel";
-import { firstEmptyPaletteSlot, tileLoadoutsEqual } from "./TilePalettePanel";
+import {
+  firstEmptyPaletteSlot,
+  tileColorConflictsFromDetails,
+  tileLoadoutsEqual,
+} from "./TilePalettePanel";
 
 const tile = (
   id: string,
@@ -79,5 +83,14 @@ describe("tile palette helpers", () => {
     expect(firstEmptyPaletteSlot([])).toBe(1);
     expect(firstEmptyPaletteSlot([palette(1), palette(3)])).toBe(2);
     expect(firstEmptyPaletteSlot([palette(1), palette(2), palette(3)])).toBeNull();
+  });
+
+  it("keeps only valid A/B/C similarity conflicts from the API response", () => {
+    expect(tileColorConflictsFromDetails({
+      conflicts: [
+        { slots: ["colorA", "colorB"], distance: 0.04 },
+        { slots: ["colorA", "invalid"], distance: 0.02 },
+      ],
+    })).toEqual([{ slots: ["colorA", "colorB"], distance: 0.04 }]);
   });
 });

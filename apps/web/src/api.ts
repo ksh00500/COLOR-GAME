@@ -92,6 +92,10 @@ export type CosmeticEquipSlot =
   | "profile_title";
 export type TileLoadoutSlot = "colorA" | "colorB" | "colorC";
 export type TileLoadout = Partial<Record<TileLoadoutSlot, string>>;
+export interface TileColorConflict {
+  slots: [TileLoadoutSlot, TileLoadoutSlot];
+  distance: number;
+}
 
 export interface TilePalettePreset {
   slotIndex: number;

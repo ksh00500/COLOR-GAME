@@ -178,6 +178,22 @@ describe("economy policy", () => {
     expect(oklabDistance("#000000", "#ffffff")).toBeGreaterThan(0.9);
   });
 
+  it("compares the final A, B, and C colors instead of the replaced slot default", () => {
+    try {
+      validateTileColorCombination([
+        { id: "lemon", representativeColor: "#f4e04d", slot: "colorA" },
+        { id: "yellow", representativeColor: "#f1d93a", slot: "colorB" },
+        { id: "green", representativeColor: "#31a56f", slot: "colorC" },
+      ]);
+      throw new Error("EXPECTED_SIMILARITY_WARNING");
+    } catch (error) {
+      expect(error).toBeInstanceOf(TileColorSimilarityError);
+      expect((error as TileColorSimilarityError).conflicts).toEqual([
+        expect.objectContaining({ slots: ["colorA", "colorB"] }),
+      ]);
+    }
+  });
+
   it("signs persistent guest identities and rejects tampering", () => {
     const secret = "test-secret";
     const id = "123e4567-e89b-12d3-a456-426614174000";
