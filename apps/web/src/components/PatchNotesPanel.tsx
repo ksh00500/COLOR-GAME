@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { useI18n } from "../i18n";
 
-const latestPatchVersion = "20260719-v1.2.4";
+const latestPatchVersion = "20260719-v1.3.0";
 const patchNotesKey = `tango-patch-notes-seen-${latestPatchVersion}`;
 const patchNotesOpenEvent = "tango:open-patch-notes";
 
@@ -26,6 +26,34 @@ export interface PatchNoteRelease {
 export const patchNoteReleases: PatchNoteRelease[] = [
   {
     version: latestPatchVersion,
+    title: "Tango 비주얼 리마스터",
+    date: "2026-07-19",
+    summary: "고급 원목과 따뜻한 파치먼트 감성을 바탕으로 로고부터 게임판, 주요 화면과 모바일 내비게이션까지 새롭게 정리한 업데이트입니다.",
+    entries: [
+      {
+        tag: "BRAND",
+        title: "새로운 Tango 로고",
+        body: "버건디·네이비·그린 타일이 맞물리는 새 로고를 웹, 브라우저 아이콘, Android 앱 아이콘과 시작 화면에 통일해 적용했습니다.",
+      },
+      {
+        tag: "DESIGN",
+        title: "원목과 파치먼트 디자인 시스템",
+        body: "따뜻한 종이 배경과 고급 원목 게임판, 절제된 색상과 그림자로 Tango만의 캐주얼 보드게임 분위기를 만들었습니다.",
+      },
+      {
+        tag: "LAYOUT",
+        title: "보드 중심 화면 재구성",
+        body: "메인과 게임 화면에서 보드와 핵심 조작을 먼저 볼 수 있도록 정보 밀도와 여백을 정리하고 상점, 마이페이지, 리더보드와 보조 화면도 같은 흐름으로 통일했습니다.",
+      },
+      {
+        tag: "MOBILE",
+        title: "모바일 내비게이션과 반응형 개선",
+        body: "상단 메뉴와 하단 내비게이션을 화면에 안정적으로 고정하고 320px부터 넓은 데스크톱까지 버튼, 카드와 게임판이 겹치지 않도록 다듬었습니다.",
+      },
+    ],
+  },
+  {
+    version: "20260719-v1.2.4",
     title: "계정과 사설방 화면 정리",
     date: "2026-07-19",
     summary: "마이페이지의 날짜와 계정 안내를 알아보기 쉽게 바꾸고 사설방 생성 화면을 간결하게 다듬은 패치입니다.",

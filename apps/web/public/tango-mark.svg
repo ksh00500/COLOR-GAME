@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 58">
+  <defs>
+    <mask id="tile-notches" maskUnits="userSpaceOnUse" x="0" y="0" width="92" height="58">
+      <rect width="92" height="58" fill="#fff"/>
+      <circle cx="34" cy="32" r="4.6" fill="#000"/>
+      <circle cx="61" cy="24" r="4.6" fill="#000"/>
+    </mask>
+  </defs>
+  <g mask="url(#tile-notches)">
+    <rect x="5" y="20" width="32" height="32" rx="9" fill="#8a3044" transform="rotate(-9 21 36)"/>
+    <rect x="31" y="12" width="32" height="32" rx="9" fill="#253f5c" transform="rotate(-3 47 28)"/>
+    <rect x="57" y="4" width="32" height="32" rx="9" fill="#365f49" transform="rotate(8 73 20)"/>
+  </g>
+</svg>

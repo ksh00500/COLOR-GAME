@@ -4,6 +4,7 @@ import { BrowserRouter } from "react-router-dom";
 import { App } from "./App";
 import { SettingsProvider } from "./settings";
 import "./styles.css";
+import "./remaster.css";
 
 const root = document.getElementById("root");
 if (root === null) throw new Error("Root element was not found.");
