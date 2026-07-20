@@ -42,6 +42,8 @@ declare global {
 }
 
 let googleScriptPromise: Promise<void> | null = null;
+let googleAccountsInitialized = false;
+let googleCredentialHandler: ((idToken: string) => void) | null = null;
 
 const loadGoogleScript = (): Promise<void> => {
   if (window.google?.accounts !== undefined) return Promise.resolve();
@@ -68,6 +70,19 @@ const loadGoogleScript = (): Promise<void> => {
   return googleScriptPromise;
 };
 
+const initializeGoogleAccounts = () => {
+  if (googleAccountsInitialized || window.google === undefined) return;
+  window.google.accounts.id.initialize({
+    client_id: webClientId,
+    callback: ({ credential }) => {
+      if (credential !== undefined) googleCredentialHandler?.(credential);
+    },
+    auto_select: false,
+    cancel_on_tap_outside: true,
+  });
+  googleAccountsInitialized = true;
+};
+
 export function GoogleSignInButton({
   busy,
   onCredential,
@@ -81,6 +96,17 @@ export function GoogleSignInButton({
   const containerRef = useRef<HTMLDivElement>(null);
   const native = Capacitor.isNativePlatform();
   const [nativePending, setNativePending] = useState(false);
+  const onErrorRef = useRef(onError);
+
+  onErrorRef.current = onError;
+
+  useEffect(() => {
+    if (native) return;
+    googleCredentialHandler = onCredential;
+    return () => {
+      if (googleCredentialHandler === onCredential) googleCredentialHandler = null;
+    };
+  }, [native, onCredential]);
 
   useEffect(() => {
     if (native || containerRef.current === null) return;
@@ -88,14 +114,7 @@ export function GoogleSignInButton({
     void loadGoogleScript()
       .then(() => {
         if (!active || containerRef.current === null || window.google === undefined) return;
-        window.google.accounts.id.initialize({
-          client_id: webClientId,
-          callback: ({ credential }) => {
-            if (credential !== undefined) onCredential(credential);
-          },
-          auto_select: false,
-          cancel_on_tap_outside: true,
-        });
+        initializeGoogleAccounts();
         containerRef.current.replaceChildren();
         window.google.accounts.id.renderButton(containerRef.current, {
           type: "standard",
@@ -106,11 +125,11 @@ export function GoogleSignInButton({
           width: Math.min(360, containerRef.current.clientWidth || 360),
         });
       })
-      .catch(() => onError("GOOGLE_SIGN_IN_UNAVAILABLE"));
+      .catch(() => onErrorRef.current("GOOGLE_SIGN_IN_UNAVAILABLE"));
     return () => {
       active = false;
     };
-  }, [native, onCredential, onError]);
+  }, [native]);
 
   if (native) {
     const nativeBusy = busy || nativePending;

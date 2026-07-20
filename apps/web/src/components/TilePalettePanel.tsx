@@ -108,7 +108,7 @@ function PaletteTileStrip({
 }
 
 type PendingAction =
-  | { kind: "equip"; loadout: TileLoadout }
+  | { kind: "equip"; loadout: TileLoadout; closeEditor?: boolean }
   | { kind: "save"; loadout: TileLoadout; slotIndex: number; name: string | null };
 
 export const tileColorConflictsFromDetails = (details: unknown): TileColorConflict[] => {
@@ -171,8 +171,6 @@ export function TilePalettePanel({
   }, [editorOpen]);
 
   const filteredOwnedTiles = filterOwnedTileItems(ownedTiles, locale, tileQuery, tileRarity);
-  const draftChanged = !tileLoadoutsEqual(draftLoadout, economy.loadout);
-
   const applyEconomy = (next: EconomyOverview) => {
     onEconomyChange(next);
     window.dispatchEvent(new CustomEvent(loadoutChangedEvent, { detail: next }));
@@ -196,7 +194,7 @@ export function TilePalettePanel({
       setSavePickerOpen(false);
       if (action.kind === "equip") {
         setDraftLoadout({ ...next.loadout });
-        setEditorOpen(false);
+        if (action.closeEditor !== false) setEditorOpen(false);
       }
     } catch (error) {
       if (error instanceof ApiError && error.code === "TILE_COLORS_TOO_SIMILAR" && !allowSimilar) {
@@ -204,6 +202,7 @@ export function TilePalettePanel({
         setSimilarityConflicts(tileColorConflictsFromDetails(error.details));
       } else {
         setMessage(error instanceof ApiError ? error.code : "팔레트를 저장하지 못했습니다.");
+        if (action.kind === "equip") setDraftLoadout({ ...economy.loadout });
       }
     } finally {
       setBusy(null);
@@ -256,15 +255,16 @@ export function TilePalettePanel({
   };
 
   const selectDraftItem = (item: CosmeticItem) => {
-    setDraftLoadout((current) => ({ ...current, [selectedSlot]: item.id }));
+    const next = { ...draftLoadout, [selectedSlot]: item.id };
+    setDraftLoadout(next);
+    void runAction({ kind: "equip", loadout: next, closeEditor: false });
   };
 
   const restoreDraftDefault = () => {
-    setDraftLoadout((current) => {
-      const next = { ...current };
-      delete next[selectedSlot];
-      return next;
-    });
+    const next = { ...draftLoadout };
+    delete next[selectedSlot];
+    setDraftLoadout(next);
+    void runAction({ kind: "equip", loadout: next, closeEditor: false });
   };
 
   const paletteNameFor = (palette: TilePalettePreset) =>
@@ -309,14 +309,14 @@ export function TilePalettePanel({
         </div>
         <PaletteTileStrip inventory={ownedTiles} loadout={economy.loadout} label={t("현재 팔레트")} />
         <button className="secondary-action palette-edit-trigger" type="button" onClick={openEditor}>
-          {t("직접 조합하기")}
+          {t("타일 바꾸기")}
         </button>
       </section>
 
       <div className="saved-palette-heading">
         <div>
           <h3>{t("저장 팔레트")}</h3>
-          <p>{t("원하는 조합을 한 번에 장착하세요.")}</p>
+          <p>{t("저장한 조합을 골라 바로 사용하세요.")}</p>
         </div>
         <small>{t("사용자 팔레트 {count}/3", { count: economy.tilePalettes.length })}</small>
       </div>
@@ -328,7 +328,7 @@ export function TilePalettePanel({
               <small>{t("기본 조합")}</small>
               <strong>{t("기본 팔레트")}</strong>
             </div>
-            {tileLoadoutsEqual(economy.loadout, {}) && <span>{t("장착 중")}</span>}
+            {tileLoadoutsEqual(economy.loadout, {}) && <span>{t("사용 중")}</span>}
           </div>
           <PaletteTileStrip inventory={ownedTiles} loadout={{}} label={t("기본 팔레트")} />
           <button
@@ -337,7 +337,7 @@ export function TilePalettePanel({
             disabled={busy !== null || tileLoadoutsEqual(economy.loadout, {})}
             onClick={() => void runAction({ kind: "equip", loadout: {} })}
           >
-            {tileLoadoutsEqual(economy.loadout, {}) ? t("장착 중") : t("한 번에 장착")}
+            {tileLoadoutsEqual(economy.loadout, {}) ? t("사용 중") : t("이 팔레트 사용")}
           </button>
         </article>
 
@@ -373,7 +373,7 @@ export function TilePalettePanel({
                   <small>{t("사용자 팔레트")}</small>
                   <strong>{paletteNameFor(palette)}</strong>
                 </div>
-                {isActive && <span>{t("장착 중")}</span>}
+                {isActive && <span>{t("사용 중")}</span>}
               </div>
               <PaletteTileStrip inventory={ownedTiles} loadout={palette.loadout} label={paletteNameFor(palette)} />
               <div className="saved-palette-actions">
@@ -383,7 +383,7 @@ export function TilePalettePanel({
                   disabled={busy !== null || isActive}
                   onClick={() => void runAction({ kind: "equip", loadout: palette.loadout })}
                 >
-                  {isActive ? t("장착 중") : t("한 번에 장착")}
+                  {isActive ? t("사용 중") : t("이 팔레트 사용")}
                 </button>
                 <details className="palette-card-menu">
                   <summary aria-label={t("팔레트 편집")}>⋯</summary>
@@ -500,11 +500,12 @@ export function TilePalettePanel({
         })()}
       </section>
 
-      <section id="tile-palette-editor" className={`palette-editor${editorOpen ? " open" : ""}`} aria-label={t("직접 조합하기")}>
+      <section id="tile-palette-editor" className={`palette-editor${editorOpen ? " open" : ""}`} aria-label={t("타일 바꾸기")}>
         <div className="palette-editor-header">
           <div>
             <p className="eyebrow">CUSTOM PALETTE</p>
-            <h3>{t("직접 조합하기")}</h3>
+            <h3>{t("타일 바꾸기")}</h3>
+            <p>{t("슬롯을 선택한 뒤 타일을 누르면 즉시 게임에 적용됩니다.")}</p>
           </div>
           <button className="palette-editor-close" type="button" onClick={() => setEditorOpen(false)} aria-label={t("닫기")}>×</button>
         </div>
@@ -578,7 +579,7 @@ export function TilePalettePanel({
                     className={selectedHere ? "selected" : ""}
                     type="button"
                     key={item.id}
-                    disabled={usedElsewhere}
+                    disabled={busy !== null || usedElsewhere || selectedHere}
                     onClick={() => selectDraftItem(item)}
                   >
                     <TileSkinPreview item={item} label={localizedCosmeticName(item, locale)} />
@@ -597,9 +598,8 @@ export function TilePalettePanel({
         </div>
 
         <div className="palette-editor-actions">
-          <button className="secondary-action" type="button" disabled={!draftChanged || busy !== null} onClick={() => setDraftLoadout({ ...economy.loadout })}>{t("변경 취소")}</button>
-          <button className="secondary-action" type="button" disabled={busy !== null} onClick={requestSaveDraft}>{t("팔레트로 저장")}</button>
-          <button className="primary-action" type="button" disabled={!draftChanged || busy !== null} onClick={() => void runAction({ kind: "equip", loadout: { ...draftLoadout } })}>{t("한 번에 장착")}</button>
+          <p role="status">{busy === "equip-palette" ? t("타일을 적용하는 중입니다.") : t("선택한 타일은 바로 적용됩니다.")}</p>
+          <button className="secondary-action" type="button" disabled={busy !== null} onClick={requestSaveDraft}>{t("현재 조합 저장")}</button>
         </div>
       </section>
 
@@ -625,7 +625,11 @@ export function TilePalettePanel({
       )}
 
       {pendingAction && (
-        <div className="modal-backdrop" role="presentation" onMouseDown={() => { setPendingAction(null); setSimilarityConflicts([]); }}>
+        <div className="modal-backdrop" role="presentation" onMouseDown={() => {
+          if (pendingAction.kind === "equip") setDraftLoadout({ ...economy.loadout });
+          setPendingAction(null);
+          setSimilarityConflicts([]);
+        }}>
           <section className="confirm-panel tile-similarity-panel" role="dialog" aria-modal="true" onMouseDown={(event) => event.stopPropagation()}>
             <p className="eyebrow">COLOR WARNING</p>
             <PaletteTileStrip
@@ -649,7 +653,11 @@ export function TilePalettePanel({
             )}
             <p>{t("색각 보조 도형은 유지됩니다. 그래도 이 조합을 사용하시겠어요?")}</p>
             <div className="confirm-actions">
-              <button className="secondary-action" type="button" onClick={() => { setPendingAction(null); setSimilarityConflicts([]); }}>{t("취소")}</button>
+              <button className="secondary-action" type="button" onClick={() => {
+                if (pendingAction.kind === "equip") setDraftLoadout({ ...economy.loadout });
+                setPendingAction(null);
+                setSimilarityConflicts([]);
+              }}>{t("취소")}</button>
               <button className="primary-action" type="button" onClick={() => void runAction(pendingAction, true)}>{pendingAction.kind === "equip" ? t("그래도 장착") : t("그래도 저장")}</button>
             </div>
           </section>

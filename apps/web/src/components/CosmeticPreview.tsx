@@ -21,22 +21,22 @@ export function CosmeticPreview({ item, className = "", label }: CosmeticPreview
   } as CSSProperties;
   return (
     <span
-      className={`cosmetic-preview cosmetic-preview-${item.category} preset-${item.preset ?? "default"} ${className}`}
+      className={`atelier-cosmetic-preview atelier-cosmetic-preview-${item.category} preset-${item.preset ?? "default"} ${className}`}
       style={style}
       role="img"
       aria-label={label}
     >
       {item.category === "board_theme" && (
-        <span className="cosmetic-preview-board-grid">
+        <span className="atelier-cosmetic-preview-board-grid">
           {Array.from({ length: 25 }, (_, index) => <i key={index} />)}
         </span>
       )}
-      {item.category === "placement_effect" && <span className="cosmetic-preview-tile placement-demo" />}
+      {item.category === "placement_effect" && <span className="atelier-cosmetic-preview-tile placement-demo" />}
       {item.category === "score_effect" && (
-        <span className="cosmetic-preview-score-row"><i /><i /><i /></span>
+        <span className="atelier-cosmetic-preview-score-row"><i /><i /><i /></span>
       )}
       {item.category === "victory_effect" && (
-        <span className="cosmetic-preview-victory"><b>V</b><i /><i /><i /></span>
+        <span className="atelier-cosmetic-preview-victory"><b>V</b><i /><i /><i /></span>
       )}
     </span>
   );

@@ -185,6 +185,16 @@ export function StorePage() {
     }
   };
 
+  const craftCost = craftMode === "random" ? 4 : 8;
+  const craftFragmentBalance = economy?.fragments[rarity] ?? 0;
+  const craftFragmentShortage = Math.max(0, craftCost - craftFragmentBalance);
+  const craftCandidates = economy?.catalog.filter(
+    (item) => item.category === category && item.rarity === rarity && !item.owned,
+  ) ?? [];
+  const selectedCraftItem = craftCandidates.find((item) => item.id === craftTarget);
+  const craftReady = craftFragmentShortage === 0
+    && (craftMode === "random" ? craftCandidates.length > 0 : selectedCraftItem !== undefined);
+
   const cosmeticCard = (item: CosmeticItem) => (
     <article className={`cosmetic-card rarity-border-${item.rarity}`} key={item.id}>
       <button
@@ -339,46 +349,133 @@ export function StorePage() {
             {storeTab === "atelier" && (
               <section className="store-section atelier-section">
                 <div className="store-section-heading">
-                  <div><p className="eyebrow">TANGO ATELIER</p><h2>{t("Tango 공방")}</h2></div>
-                  <span>{t("파편으로 원하는 꾸미기를 제작하세요.")}</span>
-                </div>
-                <nav className="atelier-category-tabs" aria-label={t("제작 카테고리")}>
-                  {craftCategories.map((entry) => (
-                    <button key={entry} type="button" className={category === entry ? "active" : ""} onClick={() => { setCategory(entry); setCraftTarget(null); }}>
-                      {t(categoryLabels[entry])}
-                    </button>
-                  ))}
-                </nav>
-                <div className="atelier-layout">
                   <div>
-                    <div className="rarity-tabs" role="tablist" aria-label={t("등급")}>
-                      {rarityOrder.map((entry) => (
-                        <button key={entry} type="button" role="tab" aria-selected={rarity === entry} className={`${rarity === entry ? "active" : ""} rarity-${entry}`} onClick={() => { setRarity(entry); setCraftTarget(null); }}>
-                          {rarityLabel(entry)} <small>{economy.fragments[entry]}</small>
-                        </button>
-                      ))}
-                    </div>
-                    {craftMode === "targeted" && (
-                      <div className="atelier-target-grid">
-                        {economy.catalog.filter((item) => item.category === category && item.rarity === rarity && !item.owned).map((item) => (
-                          <button key={item.id} type="button" className={`atelier-target-card${craftTarget === item.id ? " selected" : ""}`} onClick={() => setCraftTarget(item.id)}>
-                            <CosmeticPreview item={item} label={localizedCosmeticName(item, locale)} />
-                            <strong>{localizedCosmeticName(item, locale)}</strong>
+                    <p className="eyebrow">TANGO ATELIER</p>
+                    <h2>{t("Tango 공방")}</h2>
+                    <p>{t("종류와 등급, 제작 방식을 차례로 고르면 필요한 파편과 결과를 바로 확인할 수 있습니다.")}</p>
+                  </div>
+                </div>
+
+                <ol className="atelier-progress" aria-label={t("제작 순서")}>
+                  {["꾸미기 종류", "등급", "제작 방식", "제작 확인"].map((label, index) => (
+                    <li className={index < 3 || craftReady ? "ready" : ""} key={label}>
+                      <b>{index + 1}</b><span>{t(label)}</span>
+                    </li>
+                  ))}
+                </ol>
+
+                <div className="atelier-layout">
+                  <div className="atelier-builder">
+                    <section className="atelier-choice-section" aria-labelledby="atelier-category-title">
+                      <header>
+                        <b>1</b>
+                        <div><small>STYLE TYPE</small><h3 id="atelier-category-title">{t("어떤 꾸미기를 만들까요?")}</h3></div>
+                      </header>
+                      <div className="atelier-category-cards" role="list">
+                        {craftCategories.map((entry) => (
+                          <button
+                            key={entry}
+                            type="button"
+                            className={category === entry ? "active" : ""}
+                            aria-pressed={category === entry}
+                            onClick={() => { setCategory(entry); setCraftTarget(null); }}
+                          >
+                            <span className={`atelier-category-icon category-${entry}`} aria-hidden="true"><i /><i /><i /></span>
+                            <strong>{t(categoryLabels[entry])}</strong>
+                            <small>{t(category === entry ? "선택됨" : "선택")}</small>
                           </button>
                         ))}
                       </div>
+                    </section>
+
+                    <section className="atelier-choice-section" aria-labelledby="atelier-rarity-title">
+                      <header>
+                        <b>2</b>
+                        <div><small>RARITY</small><h3 id="atelier-rarity-title">{t("사용할 파편 등급을 고르세요")}</h3></div>
+                      </header>
+                      <div className="atelier-rarity-cards" role="radiogroup" aria-label={t("등급")}>
+                      {rarityOrder.map((entry) => (
+                        <button key={entry} type="button" role="radio" aria-checked={rarity === entry} className={`${rarity === entry ? "active" : ""} rarity-${entry}`} onClick={() => { setRarity(entry); setCraftTarget(null); }}>
+                          <span className="rarity-gem" aria-hidden="true">◆</span>
+                          <strong>{rarityLabel(entry)}</strong>
+                          <small>{t("보유 {count}개", { count: formatNumber(economy.fragments[entry]) })}</small>
+                        </button>
+                      ))}
+                      </div>
+                    </section>
+
+                    <section className="atelier-choice-section" aria-labelledby="atelier-mode-title">
+                      <header>
+                        <b>3</b>
+                        <div><small>CRAFT METHOD</small><h3 id="atelier-mode-title">{t("어떻게 만들까요?")}</h3></div>
+                      </header>
+                      <div className="atelier-mode-cards" role="radiogroup" aria-label={t("제작 방식")}>
+                        <button type="button" role="radio" aria-checked={craftMode === "random"} className={craftMode === "random" ? "active" : ""} onClick={() => { setCraftMode("random"); setCraftTarget(null); }}>
+                          <b aria-hidden="true">?</b>
+                          <span><strong>{t("무작위로 만들기")}</strong><small>{t("파편 4개로 미보유 상품 하나를 무작위로 얻습니다.")}</small></span>
+                          <em>{t("파편 4개")}</em>
+                        </button>
+                        <button type="button" role="radio" aria-checked={craftMode === "targeted"} className={craftMode === "targeted" ? "active" : ""} onClick={() => setCraftMode("targeted")}>
+                          <b aria-hidden="true">✓</b>
+                          <span><strong>{t("원하는 항목 만들기")}</strong><small>{t("파편 8개로 선택한 상품을 확정 제작합니다.")}</small></span>
+                          <em>{t("파편 8개")}</em>
+                        </button>
+                      </div>
+                    </section>
+
+                    {craftMode === "targeted" && (
+                      <section className="atelier-choice-section atelier-target-section" aria-labelledby="atelier-target-title">
+                        <header>
+                          <b>+</b>
+                          <div><small>SELECT ITEM</small><h3 id="atelier-target-title">{t("제작할 항목을 선택하세요")}</h3></div>
+                        </header>
+                        {craftCandidates.length > 0 ? (
+                          <div className="atelier-target-grid">
+                            {craftCandidates.map((item) => (
+                              <button key={item.id} type="button" className={`atelier-target-card${craftTarget === item.id ? " selected" : ""}`} aria-pressed={craftTarget === item.id} onClick={() => setCraftTarget(item.id)}>
+                                <CosmeticPreview item={item} label={localizedCosmeticName(item, locale)} />
+                                <strong>{localizedCosmeticName(item, locale)}</strong>
+                                <small>{craftTarget === item.id ? t("선택됨") : t("이 항목 선택")}</small>
+                              </button>
+                            ))}
+                          </div>
+                        ) : <p className="atelier-empty-note">{t("이 조건의 모든 꾸미기를 이미 보유하고 있습니다.")}</p>}
+                      </section>
                     )}
                   </div>
-                  <aside className="atelier-control-card">
-                    <div className="atelier-mode-tabs">
-                      <button type="button" className={craftMode === "random" ? "active" : ""} onClick={() => setCraftMode("random")}>{t("무작위 제작")}</button>
-                      <button type="button" className={craftMode === "targeted" ? "active" : ""} onClick={() => setCraftMode("targeted")}>{t("지정 제작")}</button>
+
+                  <aside className="atelier-control-card" aria-labelledby="atelier-summary-title">
+                    <div className="atelier-summary-heading">
+                      <span>4</span>
+                      <div><small>CRAFT SUMMARY</small><h3 id="atelier-summary-title">{t("제작 확인")}</h3></div>
                     </div>
-                    <h3>{t(categoryLabels[category])} · {rarityLabel(rarity)}</h3>
-                    <p>{craftMode === "random" ? t("미보유 상품 하나를 무작위로 제작합니다.") : t("선택한 상품을 확정 제작합니다.")}</p>
-                    <strong>{t("필요 파편 {count}개", { count: craftMode === "random" ? 4 : 8 })}</strong>
-                    <button className="primary-action" type="button" disabled={busyId !== null || economy.fragments[rarity] < (craftMode === "random" ? 4 : 8) || (craftMode === "targeted" && craftTarget === null)} onClick={() => void craft()}>
-                      {t("제작하기")}
+                    <dl className="atelier-summary-list">
+                      <div><dt>{t("꾸미기 종류")}</dt><dd>{t(categoryLabels[category])}</dd></div>
+                      <div><dt>{t("등급")}</dt><dd>{rarityLabel(rarity)}</dd></div>
+                      <div><dt>{t("제작 방식")}</dt><dd>{t(craftMode === "random" ? "무작위로 만들기" : "원하는 항목 만들기")}</dd></div>
+                      {selectedCraftItem && <div><dt>{t("선택 항목")}</dt><dd>{localizedCosmeticName(selectedCraftItem, locale)}</dd></div>}
+                    </dl>
+                    {selectedCraftItem && <CosmeticPreview item={selectedCraftItem} className="atelier-summary-preview" label={localizedCosmeticName(selectedCraftItem, locale)} />}
+                    <div className="atelier-fragment-status">
+                      <span><small>{t("보유 파편")}</small><strong>{formatNumber(craftFragmentBalance)}</strong></span>
+                      <i aria-hidden="true">/</i>
+                      <span><small>{t("필요 파편")}</small><strong>{formatNumber(craftCost)}</strong></span>
+                    </div>
+                    <p className={`atelier-ready-status${craftReady ? " ready" : ""}`} role="status">
+                      {craftMode === "targeted" && selectedCraftItem === undefined
+                        ? t("제작할 항목을 먼저 선택하세요.")
+                        : craftFragmentShortage > 0
+                          ? t("파편 {count}개가 더 필요합니다.", { count: formatNumber(craftFragmentShortage) })
+                          : craftCandidates.length === 0
+                            ? t("이 조건의 모든 꾸미기를 이미 보유하고 있습니다.")
+                            : t("제작할 준비가 되었습니다.")}
+                    </p>
+                    <button className="primary-action atelier-craft-action" type="button" disabled={busyId !== null || !craftReady} onClick={() => void craft()}>
+                      {busyId === "atelier"
+                        ? t("제작 중...")
+                        : selectedCraftItem
+                          ? t("{name} 제작하기", { name: localizedCosmeticName(selectedCraftItem, locale) })
+                          : t("{rarity} {category} 무작위 제작", { rarity: rarityLabel(rarity), category: t(categoryLabels[category]) })}
                     </button>
                   </aside>
                 </div>
