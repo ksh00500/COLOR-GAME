@@ -1152,6 +1152,47 @@ textarea {
   }
 }
 
+/* Keep the tile picker scan-friendly: more real tile previews, less card chrome. */
+@media (min-width: 721px) {
+  .palette-editor-layout {
+    grid-template-columns: minmax(13rem, .48fr) minmax(0, 1.8fr);
+  }
+
+  .palette-owned-tile-grid {
+    grid-template-columns: repeat(auto-fill, minmax(7rem, 1fr));
+    gap: .6rem;
+  }
+
+  .palette-owned-tile-grid > button {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    align-content: start;
+    min-height: 8.5rem;
+    gap: .42rem;
+    padding: .65rem .45rem;
+    text-align: center;
+  }
+
+  .palette-owned-tile-grid .tile-skin-preview {
+    width: min(4.25rem, 100%);
+    border-radius: .9rem;
+  }
+
+  .palette-owned-tile-grid > button > span {
+    width: 100%;
+  }
+
+  .palette-owned-tile-grid strong {
+    font-size: .74rem;
+  }
+}
+
+@media (max-width: 720px) {
+  .palette-owned-tile-grid .tile-skin-preview {
+    width: min(3.65rem, 16vw);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .app-frame *,
   .modal-backdrop * {
@@ -1293,13 +1334,33 @@ textarea {
 .palette-editor-actions { grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
 .palette-editor-actions > p { margin: 0; color: var(--text-secondary); font-size: .82rem; }
 .palette-editor-actions > button { min-width: 10rem; }
-.cosmetic-wishlist-button { position: absolute; z-index: 2; top: .45rem; right: .45rem; width: 2rem; aspect-ratio: 1; border: 0; border-radius: 50%; background: rgba(20,18,16,.72); color: #fff; }
+.cosmetic-wishlist-button {
+  position: absolute;
+  z-index: 2;
+  top: .45rem;
+  right: .45rem;
+  display: grid;
+  inline-size: 2rem;
+  block-size: 2rem;
+  min-width: 2rem;
+  min-height: 2rem;
+  max-width: 2rem;
+  max-height: 2rem;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(20,18,16,.72);
+  color: #fff;
+  line-height: 1;
+  contain: layout paint;
+}
 .cosmetic-wishlist-button.active { color: #ffcf58; }
 .collection-set-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr)); gap: .85rem; margin-top: 1rem; }
 .collection-set-card { padding: 1rem; border: 1px solid var(--border-color); border-radius: 1.15rem; background: var(--surface-soft); }
 .collection-set-previews { display: flex; gap: .35rem; margin: .7rem 0; }
 .collection-set-previews .atelier-cosmetic-preview { width: 3.5rem; border-radius: .65rem; }
-.collection-card { position: relative; }
+.collection-card { position: relative; isolation: isolate; overflow: hidden; contain: layout paint; }
 .collection-filters { grid-template-columns: repeat(6, minmax(0, 1fr)); }
 .fragment-workshop-link { display: inline-flex; min-height: 2.25rem; align-items: center; justify-content: center; padding: .4rem .7rem; border: 1px solid var(--border-color); border-radius: .65rem; color: var(--text-primary); background: var(--surface-raised); font-weight: 750; text-decoration: none; }
 .fragment-workshop-link:hover { border-color: var(--accent); transform: translateY(-1px); }
