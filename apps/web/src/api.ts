@@ -123,6 +123,7 @@ export interface CosmeticItem {
   splitAngle: number | null;
   preset?: string | null;
   durationMs?: number | null;
+  visualConfig?: Record<string, unknown> | null;
   collectionKey?: string | null;
   representativeColor: string | null;
   availability: "active" | "upcoming" | "pack_only";
@@ -139,6 +140,7 @@ export interface EconomyOverview {
     lifetimeSpent: number;
   };
   boxTickets: number;
+  mixerTickets?: number;
   fragments: Record<CosmeticRarity, number>;
   weeklyStore: {
     weekKey: string;
@@ -210,6 +212,16 @@ export interface EconomyOverview {
     };
   };
   box: {
+    priceChips: number;
+    fragmentRequirement: number;
+    probabilityVersion: string;
+    outcomes: Array<{
+      type: "fragment" | "cosmetic";
+      rarity: CosmeticRarity;
+      probability: number;
+    }>;
+  };
+  mixer?: {
     priceChips: number;
     fragmentRequirement: number;
     probabilityVersion: string;
@@ -590,6 +602,15 @@ export const purchaseCosmetic = async (cosmeticId: string): Promise<EconomyOverv
 
 export const openPaletteBox = async (category: CraftCategory = "tile_color"): Promise<CosmeticOutcome> => {
   const data = await request<{ outcome: CosmeticOutcome }>("/economy/box/open", {
+    method: "POST",
+    body: JSON.stringify({ category, timeZone: browserTimeZone() }),
+  });
+  economyCache = data.outcome.overview;
+  return data.outcome;
+};
+
+export const openPaletteMixer = async (category: CraftCategory = "tile_color"): Promise<CosmeticOutcome> => {
+  const data = await request<{ outcome: CosmeticOutcome }>("/economy/mixer/open", {
     method: "POST",
     body: JSON.stringify({ category, timeZone: browserTimeZone() }),
   });

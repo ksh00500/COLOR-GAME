@@ -162,11 +162,10 @@ export function GamePage() {
       void playOpponentTurnCue();
     }
 
-    if (settings.animationLevel === "off") return;
     setTurnCueActive(true);
     const timer = window.setTimeout(() => setTurnCueActive(false), 1_200);
     effectTimers.current.push(timer);
-  }, [settings.animationLevel, settings.soundEnabled]);
+  }, [settings.soundEnabled]);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -219,18 +218,8 @@ export function GamePage() {
 
       const isFullBoardClear = result.move.earnedScore === 0;
       const animationDuration = isFullBoardClear
-        ? settings.animationLevel === "off"
-          ? 40
-          : settings.presentationSpeed === "fast"
-            ? 260
-            : 420
-        : settings.animationLevel === "off"
-          ? 40
-          : settings.presentationSpeed === "fast"
-            ? 280
-            : settings.animationLevel === "reduced"
-              ? 360
-              : 620;
+        ? settings.presentationSpeed === "fast" ? 340 : 560
+        : settings.presentationSpeed === "fast" ? 460 : 760;
 
       setIsAnimating(true);
       setIsBoardClearing(isFullBoardClear);
@@ -257,7 +246,7 @@ export function GamePage() {
       }
       effectTimers.current.push(...timers);
     },
-    [game, isAnimating, settings.animationLevel, settings.presentationSpeed, triggerOpponentTurnComplete],
+    [game, isAnimating, settings.presentationSpeed, triggerOpponentTurnComplete],
   );
 
   useEffect(() => {

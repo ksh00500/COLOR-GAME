@@ -410,8 +410,8 @@ export function AccountPage({ deletionEntry = false }: { deletionEntry?: boolean
               </div>
               <nav className="account-tabs" aria-label={t("마이페이지 메뉴")}>
                 {([
-                  ["tiles", "타일 설정"],
-                  ["quests", "퀘스트·파편"],
+                  ["tiles", "꾸미기"],
+                  ["quests", "퀘스트"],
                   ["records", "기록"],
                   ["benefits", "혜택·계정"],
                 ] as const).map(([key, label]) => (

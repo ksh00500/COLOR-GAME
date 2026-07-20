@@ -43,30 +43,44 @@ export function ResultPanel({
         : primaryWon
           ? "마지막 연결이 목표 점수를 완성했습니다."
           : "{name} 플레이어가 목표 점수에 먼저 도달했습니다.";
+  const victoryPreset = primaryWon && typeof document !== "undefined"
+    ? document.documentElement.dataset.tangoVictoryEffect ?? "default"
+    : "default";
 
   return (
-    <div className="modal-backdrop result-backdrop">
-      <section className={`result-panel ${primaryWon ? "win" : isDraw ? "draw" : "loss"}`} role="dialog" aria-modal="true" aria-labelledby="result-title">
-        <p className="eyebrow">MATCH COMPLETE</p>
-        <div className="result-status-card">
+    <div className="modal-backdrop result-backdrop result-scene-backdrop">
+      <section
+        className={`result-panel result-scene ${primaryWon ? "win" : isDraw ? "draw" : "loss"}`}
+        data-victory-preset={victoryPreset}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="result-title"
+      >
+        <div className="result-scene-art" aria-hidden="true">
+          <i className="result-scene-halo" />
+          <i className="result-scene-ribbon" />
+          <i className="result-scene-emblem" />
+          {Array.from({ length: 14 }, (_, index) => <b key={index} />)}
+        </div>
+        <header className="result-scene-hero">
+          <p className="eyebrow">MATCH COMPLETE</p>
           <span className={`result-status-mark ${primaryWon ? "win" : isDraw ? "draw" : "loss"}`}>
             {isDraw ? "D" : primaryWon ? "W" : "L"}
           </span>
-          <span>
-            <small>{isDraw ? "DRAW" : primaryWon ? "WIN" : "LOSS"}</small>
-            <strong>{primary.nickname}</strong>
-          </span>
-        </div>
-        <h2 id="result-title">{t(title)}</h2>
-        <p>{t(reason, { name: opponent.nickname })}</p>
-        <div className="final-score">
-          <span><small>{primary.nickname}</small><strong>{primary.score}</strong></span>
-          <i>:</i>
-          <span><small>{opponent.nickname}</small><strong>{opponent.score}</strong></span>
-        </div>
-        <div className="result-meta">
-          <span><small>{t("전체 턴")}</small><strong>{game.turnNumber}</strong></span>
-          <span><small>{t("게임 시간")}</small><strong>{Math.floor(elapsedSeconds / 60)}:{String(elapsedSeconds % 60).padStart(2, "0")}</strong></span>
+          <h2 id="result-title">{t(title)}</h2>
+          <strong className="result-player-name">{primary.nickname}</strong>
+          <p>{t(reason, { name: opponent.nickname })}</p>
+        </header>
+        <div className="result-summary-card">
+          <div className="final-score">
+            <span><small>{primary.nickname}</small><strong>{primary.score}</strong></span>
+            <i>:</i>
+            <span><small>{opponent.nickname}</small><strong>{opponent.score}</strong></span>
+          </div>
+          <div className="result-meta">
+            <span><small>{t("전체 턴")}</small><strong>{game.turnNumber}</strong></span>
+            <span><small>{t("게임 시간")}</small><strong>{Math.floor(elapsedSeconds / 60)}:{String(elapsedSeconds % 60).padStart(2, "0")}</strong></span>
+          </div>
         </div>
         {rematchPending && (
           <p className="rematch-waiting" role="status">

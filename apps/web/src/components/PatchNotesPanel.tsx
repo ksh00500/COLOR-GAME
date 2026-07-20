@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { useI18n } from "../i18n";
 
-const latestPatchVersion = "20260719-v1.3.0";
+const latestPatchVersion = "20260721-v1.3.1";
 const patchNotesKey = `tango-patch-notes-seen-${latestPatchVersion}`;
 const patchNotesOpenEvent = "tango:open-patch-notes";
 
@@ -26,6 +26,34 @@ export interface PatchNoteRelease {
 export const patchNoteReleases: PatchNoteRelease[] = [
   {
     version: latestPatchVersion,
+    title: "꾸미기 경험 리마스터",
+    date: "2026-07-21",
+    summary: "게임판과 효과의 품질을 높이고 상점, 공방, 도감과 장착 화면을 실제 서비스 수준으로 다시 구성했습니다.",
+    entries: [
+      {
+        tag: "STORE",
+        title: "이번 주 상점과 팔레트 믹서",
+        body: "상품을 등급별 진열 구역으로 나누고 아틀리에 상자를 안료를 섞어 결과를 발견하는 팔레트 믹서로 교체했습니다.",
+      },
+      {
+        tag: "LOADOUT",
+        title: "한눈에 보는 내 꾸미기",
+        body: "타일, 게임판, 배치, 득점, 승리 연출을 한 종류씩 살펴보고 보유 항목을 누르면 즉시 적용할 수 있습니다.",
+      },
+      {
+        tag: "EFFECT",
+        title: "게임판과 효과 전면 강화",
+        body: "12종 게임판에 고유 표면과 상감 표현을 더하고 배치와 득점 효과를 다층 연출로 강화했습니다.",
+      },
+      {
+        tag: "RESULT",
+        title: "새로운 경기 결과 화면",
+        body: "승패와 점수, 경기 정보를 명확히 보여주는 전체 결과 장면을 만들고 승리 연출이 화면 전체에 반영되도록 개선했습니다.",
+      },
+    ],
+  },
+  {
+    version: "20260719-v1.3.0",
     title: "Tango 비주얼 리마스터",
     date: "2026-07-19",
     summary: "고급 원목과 따뜻한 파치먼트 감성을 바탕으로 로고부터 게임판, 주요 화면과 모바일 내비게이션까지 새롭게 정리한 업데이트입니다.",

@@ -5,7 +5,6 @@ import {
   formatShortcutCode,
   isConfigurableShortcutCode,
   useSettings,
-  type AnimationLevel,
   type AppLanguage,
   type ColorShortcuts,
   type ThemePreference,
@@ -21,12 +20,6 @@ const themeOptions: Array<{ value: ThemePreference; label: string }> = [
   { value: "system", label: "시스템" },
   { value: "light", label: "라이트" },
   { value: "dark", label: "다크" },
-];
-
-const motionOptions: Array<{ value: AnimationLevel; label: string }> = [
-  { value: "full", label: "전체" },
-  { value: "reduced", label: "감소" },
-  { value: "off", label: "끄기" },
 ];
 
 const languageOptions: Array<{ value: AppLanguage; label: string }> = [
@@ -228,25 +221,6 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
               ? t("변경할 칸을 누른 다음 원하는 키를 입력하세요.")
               : t(shortcutError)}
           </small>
-        </div>
-
-        <div className="setting-group">
-          <div className="setting-label">
-            <strong>{t("애니메이션")}</strong>
-            <span>{t("움직임과 전환 효과의 강도를 조절합니다.")}</span>
-          </div>
-          <div className="segmented-control">
-            {motionOptions.map((option) => (
-              <button
-                type="button"
-                key={option.value}
-                className={settings.animationLevel === option.value ? "active" : ""}
-                onClick={() => updateSettings({ animationLevel: option.value })}
-              >
-                {t(option.label)}
-              </button>
-            ))}
-          </div>
         </div>
 
         <div className="setting-group">

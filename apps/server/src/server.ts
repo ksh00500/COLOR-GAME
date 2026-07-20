@@ -1472,6 +1472,29 @@ export const createServer = (options: ServerOptions = {}) => {
     }
   });
 
+  app.post("/economy/mixer/open", async (request, reply) => {
+    const account = await authenticateToken(bearerToken(request.headers.authorization));
+    if (account === null || !economyStore.enabled) {
+      return reply.code(401).send({ code: "UNAUTHORIZED", message: "Sign in is required." });
+    }
+    const parsed = boxOpenSchema.merge(economyTimeZoneSchema).safeParse(request.body ?? {});
+    if (!parsed.success) {
+      return reply.code(400).send({ code: "INVALID_REQUEST" });
+    }
+    try {
+      return {
+        outcome: await economyStore.openBox(
+          account.id,
+          parsed.data.category as CraftCategory,
+          account.attendanceStreak,
+        ),
+      };
+    } catch (error) {
+      const mapped = economyErrorStatus(error);
+      return reply.code(mapped.status).send({ code: mapped.code });
+    }
+  });
+
   app.post("/economy/atelier/craft", async (request, reply) => {
     const account = await authenticateToken(bearerToken(request.headers.authorization));
     if (account === null || !economyStore.enabled) {

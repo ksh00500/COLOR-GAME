@@ -1,10 +1,8 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import {
   ApiError,
   fetchEconomy,
   redeemCoupon,
-  type CosmeticRarity,
   type CouponRedemptionResult,
   type EconomyOverview,
 } from "../api";
@@ -18,8 +16,6 @@ import { TilePalettePanel } from "./TilePalettePanel";
 export { filterOwnedTileItems } from "./TilePalettePanel";
 
 export type AccountEconomyTab = "tiles" | "quests" | "records" | "benefits";
-
-const rarities: CosmeticRarity[] = ["common", "rare", "epic", "legendary"];
 
 export function EconomyAccountPanel({ activeTab }: { activeTab: AccountEconomyTab }) {
   const { t, locale, formatNumber, formatDate } = useI18n();
@@ -70,27 +66,12 @@ export function EconomyAccountPanel({ activeTab }: { activeTab: AccountEconomyTa
         <>
           <div className="economy-account-heading">
             <div>
-              <p className="eyebrow">QUEST & FRAGMENTS</p>
-              <h3>{t("퀘스트와 파편")}</h3>
+              <p className="eyebrow">QUESTS</p>
+              <h3>{t("퀘스트")}</h3>
             </div>
             <strong className="mini-chip-balance">◆ {formatNumber(economy.wallet.colorChips)}</strong>
           </div>
           <EconomyQuestGrid economy={economy} onEconomyChange={setEconomy} />
-          <h3>{t("등급별 파편")}</h3>
-          <div className="fragment-grid">
-            {rarities.map((rarity) => (
-              <article className={`fragment-card rarity-border-${rarity}`} key={rarity}>
-                <span className={`fragment-gem rarity-${rarity}`}>◆</span>
-                <div>
-                  <strong>{t(rarity)}</strong>
-                  <small>{economy.fragments[rarity]}/{economy.box.fragmentRequirement}</small>
-                </div>
-                <Link className="fragment-workshop-link" to={`/store?tab=atelier&rarity=${rarity}`}>
-                  {t("공방에서 사용")}
-                </Link>
-              </article>
-            ))}
-          </div>
         </>
       )}
 

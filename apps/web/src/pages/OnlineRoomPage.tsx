@@ -244,11 +244,10 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
       void playOpponentTurnCue();
     }
 
-    if (settings.animationLevel === "off") return;
     setTurnCueActive(true);
     const timer = window.setTimeout(() => setTurnCueActive(false), 1_200);
     effectTimers.current.push(timer);
-  }, [settings.animationLevel, settings.soundEnabled]);
+  }, [settings.soundEnabled]);
 
   const applyRoom = useCallback((nextRoom: RoomSnapshot) => {
     roomCodeRef.current = nextRoom.code;

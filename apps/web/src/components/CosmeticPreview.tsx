@@ -28,6 +28,8 @@ export function CosmeticPreview({ item, className = "", label }: CosmeticPreview
     >
       {item.category === "board_theme" && (
         <span className="atelier-cosmetic-preview-board-shell">
+          <span className="preview-board-inlay" aria-hidden="true" />
+          <span className="preview-board-emblem" aria-hidden="true" />
           <span className="atelier-cosmetic-preview-board-grid">
             {Array.from({ length: 25 }, (_, index) => (
               <i className={index === 6 ? "sample-a" : index === 12 ? "sample-b" : index === 18 ? "sample-c" : ""} key={index} />
@@ -43,6 +45,9 @@ export function CosmeticPreview({ item, className = "", label }: CosmeticPreview
             <path d="M50 4v13M50 83v13M4 50h13M83 50h13M18 18l9 9M73 73l9 9M82 18l-9 9M27 73l-9 9" />
           </svg>
           <span className="atelier-cosmetic-preview-tile placement-demo" />
+          <span className="preview-effect-particles" aria-hidden="true">
+            {Array.from({ length: 10 }, (_, index) => <i key={index} />)}
+          </span>
         </span>
       )}
       {item.category === "score_effect" && (
@@ -53,17 +58,24 @@ export function CosmeticPreview({ item, className = "", label }: CosmeticPreview
             <path d="m99 17 9 7-10 5" />
           </svg>
           <strong>+4</strong>
+          <span className="preview-score-particles" aria-hidden="true">
+            {Array.from({ length: 8 }, (_, index) => <i key={index} />)}
+          </span>
         </span>
       )}
       {item.category === "victory_effect" && (
         <span className="atelier-cosmetic-preview-victory">
+          <span className="preview-victory-rays" aria-hidden="true" />
           <svg viewBox="0 0 100 100" aria-hidden="true">
             <path className="victory-laurel left" d="M33 78C17 65 14 42 25 24M28 69l-12-2M23 57l-11-6M22 44l-8-10M27 33l-3-11" />
             <path className="victory-laurel right" d="M67 78c16-13 19-36 8-54M72 69l12-2M77 57l11-6M78 44l8-10M73 33l3-11" />
             <path className="victory-cup" d="M35 24h30v13c0 13-6 22-15 22s-15-9-15-22V24Zm0 6H24v7c0 8 5 13 13 15M65 30h11v7c0 8-5 13-13 15M50 59v11M38 77h24" />
             <path className="victory-star" d="m50 29 3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1 3-6Z" />
           </svg>
-          <b>WIN</b>
+          <b>{item.rarity === "legendary" ? "VICTORY" : "WIN"}</b>
+          <span className="preview-victory-confetti" aria-hidden="true">
+            {Array.from({ length: 10 }, (_, index) => <i key={index} />)}
+          </span>
         </span>
       )}
     </span>

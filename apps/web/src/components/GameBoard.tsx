@@ -55,6 +55,7 @@ export function GameBoard({
   const scorePreset = activeCosmetics === undefined
     ? undefined
     : activeCosmetics?.scoreEffect?.preset ?? "default";
+  const scoreAnchor = scoringCells.values().next().value as string | undefined;
 
   useEffect(() => {
     const focusedButton = boardRef.current?.querySelector<HTMLButtonElement>(
@@ -94,6 +95,11 @@ export function GameBoard({
         "--active-score-duration": `${activeCosmetics?.scoreEffect?.durationMs ?? 450}ms`,
       } as CSSProperties}
     >
+      <span className="board-surface-art" aria-hidden="true">
+        <i className="board-surface-inlay" />
+        <i className="board-surface-emblem" />
+        <i className="board-surface-light" />
+      </span>
       <div
         className="game-board"
         ref={boardRef}
@@ -140,7 +146,24 @@ export function GameBoard({
                   }
                 }}
               >
-                {cell !== null && <span className="tile-face">{showShapes ? shapeForColor[cell] : ""}</span>}
+                {cell !== null && (
+                  <span className="tile-face">
+                    {showShapes ? shapeForColor[cell] : ""}
+                    {placed && (
+                      <span className="placement-effect-layer" aria-hidden="true">
+                        <i /><i /><i /><i /><i /><i /><i /><i />
+                      </span>
+                    )}
+                    {scoring && (
+                      <span className="score-effect-layer" aria-hidden="true">
+                        <i /><i /><i /><i /><i /><i />
+                      </span>
+                    )}
+                  </span>
+                )}
+                {scoring && key === scoreAnchor && (
+                  <strong className="score-effect-callout" aria-hidden="true">+{scoringCells.size}</strong>
+                )}
                 {cell === null && canPlay && <span className={`tile-preview ${selectedColor}`}>{showShapes ? shapeForColor[selectedColor] : ""}</span>}
               </button>
             );

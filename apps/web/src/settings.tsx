@@ -8,7 +8,6 @@ import {
 } from "react";
 
 export type ThemePreference = "system" | "light" | "dark";
-export type AnimationLevel = "full" | "reduced" | "off";
 export type PresentationSpeed = "standard" | "fast";
 export type AppLanguage = "auto" | "ko" | "en" | "ja" | "es" | "pt-BR";
 export type ColorShortcuts = [string, string, string];
@@ -62,7 +61,6 @@ export interface AppSettings {
   theme: ThemePreference;
   colorBlindPalette: boolean;
   showShapes: boolean;
-  animationLevel: AnimationLevel;
   presentationSpeed: PresentationSpeed;
   soundEnabled: boolean;
   language: AppLanguage;
@@ -80,7 +78,6 @@ const defaultSettings: AppSettings = {
   theme: "system",
   colorBlindPalette: false,
   showShapes: false,
-  animationLevel: "full",
   presentationSpeed: "standard",
   soundEnabled: true,
   language: "auto",
@@ -101,10 +98,11 @@ const readSettings = (): AppSettings => {
   try {
     const stored = window.localStorage.getItem(STORAGE_KEY);
     if (stored === null) return defaultSettings;
-    const parsed = JSON.parse(stored) as Partial<AppSettings>;
+    const parsed = JSON.parse(stored) as Partial<AppSettings> & { animationLevel?: unknown };
+    const { animationLevel: _legacyAnimationLevel, ...currentSettings } = parsed;
     return {
       ...defaultSettings,
-      ...parsed,
+      ...currentSettings,
       colorShortcuts: normalizeColorShortcuts(parsed.colorShortcuts),
     };
   } catch {
@@ -128,7 +126,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     document.documentElement.dataset.palette = settings.colorBlindPalette
       ? "colorblind"
       : "default";
-    document.documentElement.dataset.motion = settings.animationLevel;
+    delete document.documentElement.dataset.motion;
     document.documentElement.dataset.speed = settings.presentationSpeed;
     document.documentElement.lang = resolveAppLanguage(settings.language);
   }, [settings]);

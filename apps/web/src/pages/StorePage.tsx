@@ -7,7 +7,7 @@ import {
   fetchEconomy,
   getAuthToken,
   getCachedEconomy,
-  openPaletteBox,
+  openPaletteMixer,
   purchaseCosmetic,
   setCosmeticWishlist,
   type CraftCategory,
@@ -32,7 +32,7 @@ const compactRarityLabels: Record<CosmeticRarity, string> = {
   epic: "영웅",
   legendary: "전설",
 };
-type StoreTab = "weekly" | "atelier" | "collection" | "box" | "upcoming";
+type StoreTab = "weekly" | "atelier" | "collection" | "mixer" | "upcoming";
 type CollectionRarity = CosmeticRarity | "all";
 const craftCategories: CraftCategory[] = ["tile_color", "board_theme", "placement_effect", "score_effect", "victory_effect"];
 const categoryLabels: Record<CraftCategory, string> = {
@@ -63,13 +63,15 @@ export function StorePage() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [outcome, setOutcome] = useState<CosmeticOutcome | null>(null);
-  const [outcomeSource, setOutcomeSource] = useState<"box" | "combine">("box");
+  const [outcomeSource, setOutcomeSource] = useState<"mixer" | "combine">("mixer");
   const [purchaseCandidate, setPurchaseCandidate] = useState<CosmeticItem | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [storeTab, setStoreTab] = useState<StoreTab>(() => {
     const tab = searchParams.get("tab");
-    return tab === "atelier" || tab === "collection" || tab === "box" || tab === "upcoming"
-      ? tab
+    return tab === "box" || tab === "mixer"
+      ? "mixer"
+      : tab === "atelier" || tab === "collection" || tab === "upcoming"
+        ? tab
       : "weekly";
   });
   const [rarity, setRarity] = useState<CosmeticRarity>(() => {
@@ -79,10 +81,12 @@ export function StorePage() {
       : "common";
   });
   const [collectionRarity, setCollectionRarity] = useState<CollectionRarity>("all");
+  const [collectionQuery, setCollectionQuery] = useState("");
   const [wishlistOnly, setWishlistOnly] = useState(false);
   const [category, setCategory] = useState<CraftCategory>("tile_color");
   const [craftMode, setCraftMode] = useState<"random" | "targeted">("random");
   const [craftTarget, setCraftTarget] = useState<string | null>(null);
+  const [craftStep, setCraftStep] = useState<1 | 2 | 3 | 4>(1);
 
   useEffect(() => {
     if (getAuthToken() === null) {
@@ -112,16 +116,16 @@ export function StorePage() {
     }
   };
 
-  const openBox = async () => {
-    setBusyId("palette-box");
+  const openMixer = async () => {
+    setBusyId("palette-mixer");
     setMessage(null);
     try {
-      const nextOutcome = await openPaletteBox(category);
-      setOutcomeSource("box");
+      const nextOutcome = await openPaletteMixer(category);
+      setOutcomeSource("mixer");
       setOutcome(nextOutcome);
       setEconomy(nextOutcome.overview);
     } catch (error) {
-      setMessage(error instanceof ApiError ? error.code : "상자를 열지 못했습니다.");
+      setMessage(error instanceof ApiError ? error.code : "팔레트 믹서를 사용하지 못했습니다.");
     } finally {
       setBusyId(null);
     }
@@ -271,7 +275,7 @@ export function StorePage() {
                 ["weekly", "주간 상점"],
                 ["atelier", "Tango 공방"],
                 ["collection", "스킨 도감"],
-                ["box", "아틀리에 상자"],
+                ["mixer", "팔레트 믹서"],
                 ["upcoming", "출시 예정"],
               ] as const).map(([key, label]) => (
                 <button
@@ -290,7 +294,7 @@ export function StorePage() {
                 <div className="store-section-heading">
                   <div>
                     <p className="eyebrow">WEEKLY SELECTION</p>
-                    <h2>{t("이번 주 꾸미기")}</h2>
+                    <h2>{t("이번 주 상점")}</h2>
                   </div>
                   <span>{t("{date}에 변경", { date: formatDate(economy.weeklyStore.endsAt) })}</span>
                 </div>
@@ -305,25 +309,26 @@ export function StorePage() {
                     </button>
                   ))}
                 </nav>
-                <div className="weekly-catalog-bar">
-                  <div>
-                    <CosmeticCategoryIcon category={category} />
-                    <span>
-                      <strong>{t(categoryLabels[category])}</strong>
-                      <small>{t("이번 주 {count}개", { count: weeklyCategoryItems.length })}</small>
-                    </span>
-                  </div>
-                  <div className="weekly-rarity-legend" aria-label={t("등급")}>
-                    {rarityOrder.map((entry) => (
-                      <span className={`rarity-${entry}`} key={entry}>
-                        <i aria-hidden="true" />{rarityLabel(entry)} {weeklyCategoryItems.filter((item) => item.rarity === entry).length}
-                      </span>
-                    ))}
-                  </div>
-                </div>
                 {weeklyCategoryItems.length > 0 ? (
-                  <div className={`weekly-cosmetic-grid item-count-${Math.min(weeklyCategoryItems.length, 4)}`}>
-                    {weeklyCategoryItems.map(cosmeticCard)}
+                  <div className="weekly-rarity-sections">
+                    {rarityOrder.map((entry) => {
+                      const items = weeklyCategoryItems.filter((item) => item.rarity === entry);
+                      if (items.length === 0) return null;
+                      return (
+                        <section className={`weekly-rarity-section rarity-${entry}`} key={entry}>
+                          <header>
+                            <span className="weekly-rarity-mark" aria-hidden="true" />
+                            <div>
+                              <h3>{rarityLabel(entry)}</h3>
+                              <p>{t("이번 주 {count}개", { count: items.length })}</p>
+                            </div>
+                          </header>
+                          <div className={`weekly-cosmetic-grid item-count-${Math.min(items.length, 4)}`}>
+                            {items.map(cosmeticCard)}
+                          </div>
+                        </section>
+                      );
+                    })}
                   </div>
                 ) : (
                   <div className="weekly-empty-state">
@@ -346,15 +351,17 @@ export function StorePage() {
 
                 <ol className="atelier-progress" aria-label={t("제작 순서")}>
                   {["꾸미기 종류", "등급", "제작 방식", "제작 확인"].map((label, index) => (
-                    <li className={index < 3 ? "complete" : craftReady ? "ready active" : "active"} key={label}>
-                      <b>{index < 3 ? "✓" : index + 1}</b><span>{t(label)}</span>
+                    <li className={`${craftStep === index + 1 ? "active" : ""}${craftStep > index + 1 ? " complete" : ""}`} key={label}>
+                      <button type="button" onClick={() => setCraftStep((index + 1) as 1 | 2 | 3 | 4)}>
+                        <b>{craftStep > index + 1 ? "✓" : index + 1}</b><span>{t(label)}</span>
+                      </button>
                     </li>
                   ))}
                 </ol>
 
                 <div className="atelier-layout">
                   <div className="atelier-builder">
-                    <section className="atelier-choice-section atelier-step-category" aria-labelledby="atelier-category-title">
+                    <section className="atelier-choice-section atelier-step-category" aria-labelledby="atelier-category-title" hidden={craftStep !== 1}>
                       <header>
                         <b>1</b>
                         <div><small>STYLE TYPE</small><h3 id="atelier-category-title">{t("어떤 꾸미기를 만들까요?")}</h3></div>
@@ -379,7 +386,7 @@ export function StorePage() {
                       </div>
                     </section>
 
-                    <section className="atelier-choice-section atelier-step-rarity" aria-labelledby="atelier-rarity-title">
+                    <section className="atelier-choice-section atelier-step-rarity" aria-labelledby="atelier-rarity-title" hidden={craftStep !== 2}>
                       <header>
                         <b>2</b>
                         <div><small>RARITY</small><h3 id="atelier-rarity-title">{t("사용할 파편 등급을 고르세요")}</h3></div>
@@ -395,7 +402,7 @@ export function StorePage() {
                       </div>
                     </section>
 
-                    <section className="atelier-choice-section atelier-step-method" aria-labelledby="atelier-mode-title">
+                    <section className="atelier-choice-section atelier-step-method" aria-labelledby="atelier-mode-title" hidden={craftStep !== 3}>
                       <header>
                         <b>3</b>
                         <div><small>CRAFT METHOD</small><h3 id="atelier-mode-title">{t("어떻게 만들까요?")}</h3></div>
@@ -414,7 +421,7 @@ export function StorePage() {
                       </div>
                     </section>
 
-                    {craftMode === "targeted" && (
+                    {craftStep === 3 && craftMode === "targeted" && (
                       <section className="atelier-choice-section atelier-target-section" aria-labelledby="atelier-target-title">
                         <header>
                           <b>+</b>
@@ -435,7 +442,7 @@ export function StorePage() {
                     )}
                   </div>
 
-                  <aside className="atelier-control-card" aria-labelledby="atelier-summary-title">
+                  <aside className="atelier-control-card" aria-labelledby="atelier-summary-title" hidden={craftStep !== 4}>
                     <div className="atelier-summary-heading">
                       <span>4</span>
                       <div><small>CRAFT SUMMARY</small><h3 id="atelier-summary-title">{t("제작 확인")}</h3></div>
@@ -486,6 +493,21 @@ export function StorePage() {
                           : t("{rarity} {category} 무작위 제작", { rarity: rarityLabel(rarity), category: t(categoryLabels[category]) })}
                     </button>
                   </aside>
+                </div>
+                <div className="atelier-step-navigation">
+                  <button className="secondary-action" type="button" disabled={craftStep === 1} onClick={() => setCraftStep((craftStep - 1) as 1 | 2 | 3 | 4)}>
+                    {t("이전")}
+                  </button>
+                  {craftStep < 4 && (
+                    <button
+                      className="primary-action"
+                      type="button"
+                      disabled={craftStep === 3 && craftMode === "targeted" && selectedCraftItem === undefined}
+                      onClick={() => setCraftStep((craftStep + 1) as 1 | 2 | 3 | 4)}
+                    >
+                      {t("다음")}
+                    </button>
+                  )}
                 </div>
               </section>
             )}
@@ -542,11 +564,23 @@ export function StorePage() {
                   </button>
                 </nav>
 
+                <label className="collection-search-field">
+                  <span>{t("도감 검색")}</span>
+                  <input
+                    type="search"
+                    value={collectionQuery}
+                    placeholder={t("꾸미기 이름으로 검색")}
+                    onChange={(event) => setCollectionQuery(event.target.value)}
+                  />
+                </label>
+
                 <div className="collection-grid">
                   {economy.catalog
                     .filter((item) => item.category === category
                       && (collectionRarity === "all" || item.rarity === collectionRarity)
-                      && (!wishlistOnly || item.wishlisted))
+                      && (!wishlistOnly || item.wishlisted)
+                      && [localizedCosmeticName(item, locale), item.nameKo, item.nameEn]
+                        .some((name) => name.toLocaleLowerCase(locale).includes(collectionQuery.trim().toLocaleLowerCase(locale))))
                     .map((item) => (
                       <article
                         className={`collection-card rarity-border-${item.rarity}${item.owned ? " owned" : " locked"}`}
@@ -567,7 +601,10 @@ export function StorePage() {
                           <small>{rarityLabel(item.rarity)}</small>
                           <strong>{localizedCosmeticName(item, locale)}</strong>
                         </span>
-                        <b>{item.owned ? `✓ ${t("보유 중")}` : `🔒 ${t("미보유")}`}</b>
+                        <b className={item.owned ? "owned-label" : "locked-label"}>
+                          <span aria-hidden="true">{item.owned ? "✓" : "•"}</span>
+                          {t(item.owned ? "보유 중" : "미보유")}
+                        </b>
                       </article>
                     ))}
                 </div>
@@ -595,46 +632,72 @@ export function StorePage() {
               </section>
             )}
 
-            {storeTab === "box" && (
-              <section className="store-feature-grid single-feature">
-                <article className="palette-box-card">
-                <div className="palette-box-visual" aria-hidden="true">
-                  <span>◆</span><span>◆</span><span>◆</span><span>◆</span>
-                </div>
-                <div>
-                  <p className="eyebrow">ATELIER BOX</p>
-                  <h2>{t("아틀리에 상자")}</h2>
-                  <p>{t("원하는 카테고리를 먼저 고른 뒤 파편 또는 완성 꾸미기 하나를 획득합니다.")}</p>
-                </div>
-                <nav className="atelier-category-tabs" aria-label={t("상자 카테고리")}>
-                  {craftCategories.map((entry) => (
-                    <button key={entry} type="button" className={category === entry ? "active" : ""} onClick={() => setCategory(entry)}>{t(categoryLabels[entry])}</button>
-                  ))}
-                </nav>
-                <button
-                  className="primary-action"
-                  type="button"
-                  disabled={busyId !== null || (economy.boxTickets < 1 && economy.wallet.colorChips < economy.box.priceChips)}
-                  onClick={() => void openBox()}
-                >
-                  {economy.boxTickets > 0
-                    ? t("상자 이용권으로 열기 ({count}개 보유)", { count: formatNumber(economy.boxTickets) })
-                    : t("{chips} 칩으로 열기", { chips: formatNumber(economy.box.priceChips) })}
-                </button>
-                <details className="box-odds">
-                  <summary>{t("획득 확률 보기")}</summary>
-                  <ul>
-                    {economy.box.outcomes.map((entry) => (
-                      <li key={`${entry.type}-${entry.rarity}`}>
-                        <span>{t(entry.rarity)} {t(entry.type === "fragment" ? "파편" : "스킨")}</span>
-                        <strong>{entry.probability}%</strong>
-                      </li>
-                    ))}
-                  </ul>
-                </details>
-                </article>
-              </section>
-            )}
+            {storeTab === "mixer" && (() => {
+              const mixer = economy.mixer ?? economy.box;
+              const mixerTickets = economy.mixerTickets ?? economy.boxTickets;
+              return (
+                <section className="palette-mixer-section">
+                  <div className="palette-mixer-copy">
+                    <p className="eyebrow">PALETTE MIXER</p>
+                    <h2>{t("팔레트 믹서")}</h2>
+                    <p>{t("원하는 꾸미기 종류를 고르고 안료를 섞어 파편 또는 완성 꾸미기 하나를 발견하세요.")}</p>
+                    <div className="mixer-category-grid" role="group" aria-label={t("믹서 카테고리")}>
+                      {craftCategories.map((entry) => (
+                        <button key={entry} type="button" className={category === entry ? "active" : ""} onClick={() => setCategory(entry)}>
+                          <CosmeticCategoryIcon category={entry} />
+                          <span><strong>{t(categoryLabels[entry])}</strong><small>{t("결과 범위")}</small></span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="palette-mixer-stage" aria-label={t("선택한 안료를 섞는 팔레트 믹서")}>
+                    <div className="mixer-pigment pigment-one" aria-hidden="true" />
+                    <div className="mixer-pigment pigment-two" aria-hidden="true" />
+                    <div className="mixer-pigment pigment-three" aria-hidden="true" />
+                    <div className="mixer-bowl" aria-hidden="true">
+                      <span /><span /><span />
+                      <i />
+                    </div>
+                    <CosmeticCategoryIcon category={category} className="mixer-selected-icon" />
+                  </div>
+
+                  <aside className="palette-mixer-control">
+                    <div>
+                      <small>{t("선택한 종류")}</small>
+                      <strong>{t(categoryLabels[category])}</strong>
+                    </div>
+                    <dl>
+                      <div><dt>{t("믹서 이용권")}</dt><dd>{formatNumber(mixerTickets)}</dd></div>
+                      <div><dt>{t("컬러 칩")}</dt><dd>{formatNumber(economy.wallet.colorChips)}</dd></div>
+                    </dl>
+                    <button
+                      className="primary-action mixer-action"
+                      type="button"
+                      disabled={busyId !== null || (mixerTickets < 1 && economy.wallet.colorChips < mixer.priceChips)}
+                      onClick={() => void openMixer()}
+                    >
+                      {busyId === "palette-mixer"
+                        ? t("안료를 섞는 중입니다.")
+                        : mixerTickets > 0
+                          ? t("믹서 이용권 사용 ({count}개 보유)", { count: formatNumber(mixerTickets) })
+                          : t("{chips} 칩으로 섞기", { chips: formatNumber(mixer.priceChips) })}
+                    </button>
+                    <details className="box-odds mixer-odds">
+                      <summary>{t("획득 확률 보기")}</summary>
+                      <ul>
+                        {mixer.outcomes.map((entry) => (
+                          <li key={`${entry.type}-${entry.rarity}`}>
+                            <span>{t(entry.rarity)} {t(entry.type === "fragment" ? "파편" : "꾸미기")}</span>
+                            <strong>{entry.probability}%</strong>
+                          </li>
+                        ))}
+                      </ul>
+                    </details>
+                  </aside>
+                </section>
+              );
+            })()}
 
             {storeTab === "upcoming" && (
               <section className="store-feature-grid">
@@ -676,16 +739,16 @@ export function StorePage() {
           outcome={outcome}
           source={outcomeSource}
           onClose={() => setOutcome(null)}
-          {...(outcomeSource === "box" ? {
+          {...(outcomeSource === "mixer" ? {
             onAgain: () => {
               setOutcome(null);
-              void openBox();
+              void openMixer();
             },
           } : {})}
           againDisabled={
             busyId !== null
-            || (outcome.overview.boxTickets < 1
-              && outcome.overview.wallet.colorChips < outcome.overview.box.priceChips)
+            || ((outcome.overview.mixerTickets ?? outcome.overview.boxTickets) < 1
+              && outcome.overview.wallet.colorChips < (outcome.overview.mixer ?? outcome.overview.box).priceChips)
           }
         />
       )}

@@ -11,7 +11,7 @@ export function CosmeticOutcomeModal({
   againDisabled = false,
 }: {
   outcome: CosmeticOutcome;
-  source: "box" | "combine";
+  source: "mixer" | "combine";
   onClose: () => void;
   onAgain?: () => void;
   againDisabled?: boolean;
@@ -30,7 +30,7 @@ export function CosmeticOutcomeModal({
         aria-labelledby="cosmetic-outcome-title"
         onMouseDown={(event) => event.stopPropagation()}
       >
-        <p className="eyebrow">{source === "box" ? "PALETTE BOX OPEN" : "FRAGMENT CRAFT"}</p>
+        <p className="eyebrow">{source === "mixer" ? "PALETTE MIXER" : "FRAGMENT CRAFT"}</p>
         {outcome.cosmetic ? (
           <CosmeticPreview
             item={outcome.cosmetic}
@@ -45,7 +45,7 @@ export function CosmeticOutcomeModal({
         </h2>
         <p>
           {outcome.cosmetic
-            ? t(source === "combine" ? "파편을 합성해 새로운 스킨을 완성했습니다." : "새로운 스킨을 획득했습니다.")
+            ? t(source === "combine" ? "파편을 합성해 새로운 스킨을 완성했습니다." : "새로운 꾸미기를 발견했습니다.")
             : t("같은 등급 파편 4개를 모아 스킨을 합성하세요.")}
         </p>
         <div className="box-result-actions">

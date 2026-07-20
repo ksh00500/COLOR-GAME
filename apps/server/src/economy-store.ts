@@ -59,6 +59,7 @@ export interface EconomyCatalogItem {
   splitAngle: number | null;
   preset: string | null;
   durationMs: number | null;
+  visualConfig?: Record<string, unknown> | null;
   collectionKey: string | null;
   representativeColor: string | null;
   availability: "active" | "upcoming" | "pack_only";
@@ -87,6 +88,7 @@ export interface EconomyOverview {
     lifetimeSpent: number;
   };
   boxTickets: number;
+  mixerTickets?: number;
   fragments: Record<CosmeticRarity, number>;
   weeklyStore: {
     weekKey: string;
@@ -138,6 +140,12 @@ export interface EconomyOverview {
     };
   };
   box: {
+    priceChips: number;
+    fragmentRequirement: number;
+    probabilityVersion: string;
+    outcomes: Array<{ type: "fragment" | "cosmetic"; rarity: CosmeticRarity; probability: number }>;
+  };
+  mixer?: {
     priceChips: number;
     fragmentRequirement: number;
     probabilityVersion: string;
@@ -285,7 +293,13 @@ interface CatalogRow {
   description_ko: string;
   chip_price: number;
   visual_kind: EconomyCatalogItem["visualKind"];
-  visual_config: { colors?: unknown; pattern?: unknown; splitAngle?: unknown; preset?: unknown } | null;
+  visual_config: {
+    colors?: unknown;
+    pattern?: unknown;
+    splitAngle?: unknown;
+    preset?: unknown;
+    visualConfig?: unknown;
+  } | null;
   collection_key: string | null;
   duration_ms: number | null;
   representative_color: string | null;
@@ -375,6 +389,11 @@ const toCatalogItem = (
     : null,
   preset: typeof row.visual_config?.preset === "string" ? row.visual_config.preset : null,
   durationMs: row.duration_ms,
+  visualConfig: row.visual_config?.visualConfig !== null
+    && typeof row.visual_config?.visualConfig === "object"
+    && !Array.isArray(row.visual_config.visualConfig)
+      ? row.visual_config.visualConfig as Record<string, unknown>
+      : null,
   collectionKey: row.collection_key,
   representativeColor: row.representative_color,
   availability: row.availability,
@@ -982,6 +1001,7 @@ export class PostgresEconomyStore implements EconomyStore {
         lifetimeSpent: wallet.lifetime_spent,
       },
       boxTickets: ticketResult.rows[0]?.quantity ?? 0,
+      mixerTickets: ticketResult.rows[0]?.quantity ?? 0,
       fragments,
       weeklyStore: {
         weekKey: storeWeek.weekKey,
@@ -1154,6 +1174,12 @@ export class PostgresEconomyStore implements EconomyStore {
         },
       },
       box: {
+        priceChips: boxPrice,
+        fragmentRequirement,
+        probabilityVersion,
+        outcomes: boxOutcomes,
+      },
+      mixer: {
         priceChips: boxPrice,
         fragmentRequirement,
         probabilityVersion,
