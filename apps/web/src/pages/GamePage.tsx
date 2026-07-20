@@ -19,7 +19,7 @@ import { PlayerCard } from "../components/PlayerCard";
 import { ResultPanel } from "../components/ResultPanel";
 import { SettingsPanel } from "../components/SettingsPanel";
 import { playOpponentTurnCue } from "../audio";
-import { useSettings } from "../settings";
+import { resolveColorShortcutIndex, useSettings } from "../settings";
 import { useI18n } from "../i18n";
 
 const HUMAN_ID = "player1";
@@ -283,21 +283,16 @@ export function GamePage() {
       if (!canHumanPlay) return;
       const target = event.target as HTMLElement | null;
       if (target?.tagName === "INPUT") return;
-      const color = ({
-        "1": "colorA",
-        "2": "colorB",
-        "3": "colorC",
-        q: "colorA",
-        w: "colorB",
-        e: "colorC",
-      } as const)[event.key.toLocaleLowerCase() as "1" | "2" | "3" | "q" | "w" | "e"];
+      const shortcutIndex = resolveColorShortcutIndex(event.code, settings.colorShortcuts);
+      const color = (["colorA", "colorB", "colorC"] as const)[shortcutIndex ?? -1];
       if (color !== undefined) {
+        event.preventDefault();
         setSelectedColors((current) => ({ ...current, [HUMAN_ID]: color }));
       }
     };
     window.addEventListener("keydown", handleShortcut);
     return () => window.removeEventListener("keydown", handleShortcut);
-  }, [canHumanPlay]);
+  }, [canHumanPlay, settings.colorShortcuts]);
 
   const remainingSeconds = useMemo(() => {
     if (game.turnTimer === null) return null;

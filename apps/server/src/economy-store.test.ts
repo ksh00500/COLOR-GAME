@@ -11,6 +11,7 @@ import {
   isRewardEligibleRoom,
   oklabDistance,
   selectWeeklyCatalog,
+  selectWeeklyCatalogByCategory,
   seoulDayKey,
   seoulQuestWeek,
   seoulWeek,
@@ -176,6 +177,47 @@ describe("economy policy", () => {
     ])).not.toThrow();
     expect(hexToOklab("#ffffff")).toHaveLength(3);
     expect(oklabDistance("#000000", "#ffffff")).toBeGreaterThan(0.9);
+  });
+
+  it("adds five deterministic weekly items for every new cosmetic category", () => {
+    const categories = ["tile_color", "board_theme", "placement_effect", "score_effect", "victory_effect"] as const;
+    const catalog = categories.flatMap((category) => ([
+      ["common", 14], ["rare", 10], ["epic", 8], ["legendary", 4],
+    ] as const).flatMap(([rarity, count]) =>
+      Array.from({ length: count }, (_, index) => ({ id: `${category}-${rarity}-${index}`, category, rarity })),
+    ));
+    const selected = selectWeeklyCatalogByCategory(catalog, "2026-07-20");
+    expect(selected.filter((id) => id.startsWith("tile_color-"))).toHaveLength(13);
+    for (const category of categories.slice(1)) {
+      expect(selected.filter((id) => id.startsWith(`${category}-`))).toHaveLength(5);
+    }
+    expect(selected).toEqual(selectWeeklyCatalogByCategory([...catalog].reverse(), "2026-07-20"));
+
+    const following = selectWeeklyCatalogByCategory(catalog, "2026-07-27");
+    for (const category of categories.slice(1)) {
+      const firstHasLegendary = selected.some((id) => id.startsWith(`${category}-legendary-`));
+      const nextHasLegendary = following.some((id) => id.startsWith(`${category}-legendary-`));
+      expect(firstHasLegendary).not.toBe(nextHasLegendary);
+    }
+  });
+
+  it("adds 48 atelier cosmetics and cascading wishlist/craft records", () => {
+    const migration = readFileSync(
+      fileURLToPath(new URL("../db/migrations/015_cosmetic_atelier.sql", import.meta.url)),
+      "utf8",
+    );
+    const ids = migration.match(/^\s*\('(board|place|score|victory)-[^']+'/gm) ?? [];
+    expect(ids).toHaveLength(48);
+    for (const prefix of ["board", "place", "score", "victory"]) {
+      expect(ids.filter((id) => id.includes(`('${prefix}-`))).toHaveLength(12);
+    }
+    expect(migration).toContain("case rarity when 'common' then 150 when 'rare' then 400 when 'epic' then 800 else 1600 end");
+    expect(migration).toContain("'placement',array['#8b7de4','#56d2ca'],'orbit',350");
+    expect(migration).toContain("'score',array['#8b7de4','#56d2ca'],'cosmos-fold',650");
+    expect(migration).toContain("'victory',array['#8b7de4','#56d2ca'],'tableau',2500");
+    expect(migration).toContain("create table if not exists account_cosmetic_wishlist");
+    expect(migration).toContain("create table if not exists cosmetic_craft_history");
+    expect(migration.match(/references accounts\(id\) on delete cascade/g)?.length).toBeGreaterThanOrEqual(2);
   });
 
   it("compares the final A, B, and C colors instead of the replaced slot default", () => {

@@ -1,7 +1,7 @@
 import type { CosmeticOutcome } from "../api";
 import { localizedCosmeticName } from "../cosmetic-localization";
 import { useI18n } from "../i18n";
-import { TileSkinPreview } from "./TileSkinPreview";
+import { CosmeticPreview } from "./CosmeticPreview";
 
 export function CosmeticOutcomeModal({
   outcome,
@@ -32,7 +32,7 @@ export function CosmeticOutcomeModal({
       >
         <p className="eyebrow">{source === "box" ? "PALETTE BOX OPEN" : "FRAGMENT CRAFT"}</p>
         {outcome.cosmetic ? (
-          <TileSkinPreview
+          <CosmeticPreview
             item={outcome.cosmetic}
             className="box-result-skin"
             label={cosmeticName ?? outcome.cosmetic.nameKo}

@@ -97,6 +97,7 @@ export function SpectatePage() {
               scoringCells={new Set()}
               lastPlaced={game.lastMove === null ? null : { row: game.lastMove.row, col: game.lastMove.col }}
               invalidCell={null}
+              activeCosmetics={game.players.find((player) => player.id === game.lastMove?.playerId)?.cosmetics ?? null}
               onFocusedIndexChange={setFocusedIndex}
               onPlace={() => undefined}
             />

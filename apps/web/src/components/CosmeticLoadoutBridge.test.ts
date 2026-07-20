@@ -62,4 +62,39 @@ describe("cosmetic loadout bridge", () => {
     expect(root.dataset.tangoTileColorA).toBeUndefined();
     expect(root.properties.size).toBe(0);
   });
+
+  it("applies board and effect presets from the style loadout", () => {
+    const board = {
+      ...cosmetic("board-maple", ["#d49a5b", "#70452c"]),
+      category: "board_theme" as const,
+      equipSlot: "board_theme" as const,
+      visualKind: "board" as const,
+      preset: "maple",
+      durationMs: 0,
+    };
+    const placement = {
+      ...cosmetic("placement-maple", ["#f2c078", "#9b5d32"]),
+      category: "placement_effect" as const,
+      equipSlot: "placement_effect" as const,
+      visualKind: "placement" as const,
+      preset: "maple",
+      durationMs: 180,
+    };
+    const economy = {
+      inventory: [board, placement],
+      loadout: {},
+      styleLoadout: {
+        boardTheme: board.id,
+        placementEffect: placement.id,
+      },
+    } as EconomyOverview;
+    const root = target();
+
+    applyLoadout(economy, root);
+
+    expect(root.dataset.tangoBoardTheme).toBe("maple");
+    expect(root.dataset.tangoPlacementEffect).toBe("maple");
+    expect(root.properties.get("--equipped-boardTheme-a")).toBe("#d49a5b");
+    expect(root.properties.get("--equipped-placementEffect-duration")).toBe("180ms");
+  });
 });

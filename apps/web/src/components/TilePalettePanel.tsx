@@ -2,11 +2,13 @@ import { useEffect, useMemo, useState } from "react";
 import {
   ApiError,
   deleteTilePalette,
+  equipStyleCosmetic,
   equipTileLoadout,
   saveTilePalette,
   type CosmeticItem,
   type CosmeticRarity,
   type EconomyOverview,
+  type StyleLoadoutSlot,
   type TileColorConflict,
   type TileLoadout,
   type TileLoadoutSlot,
@@ -15,6 +17,7 @@ import {
 import { localizedCosmeticName } from "../cosmetic-localization";
 import { useI18n } from "../i18n";
 import { loadoutChangedEvent } from "./CosmeticLoadoutBridge";
+import { CosmeticPreview } from "./CosmeticPreview";
 import { TileSkinPreview } from "./TileSkinPreview";
 
 const rarities: CosmeticRarity[] = ["common", "rare", "epic", "legendary"];
@@ -28,6 +31,18 @@ const tileSlots: Array<{
   { key: "colorA", label: "빨강 슬롯", defaultName: "기본 버건디" },
   { key: "colorB", label: "파랑 슬롯", defaultName: "기본 네이비" },
   { key: "colorC", label: "초록 슬롯", defaultName: "기본 그린" },
+];
+
+const styleSlots: Array<{
+  key: StyleLoadoutSlot;
+  category: "board_theme" | "placement_effect" | "score_effect" | "victory_effect";
+  label: string;
+  defaultName: string;
+}> = [
+  { key: "boardTheme", category: "board_theme", label: "게임판", defaultName: "기본 원목 게임판" },
+  { key: "placementEffect", category: "placement_effect", label: "배치 효과", defaultName: "기본 배치 효과" },
+  { key: "scoreEffect", category: "score_effect", label: "득점 효과", defaultName: "기본 득점 효과" },
+  { key: "victoryEffect", category: "victory_effect", label: "승리 연출", defaultName: "기본 승리 연출" },
 ];
 
 export const filterOwnedTileItems = (
@@ -134,6 +149,7 @@ export function TilePalettePanel({
   const [savePickerOpen, setSavePickerOpen] = useState(false);
   const [editingNameSlot, setEditingNameSlot] = useState<number | null>(null);
   const [paletteName, setPaletteName] = useState("");
+  const [selectedStyleSlot, setSelectedStyleSlot] = useState<StyleLoadoutSlot | null>(null);
 
   const loadoutKey = tileSlots.map((slot) => economy.loadout[slot.key] ?? "default").join(":");
   useEffect(() => {
@@ -259,6 +275,20 @@ export function TilePalettePanel({
     window.requestAnimationFrame(() => {
       document.getElementById("tile-palette-editor")?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
+  };
+
+  const equipStyle = async (slot: StyleLoadoutSlot, cosmeticId: string | null) => {
+    setBusy(`style:${slot}`);
+    setMessage(null);
+    try {
+      const next = await equipStyleCosmetic(slot, cosmeticId);
+      applyEconomy(next);
+      setSelectedStyleSlot(null);
+    } catch (error) {
+      setMessage(error instanceof ApiError ? error.code : "꾸미기를 장착하지 못했습니다.");
+    } finally {
+      setBusy(null);
+    }
   };
 
   return (
@@ -389,6 +419,86 @@ export function TilePalettePanel({
           );
         })}
       </div>
+
+      <section className="style-loadout-panel" aria-labelledby="style-loadout-title">
+        <div className="saved-palette-heading">
+          <div>
+            <p className="eyebrow">GAME STYLE</p>
+            <h3 id="style-loadout-title">{t("게임 스타일")}</h3>
+            <p>{t("게임판과 효과를 슬롯별로 장착하세요.")}</p>
+          </div>
+        </div>
+        <div className="style-loadout-grid">
+          {styleSlots.map((slot) => {
+            const equippedId = economy.styleLoadout?.[slot.key];
+            const equipped = economy.inventory.find((item) => item.id === equippedId);
+            return (
+              <article key={slot.key} className={equipped === undefined ? "default" : "equipped"}>
+                <small>{t(slot.label)}</small>
+                {equipped === undefined ? (
+                  <span className={`style-default-preview style-default-${slot.category}`} aria-hidden="true">T</span>
+                ) : (
+                  <CosmeticPreview item={equipped} label={localizedCosmeticName(equipped, locale)} />
+                )}
+                <strong>{equipped === undefined ? t(slot.defaultName) : localizedCosmeticName(equipped, locale)}</strong>
+                <button
+                  className="secondary-action"
+                  type="button"
+                  disabled={busy !== null}
+                  onClick={() => setSelectedStyleSlot((current) => current === slot.key ? null : slot.key)}
+                >
+                  {t(selectedStyleSlot === slot.key ? "닫기" : "변경")}
+                </button>
+              </article>
+            );
+          })}
+        </div>
+        {selectedStyleSlot !== null && (() => {
+          const slot = styleSlots.find((entry) => entry.key === selectedStyleSlot);
+          if (slot === undefined) return null;
+          const items = economy.inventory.filter((item) => item.category === slot.category);
+          return (
+            <div className="style-inventory-panel">
+              <div className="style-inventory-heading">
+                <div>
+                  <small>{t(slot.label)}</small>
+                  <h4>{t("보유 꾸미기 선택")}</h4>
+                </div>
+                <button
+                  className="secondary-action"
+                  type="button"
+                  disabled={busy !== null || economy.styleLoadout?.[slot.key] === undefined}
+                  onClick={() => void equipStyle(slot.key, null)}
+                >
+                  {t("기본으로 복원")}
+                </button>
+              </div>
+              {items.length === 0 ? (
+                <p className="online-message">{t("이 슬롯에 장착할 보유 꾸미기가 없습니다.")}</p>
+              ) : (
+                <div className="style-inventory-grid">
+                  {items.map((item) => {
+                    const equipped = economy.styleLoadout?.[slot.key] === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        className={equipped ? "selected" : ""}
+                        disabled={busy !== null || equipped}
+                        onClick={() => void equipStyle(slot.key, item.id)}
+                      >
+                        <CosmeticPreview item={item} label={localizedCosmeticName(item, locale)} />
+                        <span><strong>{localizedCosmeticName(item, locale)}</strong><small>{t(item.rarity)}</small></span>
+                        {equipped && <b>✓</b>}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })()}
+      </section>
 
       <section id="tile-palette-editor" className={`palette-editor${editorOpen ? " open" : ""}`} aria-label={t("직접 조합하기")}>
         <div className="palette-editor-header">

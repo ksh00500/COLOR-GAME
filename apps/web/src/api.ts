@@ -81,9 +81,11 @@ export class ApiError extends Error {
 }
 
 export type CosmeticRarity = "common" | "rare" | "epic" | "legendary";
-export type CosmeticCategory = "tile_color" | "placement_effect" | "score_effect" | "profile" | "victory_effect";
+export type CosmeticCategory = "tile_color" | "board_theme" | "placement_effect" | "score_effect" | "profile" | "victory_effect";
+export type CraftCategory = Exclude<CosmeticCategory, "profile">;
 export type CosmeticEquipSlot =
   | "tile_color"
+  | "board_theme"
   | "placement_effect"
   | "score_effect"
   | "victory_effect"
@@ -92,6 +94,8 @@ export type CosmeticEquipSlot =
   | "profile_title";
 export type TileLoadoutSlot = "colorA" | "colorB" | "colorC";
 export type TileLoadout = Partial<Record<TileLoadoutSlot, string>>;
+export type StyleLoadoutSlot = "boardTheme" | "placementEffect" | "scoreEffect" | "victoryEffect";
+export type StyleLoadout = Partial<Record<StyleLoadoutSlot, string>>;
 export interface TileColorConflict {
   slots: [TileLoadoutSlot, TileLoadoutSlot];
   distance: number;
@@ -113,15 +117,19 @@ export interface CosmeticItem {
   localizedNames: Record<string, string>;
   descriptionKo: string;
   chipPrice: number;
-  visualKind: "solid" | "split" | "gradient" | "pattern" | "placeholder";
+  visualKind: "solid" | "split" | "gradient" | "pattern" | "placeholder" | "board" | "placement" | "score" | "victory";
   colors: string[];
   pattern: string | null;
   splitAngle: number | null;
+  preset?: string | null;
+  durationMs?: number | null;
+  collectionKey?: string | null;
   representativeColor: string | null;
   availability: "active" | "upcoming" | "pack_only";
   owned: boolean;
   isNew: boolean;
   equippedSlots: TileLoadoutSlot[];
+  wishlisted?: boolean;
 }
 
 export interface EconomyOverview {
@@ -149,6 +157,8 @@ export interface EconomyOverview {
   catalog: CosmeticItem[];
   inventory: CosmeticItem[];
   loadout: TileLoadout;
+  styleLoadout: StyleLoadout;
+  wishlist: string[];
   tilePalettes: TilePalettePreset[];
   upcomingCategories: Array<Exclude<CosmeticCategory, "tile_color">>;
   quests: Array<{
@@ -578,10 +588,10 @@ export const purchaseCosmetic = async (cosmeticId: string): Promise<EconomyOverv
   return data.economy;
 };
 
-export const openPaletteBox = async (): Promise<CosmeticOutcome> => {
+export const openPaletteBox = async (category: CraftCategory = "tile_color"): Promise<CosmeticOutcome> => {
   const data = await request<{ outcome: CosmeticOutcome }>("/economy/box/open", {
     method: "POST",
-    body: JSON.stringify({ timeZone: browserTimeZone() }),
+    body: JSON.stringify({ category, timeZone: browserTimeZone() }),
   });
   economyCache = data.outcome.overview;
   return data.outcome;
@@ -589,13 +599,52 @@ export const openPaletteBox = async (): Promise<CosmeticOutcome> => {
 
 export const combineCosmeticFragments = async (
   rarity: CosmeticRarity,
+  category: CraftCategory = "tile_color",
 ): Promise<CosmeticOutcome> => {
   const data = await request<{ outcome: CosmeticOutcome }>("/economy/fragments/combine", {
     method: "POST",
-    body: JSON.stringify({ rarity, timeZone: browserTimeZone() }),
+    body: JSON.stringify({ rarity, category, timeZone: browserTimeZone() }),
   });
   economyCache = data.outcome.overview;
   return data.outcome;
+};
+
+export const craftCosmetic = async (
+  mode: "random" | "targeted",
+  category: CraftCategory,
+  rarity: CosmeticRarity,
+  cosmeticId?: string,
+): Promise<CosmeticOutcome> => {
+  const data = await request<{ outcome: CosmeticOutcome }>("/economy/atelier/craft", {
+    method: "POST",
+    body: JSON.stringify({ mode, category, rarity, cosmeticId, timeZone: browserTimeZone() }),
+  });
+  economyCache = data.outcome.overview;
+  return data.outcome;
+};
+
+export const equipStyleCosmetic = async (
+  slot: StyleLoadoutSlot,
+  cosmeticId: string | null,
+): Promise<EconomyOverview> => {
+  const data = await request<{ economy: EconomyOverview }>(`/economy/loadout/style/${slot}`, {
+    method: "PUT",
+    body: JSON.stringify({ cosmeticId, timeZone: browserTimeZone() }),
+  });
+  economyCache = data.economy;
+  return data.economy;
+};
+
+export const setCosmeticWishlist = async (
+  cosmeticId: string,
+  wished: boolean,
+): Promise<EconomyOverview> => {
+  const data = await request<{ economy: EconomyOverview }>(
+    `/economy/wishlist/${encodeURIComponent(cosmeticId)}`,
+    { method: "PUT", body: JSON.stringify({ wished, timeZone: browserTimeZone() }) },
+  );
+  economyCache = data.economy;
+  return data.economy;
 };
 
 export const equipTileColor = async (

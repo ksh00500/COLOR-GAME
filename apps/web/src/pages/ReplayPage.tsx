@@ -182,6 +182,7 @@ export function ReplayPage() {
               scoringCells={frame.scoringCells}
               lastPlaced={frame.lastPlaced}
               invalidCell={null}
+              activeCosmetics={frame.players.find((player) => player.id === currentMove?.playerId)?.cosmetics ?? null}
               onFocusedIndexChange={setFocusedIndex}
               onPlace={() => undefined}
             />

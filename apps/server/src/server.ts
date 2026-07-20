@@ -32,10 +32,12 @@ import {
   NullEconomyStore,
   TileColorSimilarityError,
   type CosmeticRarity,
+  type CraftCategory,
   type EconomyStore,
   seoulDayKey,
   type TileLoadout,
   type TileLoadoutSlot,
+  type StyleLoadoutSlot,
 } from "./economy-store.js";
 import {
   NullAdminStore,
@@ -179,7 +181,24 @@ const normalizeTileLoadout = (
 
 const fragmentCombineSchema = z.object({
   rarity: z.enum(["common", "rare", "epic", "legendary"]),
+  category: z.enum(["tile_color", "board_theme", "placement_effect", "score_effect", "victory_effect"]).optional().default("tile_color"),
 });
+
+const cosmeticCategorySchema = z.enum(["tile_color", "board_theme", "placement_effect", "score_effect", "victory_effect"]);
+const boxOpenSchema = z.object({ category: cosmeticCategorySchema.optional().default("tile_color") });
+const atelierCraftSchema = z.object({
+  mode: z.enum(["random", "targeted"]),
+  category: cosmeticCategorySchema,
+  rarity: z.enum(["common", "rare", "epic", "legendary"]),
+  cosmeticId: z.string().trim().min(1).max(80).optional(),
+}).refine((value) => value.mode === "random" || value.cosmeticId !== undefined, {
+  message: "Targeted crafting requires cosmeticId.",
+});
+const styleLoadoutParamsSchema = z.object({
+  slot: z.enum(["boardTheme", "placementEffect", "scoreEffect", "victoryEffect"]),
+});
+const styleEquipSchema = z.object({ cosmeticId: z.string().trim().min(1).max(80).nullable() });
+const wishlistSchema = z.object({ wished: z.boolean() });
 
 const progressQuestParamsSchema = z.object({
   quest: z.enum([
@@ -258,6 +277,8 @@ const economyErrorStatus = (error: unknown): { status: number; code: string } =>
     || code === "NO_UNOWNED_COSMETICS"
     || code === "DUPLICATE_TILE_COLOR"
     || code === "TILE_COLORS_TOO_SIMILAR"
+    || code === "WISHLIST_LIMIT_REACHED"
+    || code === "COSMETIC_NOT_CRAFTABLE"
   ) {
     return { status: 409, code };
   }
@@ -265,6 +286,8 @@ const economyErrorStatus = (error: unknown): { status: number; code: string } =>
     code === "COSMETIC_NOT_IN_WEEKLY_STORE"
     || code === "COSMETIC_NOT_OWNED"
     || code === "ATTENDANCE_REQUIRED"
+    || code === "COSMETIC_NOT_FOUND"
+    || code === "COSMETIC_REQUIRED"
   ) {
     return { status: 400, code };
   }
@@ -459,19 +482,23 @@ export const createServer = (options: ServerOptions = {}) => {
     return createAuthToken(account.id, sessionId, authSecret, tokenTtlSeconds);
   };
 
-  const accountProfile = (
+  const accountProfile = async (
     player: z.infer<typeof playerProfileSchema>,
     socketId: string,
     account: AccountSummary | null,
     guestId: string | null,
-  ): PlayerProfile => {
+  ): Promise<PlayerProfile> => {
     if (account !== null) {
+      const cosmetics = economyStore.enabled
+        ? await economyStore.getMatchCosmetics(account.id)
+        : undefined;
       return {
         accountId: account.id,
         nickname: account.displayName,
         avatarId: account.avatarId,
         isGuest: false,
         socketId,
+        ...(cosmetics === undefined ? {} : { cosmetics }),
       };
     }
 
@@ -1347,12 +1374,18 @@ export const createServer = (options: ServerOptions = {}) => {
     if (account === null || !economyStore.enabled) {
       return reply.code(401).send({ code: "UNAUTHORIZED", message: "Sign in is required." });
     }
-    const parsed = economyTimeZoneSchema.safeParse(request.body ?? {});
+    const parsed = boxOpenSchema.merge(economyTimeZoneSchema).safeParse(request.body ?? {});
     if (!parsed.success) {
       return reply.code(400).send({ code: "INVALID_REQUEST" });
     }
     try {
-      return { outcome: await economyStore.openBox(account.id, account.attendanceStreak) };
+      return {
+        outcome: await economyStore.openBox(
+          account.id,
+          parsed.data.category as CraftCategory,
+          account.attendanceStreak,
+        ),
+      };
     } catch (error) {
       const mapped = economyErrorStatus(error);
       return reply.code(mapped.status).send({ code: mapped.code });
@@ -1373,6 +1406,7 @@ export const createServer = (options: ServerOptions = {}) => {
         outcome: await economyStore.combineFragments(
           account.id,
           parsed.data.rarity as CosmeticRarity,
+          parsed.data.category as CraftCategory,
           account.attendanceStreak,
         ),
       };
@@ -1429,6 +1463,76 @@ export const createServer = (options: ServerOptions = {}) => {
         economy: await economyStore.resetTileColor(
           account.id,
           params.data.slot as TileLoadoutSlot,
+          account.attendanceStreak,
+        ),
+      };
+    } catch (error) {
+      const mapped = economyErrorStatus(error);
+      return reply.code(mapped.status).send({ code: mapped.code });
+    }
+  });
+
+  app.post("/economy/atelier/craft", async (request, reply) => {
+    const account = await authenticateToken(bearerToken(request.headers.authorization));
+    if (account === null || !economyStore.enabled) {
+      return reply.code(401).send({ code: "UNAUTHORIZED", message: "Sign in is required." });
+    }
+    const parsed = atelierCraftSchema.merge(economyTimeZoneSchema).safeParse(request.body ?? {});
+    if (!parsed.success) return reply.code(400).send({ code: "INVALID_REQUEST" });
+    try {
+      return {
+        outcome: await economyStore.craftCosmetic(
+          account.id,
+          parsed.data.mode,
+          parsed.data.category as CraftCategory,
+          parsed.data.rarity as CosmeticRarity,
+          parsed.data.cosmeticId,
+          account.attendanceStreak,
+        ),
+      };
+    } catch (error) {
+      const mapped = economyErrorStatus(error);
+      return reply.code(mapped.status).send({ code: mapped.code });
+    }
+  });
+
+  app.put("/economy/loadout/style/:slot", async (request, reply) => {
+    const account = await authenticateToken(bearerToken(request.headers.authorization));
+    if (account === null || !economyStore.enabled) {
+      return reply.code(401).send({ code: "UNAUTHORIZED", message: "Sign in is required." });
+    }
+    const params = styleLoadoutParamsSchema.safeParse(request.params);
+    const body = styleEquipSchema.merge(economyTimeZoneSchema).safeParse(request.body ?? {});
+    if (!params.success || !body.success) return reply.code(400).send({ code: "INVALID_REQUEST" });
+    try {
+      return {
+        economy: await economyStore.equipStyleCosmetic(
+          account.id,
+          params.data.slot as StyleLoadoutSlot,
+          body.data.cosmeticId,
+          account.attendanceStreak,
+        ),
+      };
+    } catch (error) {
+      const mapped = economyErrorStatus(error);
+      return reply.code(mapped.status).send({ code: mapped.code });
+    }
+  });
+
+  app.put("/economy/wishlist/:cosmeticId", async (request, reply) => {
+    const account = await authenticateToken(bearerToken(request.headers.authorization));
+    if (account === null || !economyStore.enabled) {
+      return reply.code(401).send({ code: "UNAUTHORIZED", message: "Sign in is required." });
+    }
+    const params = cosmeticIdSchema.safeParse(request.params);
+    const body = wishlistSchema.merge(economyTimeZoneSchema).safeParse(request.body ?? {});
+    if (!params.success || !body.success) return reply.code(400).send({ code: "INVALID_REQUEST" });
+    try {
+      return {
+        economy: await economyStore.setWishlist(
+          account.id,
+          params.data.cosmeticId,
+          body.data.wished,
           account.attendanceStreak,
         ),
       };
@@ -1617,7 +1721,7 @@ export const createServer = (options: ServerOptions = {}) => {
               turnTimeLimitSeconds: parsed.data.settings.turnTimeLimitSeconds,
             };
         const room = roomService.createRoom(
-          accountProfile(
+          await accountProfile(
             player,
             socket.id,
             account,
@@ -1640,7 +1744,7 @@ export const createServer = (options: ServerOptions = {}) => {
       });
     });
 
-    socket.on("room:join", (payload, callback?: (response: unknown) => void) => {
+    socket.on("room:join", async (payload, callback?: (response: unknown) => void) => {
       const parsed = roomJoinSchema.safeParse(payload ?? {});
       if (!parsed.success) {
         callback?.({ ok: false, error: parsed.error.flatten() });
@@ -1649,7 +1753,7 @@ export const createServer = (options: ServerOptions = {}) => {
 
       const player = playerProfileSchema.parse(parsed.data.player ?? {});
       const result = roomService.joinRoom(parsed.data.code, {
-        ...accountProfile(
+        ...await accountProfile(
           player,
           socket.id,
           getSocketAccount(socket),
@@ -1864,7 +1968,7 @@ export const createServer = (options: ServerOptions = {}) => {
         const queued: QueuedPlayer = {
           socketId: socket.id,
           accountId: account?.id ?? null,
-          profile: accountProfile(
+          profile: await accountProfile(
             player,
             socket.id,
             account,

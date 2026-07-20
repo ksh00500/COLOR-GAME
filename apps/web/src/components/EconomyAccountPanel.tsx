@@ -1,10 +1,9 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   ApiError,
-  combineCosmeticFragments,
   fetchEconomy,
   redeemCoupon,
-  type CosmeticOutcome,
   type CosmeticRarity,
   type CouponRedemptionResult,
   type EconomyOverview,
@@ -12,8 +11,7 @@ import {
 import { useI18n } from "../i18n";
 import { localizedCosmeticName } from "../cosmetic-localization";
 import { EconomyQuestGrid } from "./EconomyQuestGrid";
-import { TileSkinPreview } from "./TileSkinPreview";
-import { CosmeticOutcomeModal } from "./CosmeticOutcomeModal";
+import { CosmeticPreview } from "./CosmeticPreview";
 import { loadoutChangedEvent } from "./CosmeticLoadoutBridge";
 import { TilePalettePanel } from "./TilePalettePanel";
 
@@ -28,7 +26,6 @@ export function EconomyAccountPanel({ activeTab }: { activeTab: AccountEconomyTa
   const [economy, setEconomy] = useState<EconomyOverview | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-  const [outcome, setOutcome] = useState<CosmeticOutcome | null>(null);
   const [couponCode, setCouponCode] = useState("");
   const [couponResult, setCouponResult] = useState<CouponRedemptionResult | null>(null);
   const [ledgerExpanded, setLedgerExpanded] = useState(false);
@@ -40,20 +37,6 @@ export function EconomyAccountPanel({ activeTab }: { activeTab: AccountEconomyTa
   const applyEconomy = (next: EconomyOverview) => {
     setEconomy(next);
     window.dispatchEvent(new CustomEvent(loadoutChangedEvent, { detail: next }));
-  };
-
-  const combine = async (rarity: CosmeticRarity) => {
-    setBusy(`combine-${rarity}`);
-    setMessage(null);
-    try {
-      const result = await combineCosmeticFragments(rarity);
-      setOutcome(result);
-      setEconomy(result.overview);
-    } catch (error) {
-      setMessage(error instanceof ApiError ? error.code : "파편을 합성하지 못했습니다.");
-    } finally {
-      setBusy(null);
-    }
   };
 
   const submitCoupon = async () => {
@@ -102,13 +85,9 @@ export function EconomyAccountPanel({ activeTab }: { activeTab: AccountEconomyTa
                   <strong>{t(rarity)}</strong>
                   <small>{economy.fragments[rarity]}/{economy.box.fragmentRequirement}</small>
                 </div>
-                <button
-                  type="button"
-                  disabled={economy.fragments[rarity] < economy.box.fragmentRequirement || busy !== null}
-                  onClick={() => void combine(rarity)}
-                >
-                  {t("합성")}
-                </button>
+                <Link className="fragment-workshop-link" to={`/store?tab=atelier&rarity=${rarity}`}>
+                  {t("공방에서 사용")}
+                </Link>
               </article>
             ))}
           </div>
@@ -191,13 +170,6 @@ export function EconomyAccountPanel({ activeTab }: { activeTab: AccountEconomyTa
       )}
 
       {message && <p className="online-message">{t(message)}</p>}
-      {outcome !== null && (
-        <CosmeticOutcomeModal
-          outcome={outcome}
-          source="combine"
-          onClose={() => setOutcome(null)}
-        />
-      )}
       {couponResult !== null && (
         <div className="modal-backdrop" role="presentation" onMouseDown={() => setCouponResult(null)}>
           <section className="confirm-panel coupon-result-panel" role="dialog" aria-modal="true" aria-labelledby="coupon-result-title" onMouseDown={(event) => event.stopPropagation()}>
@@ -220,7 +192,7 @@ export function EconomyAccountPanel({ activeTab }: { activeTab: AccountEconomyTa
                 return (
                   <article key={`${reward.type}-${reward.cosmeticId ?? index}`}>
                     {item
-                      ? <TileSkinPreview item={item} label={localizedCosmeticName(item, locale)} />
+                      ? <CosmeticPreview item={item} label={localizedCosmeticName(item, locale)} />
                       : <span className={`coupon-reward-icon reward-${reward.type}`} aria-hidden="true">
                           {reward.type === "color_chips" ? "◆" : reward.type === "palette_box_ticket" ? "◇" : reward.type === "fragments" ? "✦" : "★"}
                         </span>}

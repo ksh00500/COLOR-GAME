@@ -11,6 +11,52 @@ export type ThemePreference = "system" | "light" | "dark";
 export type AnimationLevel = "full" | "reduced" | "off";
 export type PresentationSpeed = "standard" | "fast";
 export type AppLanguage = "auto" | "ko" | "en" | "ja" | "es" | "pt-BR";
+export type ColorShortcuts = [string, string, string];
+
+export const defaultColorShortcuts: ColorShortcuts = ["Digit1", "Digit2", "Digit3"];
+
+const validShortcutCode = /^(?:Key[A-Z]|Digit[0-9]|Numpad[0-9])$/;
+
+export const isConfigurableShortcutCode = (code: string): boolean =>
+  validShortcutCode.test(code);
+
+export const formatShortcutCode = (code: string): string => {
+  if (code.startsWith("Key")) return code.slice(3);
+  if (code.startsWith("Digit")) return code.slice(5);
+  if (code.startsWith("Numpad")) return `NUM ${code.slice(6)}`;
+  return code;
+};
+
+const normalizeColorShortcuts = (value: unknown): ColorShortcuts => {
+  if (!Array.isArray(value) || value.length !== 3) return [...defaultColorShortcuts];
+  const shortcuts = value.map((item) => typeof item === "string" ? item : "");
+  if (
+    shortcuts.some((code) => !isConfigurableShortcutCode(code)) ||
+    new Set(shortcuts).size !== shortcuts.length
+  ) {
+    return [...defaultColorShortcuts];
+  }
+  return shortcuts as ColorShortcuts;
+};
+
+export const resolveColorShortcutIndex = (
+  eventCode: string,
+  shortcuts: ColorShortcuts,
+): number | null => {
+  const directIndex = shortcuts.indexOf(eventCode);
+  if (directIndex >= 0) return directIndex;
+
+  // Keep the number row and numeric keypad interchangeable for number shortcuts.
+  if (eventCode.startsWith("Numpad")) {
+    const digitIndex = shortcuts.indexOf(`Digit${eventCode.slice(6)}`);
+    return digitIndex >= 0 ? digitIndex : null;
+  }
+  if (eventCode.startsWith("Digit")) {
+    const numpadIndex = shortcuts.indexOf(`Numpad${eventCode.slice(5)}`);
+    return numpadIndex >= 0 ? numpadIndex : null;
+  }
+  return null;
+};
 
 export interface AppSettings {
   theme: ThemePreference;
@@ -20,6 +66,7 @@ export interface AppSettings {
   presentationSpeed: PresentationSpeed;
   soundEnabled: boolean;
   language: AppLanguage;
+  colorShortcuts: ColorShortcuts;
 }
 
 interface SettingsContextValue {
@@ -37,6 +84,7 @@ const defaultSettings: AppSettings = {
   presentationSpeed: "standard",
   soundEnabled: true,
   language: "auto",
+  colorShortcuts: [...defaultColorShortcuts],
 };
 
 export const resolveAppLanguage = (language: AppLanguage): Exclude<AppLanguage, "auto"> => {
@@ -53,7 +101,12 @@ const readSettings = (): AppSettings => {
   try {
     const stored = window.localStorage.getItem(STORAGE_KEY);
     if (stored === null) return defaultSettings;
-    return { ...defaultSettings, ...(JSON.parse(stored) as Partial<AppSettings>) };
+    const parsed = JSON.parse(stored) as Partial<AppSettings>;
+    return {
+      ...defaultSettings,
+      ...parsed,
+      colorShortcuts: normalizeColorShortcuts(parsed.colorShortcuts),
+    };
   } catch {
     return defaultSettings;
   }

@@ -125,6 +125,34 @@ describe("GameRoomService", () => {
     expect(room.game?.config.turnTimeLimitSeconds).toBe(60);
   });
 
+  it("snapshots the performers' public placement and score effects", () => {
+    const { service } = createDeterministicService();
+    const cosmetics = {
+      placementEffect: {
+        id: "placement-maple",
+        preset: "maple",
+        colors: ["#d49a5b", "#7f4c2c"],
+        durationMs: 180,
+      },
+      scoreEffect: {
+        id: "score-maple",
+        preset: "maple",
+        colors: ["#f2c078", "#9b5d32"],
+        durationMs: 350,
+      },
+    };
+    const room = service.createMatchedRoom(
+      { ...profile("Styled"), accountId: "account-1", cosmetics },
+      { ...profile("Plain"), accountId: "account-2" },
+      "casual",
+    );
+
+    expect(room.players[0].cosmetics).toEqual(cosmetics);
+    expect(room.game?.players[0]?.cosmetics).toEqual(cosmetics);
+    expect(room.players[1]?.cosmetics).toBeUndefined();
+    expect(room.game?.players[1]?.cosmetics).toBeUndefined();
+  });
+
   it("uses a 30 second turn timer for casual matchmaking", () => {
     const { service } = createDeterministicService();
     const room = service.createMatchedRoom(

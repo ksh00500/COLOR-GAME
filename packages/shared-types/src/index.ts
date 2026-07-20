@@ -68,6 +68,18 @@ export interface TurnTimer {
   expiresAt: number;
 }
 
+export interface MatchCosmeticVisual {
+  id: string;
+  preset: string;
+  colors: string[];
+  durationMs: number;
+}
+
+export interface MatchCosmetics {
+  placementEffect?: MatchCosmeticVisual;
+  scoreEffect?: MatchCosmeticVisual;
+}
+
 export interface GamePlayer {
   id: PlayerId;
   accountId?: string | null;
@@ -76,6 +88,7 @@ export interface GamePlayer {
   score: number;
   connectionStatus: "connected" | "unstable" | "disconnected";
   isGuest: boolean;
+  cosmetics?: MatchCosmetics;
 }
 
 export interface Move {
@@ -156,6 +169,7 @@ export interface RoomPlayerSnapshot {
   isGuest: boolean;
   ready: boolean;
   connected: boolean;
+  cosmetics?: MatchCosmetics;
 }
 
 export interface RoomSnapshot {

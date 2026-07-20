@@ -19,7 +19,7 @@ import { playOpponentTurnCue } from "../audio";
 import { shareUrl } from "../share";
 import { nativeBackEvent, publicAppUrl } from "../nativeApp";
 import { notifyInvalidMove, notifyTilePlaced } from "../nativeFeedback";
-import { useSettings } from "../settings";
+import { resolveColorShortcutIndex, useSettings } from "../settings";
 import { useI18n } from "../i18n";
 import { createAppSocket } from "../socket";
 
@@ -378,21 +378,16 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
       if (!canPlay || playerId === null) return;
       const target = event.target as HTMLElement | null;
       if (target?.tagName === "INPUT") return;
-      const color = ({
-        "1": "colorA",
-        "2": "colorB",
-        "3": "colorC",
-        q: "colorA",
-        w: "colorB",
-        e: "colorC",
-      } as const)[event.key.toLocaleLowerCase() as "1" | "2" | "3" | "q" | "w" | "e"];
+      const shortcutIndex = resolveColorShortcutIndex(event.code, settings.colorShortcuts);
+      const color = (["colorA", "colorB", "colorC"] as const)[shortcutIndex ?? -1];
       if (color !== undefined) {
+        event.preventDefault();
         setSelectedColors((current) => ({ ...current, [playerId]: color }));
       }
     };
     window.addEventListener("keydown", handleShortcut);
     return () => window.removeEventListener("keydown", handleShortcut);
-  }, [canPlay, playerId]);
+  }, [canPlay, playerId, settings.colorShortcuts]);
 
   const remainingSeconds = useMemo(() => {
     if (game?.turnTimer === null || game?.turnTimer === undefined) return null;
@@ -800,6 +795,7 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
               lastPlaced={lastPlaced}
               opponentLastPlaced={opponentLastPlaced}
               invalidCell={invalidCell}
+              activeCosmetics={game.players.find((player) => player.id === (scoreNotice?.playerId ?? game.lastMove?.playerId))?.cosmetics ?? null}
               onFocusedIndexChange={setFocusedIndex}
               onPlace={placeTileOnline}
             />

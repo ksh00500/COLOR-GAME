@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import type { Board, Position, TileColorId } from "@color-game/shared-types";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
+import type { Board, MatchCosmetics, Position, TileColorId } from "@color-game/shared-types";
 import { useI18n } from "../i18n";
 
 interface GameBoardProps {
@@ -13,6 +13,7 @@ interface GameBoardProps {
   lastPlaced: Position | null;
   opponentLastPlaced?: Position | null;
   invalidCell: Position | null;
+  activeCosmetics?: MatchCosmetics | null | undefined;
   onFocusedIndexChange: (index: number) => void;
   onPlace: (position: Position) => void;
 }
@@ -40,6 +41,7 @@ export function GameBoard({
   lastPlaced,
   opponentLastPlaced = null,
   invalidCell,
+  activeCosmetics,
   onFocusedIndexChange,
   onPlace,
 }: GameBoardProps) {
@@ -47,6 +49,12 @@ export function GameBoard({
   const boardRef = useRef<HTMLDivElement>(null);
   const [inputMode, setInputMode] = useState<"keyboard" | "pointer">("keyboard");
   const size = board.length;
+  const placementPreset = activeCosmetics === undefined
+    ? undefined
+    : activeCosmetics?.placementEffect?.preset ?? "default";
+  const scorePreset = activeCosmetics === undefined
+    ? undefined
+    : activeCosmetics?.scoreEffect?.preset ?? "default";
 
   useEffect(() => {
     const focusedButton = boardRef.current?.querySelector<HTMLButtonElement>(
@@ -73,7 +81,19 @@ export function GameBoard({
   };
 
   return (
-    <div className={`game-board-frame ${canPlay ? "interactive" : "locked"} ${isClearing ? "clearing" : ""} ${inputMode}-active`}>
+    <div
+      className={`game-board-frame ${canPlay ? "interactive" : "locked"} ${isClearing ? "clearing" : ""} ${inputMode}-active`}
+      data-placement-preset={placementPreset}
+      data-score-preset={scorePreset}
+      style={{
+        "--active-placement-a": activeCosmetics?.placementEffect?.colors[0],
+        "--active-placement-b": activeCosmetics?.placementEffect?.colors[1] ?? activeCosmetics?.placementEffect?.colors[0],
+        "--active-placement-duration": `${activeCosmetics?.placementEffect?.durationMs ?? 240}ms`,
+        "--active-score-a": activeCosmetics?.scoreEffect?.colors[0],
+        "--active-score-b": activeCosmetics?.scoreEffect?.colors[1] ?? activeCosmetics?.scoreEffect?.colors[0],
+        "--active-score-duration": `${activeCosmetics?.scoreEffect?.durationMs ?? 450}ms`,
+      } as CSSProperties}
+    >
       <div
         className="game-board"
         ref={boardRef}

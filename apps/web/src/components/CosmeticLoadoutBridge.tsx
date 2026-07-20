@@ -32,6 +32,20 @@ export const applyLoadout = (
       root.style.removeProperty(`--equipped-tile-${cssSlot}-accent`);
     }
   }
+  const styleSlots = [
+    ["boardTheme", "BoardTheme"],
+    ["placementEffect", "PlacementEffect"],
+    ["scoreEffect", "ScoreEffect"],
+    ["victoryEffect", "VictoryEffect"],
+  ] as const;
+  for (const [slot, datasetName] of styleSlots) {
+    const item = economy.inventory.find((entry) => entry.id === economy.styleLoadout?.[slot]);
+    root.dataset[`tango${datasetName}`] = item?.preset ?? "default";
+    root.style.setProperty(`--equipped-${slot}-a`, item?.colors[0] ?? "#c39358");
+    root.style.setProperty(`--equipped-${slot}-b`, item?.colors[1] ?? item?.colors[0] ?? "#755139");
+    root.style.setProperty(`--equipped-${slot}-c`, item?.colors[2] ?? item?.colors[1] ?? "#e0b875");
+    root.style.setProperty(`--equipped-${slot}-duration`, `${item?.durationMs ?? 240}ms`);
+  }
 };
 
 export const clearLoadout = (
@@ -41,6 +55,14 @@ export const clearLoadout = (
     delete root.dataset[`tangoTileColor${slot.toUpperCase()}`];
     root.style.removeProperty(`--equipped-tile-${slot}-background`);
     root.style.removeProperty(`--equipped-tile-${slot}-accent`);
+  }
+  for (const datasetName of ["BoardTheme", "PlacementEffect", "ScoreEffect", "VictoryEffect"]) {
+    delete root.dataset[`tango${datasetName}`];
+  }
+  for (const slot of ["boardTheme", "placementEffect", "scoreEffect", "victoryEffect"]) {
+    for (const suffix of ["a", "b", "c", "duration"]) {
+      root.style.removeProperty(`--equipped-${slot}-${suffix}`);
+    }
   }
 };
 

@@ -1,16 +1,18 @@
 import { createHash, randomInt, randomUUID } from "node:crypto";
 import { Pool, type PoolClient, type PoolConfig } from "pg";
-import type { RoomSnapshot } from "@color-game/shared-types";
+import type { MatchCosmetics, RoomSnapshot } from "@color-game/shared-types";
 
 export type CosmeticRarity = "common" | "rare" | "epic" | "legendary";
 export type CosmeticCategory =
   | "tile_color"
+  | "board_theme"
   | "placement_effect"
   | "score_effect"
   | "profile"
   | "victory_effect";
 export type CosmeticEquipSlot =
   | "tile_color"
+  | "board_theme"
   | "placement_effect"
   | "score_effect"
   | "victory_effect"
@@ -19,6 +21,10 @@ export type CosmeticEquipSlot =
   | "profile_title";
 export type TileLoadoutSlot = "colorA" | "colorB" | "colorC";
 export type TileLoadout = Partial<Record<TileLoadoutSlot, string>>;
+export type StyleLoadout = Partial<Record<
+  "boardTheme" | "placementEffect" | "scoreEffect" | "victoryEffect",
+  string
+>>;
 export interface TilePalettePreset {
   slotIndex: number;
   name: string | null;
@@ -47,15 +53,19 @@ export interface EconomyCatalogItem {
   localizedNames: Record<string, string>;
   descriptionKo: string;
   chipPrice: number;
-  visualKind: "solid" | "split" | "gradient" | "pattern" | "placeholder";
+  visualKind: "solid" | "split" | "gradient" | "pattern" | "placeholder" | "board" | "placement" | "score" | "victory";
   colors: string[];
   pattern: string | null;
   splitAngle: number | null;
+  preset: string | null;
+  durationMs: number | null;
+  collectionKey: string | null;
   representativeColor: string | null;
   availability: "active" | "upcoming" | "pack_only";
   owned: boolean;
   isNew: boolean;
   equippedSlots: TileLoadoutSlot[];
+  wishlisted: boolean;
 }
 
 export interface EconomyQuest {
@@ -95,6 +105,8 @@ export interface EconomyOverview {
   catalog: EconomyCatalogItem[];
   inventory: EconomyCatalogItem[];
   loadout: TileLoadout;
+  styleLoadout: StyleLoadout;
+  wishlist: string[];
   tilePalettes: TilePalettePreset[];
   upcomingCategories: Array<Exclude<CosmeticCategory, "tile_color">>;
   quests: EconomyQuest[];
@@ -149,6 +161,7 @@ export interface EconomyStore {
   readonly enabled: boolean;
   close(): Promise<void>;
   getOverview(accountId: string, attendanceStreak?: number): Promise<EconomyOverview>;
+  getMatchCosmetics(accountId: string): Promise<MatchCosmetics | undefined>;
   claimWelcome(accountId: string, attendanceStreak?: number): Promise<EconomyOverview>;
   claimAttendance(
     accountId: string,
@@ -170,12 +183,33 @@ export interface EconomyStore {
     cosmeticId: string,
     attendanceStreak?: number,
   ): Promise<EconomyOverview>;
-  openBox(accountId: string, attendanceStreak?: number): Promise<BoxOutcome>;
+  openBox(accountId: string, category?: CraftCategory, attendanceStreak?: number): Promise<BoxOutcome>;
   combineFragments(
     accountId: string,
     rarity: CosmeticRarity,
+    category?: CraftCategory,
     attendanceStreak?: number,
   ): Promise<BoxOutcome>;
+  craftCosmetic(
+    accountId: string,
+    mode: "random" | "targeted",
+    category: CraftCategory,
+    rarity: CosmeticRarity,
+    cosmeticId?: string,
+    attendanceStreak?: number,
+  ): Promise<BoxOutcome>;
+  equipStyleCosmetic(
+    accountId: string,
+    slot: StyleLoadoutSlot,
+    cosmeticId: string | null,
+    attendanceStreak?: number,
+  ): Promise<EconomyOverview>;
+  setWishlist(
+    accountId: string,
+    cosmeticId: string,
+    wished: boolean,
+    attendanceStreak?: number,
+  ): Promise<EconomyOverview>;
   equipTileColor(
     accountId: string,
     slot: TileLoadoutSlot,
@@ -212,6 +246,9 @@ export interface EconomyStore {
 }
 
 const rarities: CosmeticRarity[] = ["common", "rare", "epic", "legendary"];
+export type CraftCategory = "tile_color" | "board_theme" | "placement_effect" | "score_effect" | "victory_effect";
+export type StyleLoadoutSlot = "boardTheme" | "placementEffect" | "scoreEffect" | "victoryEffect";
+const craftCategories: CraftCategory[] = ["tile_color", "board_theme", "placement_effect", "score_effect", "victory_effect"];
 export const weeklyQuestGoals = {
   attendance: 5,
   matches: 20,
@@ -248,11 +285,14 @@ interface CatalogRow {
   description_ko: string;
   chip_price: number;
   visual_kind: EconomyCatalogItem["visualKind"];
-  visual_config: { colors?: unknown; pattern?: unknown; splitAngle?: unknown } | null;
+  visual_config: { colors?: unknown; pattern?: unknown; splitAngle?: unknown; preset?: unknown } | null;
+  collection_key: string | null;
+  duration_ms: number | null;
   representative_color: string | null;
   availability: EconomyCatalogItem["availability"];
   owned: boolean;
   first_equipped_at: Date | null;
+  wishlisted: boolean;
 }
 
 interface WalletRow {
@@ -285,6 +325,10 @@ interface LoadoutRow {
   tile_color_a_id: string | null;
   tile_color_b_id: string | null;
   tile_color_c_id: string | null;
+  board_theme_id: string | null;
+  placement_effect_id: string | null;
+  score_effect_id: string | null;
+  victory_effect_id: string | null;
 }
 
 interface TilePaletteRow extends LoadoutRow {
@@ -329,6 +373,9 @@ const toCatalogItem = (
   splitAngle: typeof row.visual_config?.splitAngle === "number"
     ? row.visual_config.splitAngle
     : null,
+  preset: typeof row.visual_config?.preset === "string" ? row.visual_config.preset : null,
+  durationMs: row.duration_ms,
+  collectionKey: row.collection_key,
   representativeColor: row.representative_color,
   availability: row.availability,
   owned: row.owned,
@@ -336,6 +383,7 @@ const toCatalogItem = (
   equippedSlots: (Object.entries(loadout) as Array<[TileLoadoutSlot, string]>)
     .filter(([, id]) => id === row.id)
     .map(([slot]) => slot),
+  wishlisted: row.wishlisted,
 });
 
 export const seoulDayKey = (now = new Date()): string => {
@@ -392,6 +440,32 @@ export const selectWeeklyCatalog = (
         .slice(0, weeklyCounts[rarity])
         .map((item) => item.id),
     );
+  }
+  return selected;
+};
+
+export const selectWeeklyCatalogByCategory = (
+  catalog: Array<{ id: string; category: CosmeticCategory; rarity: CosmeticRarity }>,
+  weekKey: string,
+): string[] => {
+  const tile = selectWeeklyCatalog(
+    catalog.filter((item) => item.category === "tile_color"),
+    weekKey,
+  );
+  const epochWeek = Math.floor(Date.parse(`${weekKey}T00:00:00Z`) / (7 * 86_400_000));
+  const legendaryWeek = epochWeek % 2 === 0;
+  const selected = [...tile];
+  for (const category of craftCategories.filter((entry) => entry !== "tile_color")) {
+    const quotas: Partial<Record<CosmeticRarity, number>> = legendaryWeek
+      ? { common: 2, rare: 1, epic: 1, legendary: 1 }
+      : { common: 2, rare: 1, epic: 2 };
+    for (const rarity of rarities) {
+      selected.push(...catalog
+        .filter((item) => item.category === category && item.rarity === rarity)
+        .sort((a, b) => stableScore(`${weekKey}:${category}`, a.id).localeCompare(stableScore(`${weekKey}:${category}`, b.id)))
+        .slice(0, quotas[rarity] ?? 0)
+        .map((item) => item.id));
+    }
   }
   return selected;
 };
@@ -507,6 +581,7 @@ export class NullEconomyStore implements EconomyStore {
 
   async close(): Promise<void> {}
   async getOverview(): Promise<EconomyOverview> { throw new Error("DATABASE_DISABLED"); }
+  async getMatchCosmetics(): Promise<undefined> { return undefined; }
   async claimWelcome(): Promise<EconomyOverview> { throw new Error("DATABASE_DISABLED"); }
   async claimAttendance(): Promise<EconomyOverview> { throw new Error("DATABASE_DISABLED"); }
   async claimUnlockedQuest(): Promise<EconomyOverview> { throw new Error("DATABASE_DISABLED"); }
@@ -514,6 +589,9 @@ export class NullEconomyStore implements EconomyStore {
   async purchaseWeeklyCosmetic(): Promise<EconomyOverview> { throw new Error("DATABASE_DISABLED"); }
   async openBox(): Promise<BoxOutcome> { throw new Error("DATABASE_DISABLED"); }
   async combineFragments(): Promise<BoxOutcome> { throw new Error("DATABASE_DISABLED"); }
+  async craftCosmetic(): Promise<BoxOutcome> { throw new Error("DATABASE_DISABLED"); }
+  async equipStyleCosmetic(): Promise<EconomyOverview> { throw new Error("DATABASE_DISABLED"); }
+  async setWishlist(): Promise<EconomyOverview> { throw new Error("DATABASE_DISABLED"); }
   async equipTileColor(): Promise<EconomyOverview> { throw new Error("DATABASE_DISABLED"); }
   async resetTileColor(): Promise<EconomyOverview> { throw new Error("DATABASE_DISABLED"); }
   async equipTileLoadout(): Promise<EconomyOverview> { throw new Error("DATABASE_DISABLED"); }
@@ -638,23 +716,17 @@ export class PostgresEconomyStore implements EconomyStore {
        values ($1, $2, $3) on conflict (week_key) do nothing`,
       [week.weekKey, week.startsAt, week.endsAt],
     );
-    const existing = await client.query(
-      `select 1 from weekly_store_items where week_key = $1 limit 1`,
-      [week.weekKey],
+    const catalog = await client.query<{ id: string; category: CosmeticCategory; rarity: CosmeticRarity }>(
+      `select id, category, rarity from cosmetic_catalog
+       where active and availability = 'active' and available_in_weekly_store`,
     );
-    if ((existing.rowCount ?? 0) === 0) {
-      const catalog = await client.query<{ id: string; rarity: CosmeticRarity }>(
-        `select id, rarity from cosmetic_catalog
-         where active and availability = 'active' and available_in_weekly_store`,
+    const selected = selectWeeklyCatalogByCategory(catalog.rows, week.weekKey);
+    for (const [order, cosmeticId] of selected.entries()) {
+      await client.query(
+        `insert into weekly_store_items (week_key, cosmetic_id, display_order)
+         values ($1, $2, $3) on conflict do nothing`,
+        [week.weekKey, cosmeticId, order],
       );
-      const selected = selectWeeklyCatalog(catalog.rows, week.weekKey);
-      for (const [order, cosmeticId] of selected.entries()) {
-        await client.query(
-          `insert into weekly_store_items (week_key, cosmetic_id, display_order)
-           values ($1, $2, $3) on conflict do nothing`,
-          [week.weekKey, cosmeticId, order],
-        );
-      }
     }
     return week;
   }
@@ -668,8 +740,12 @@ export class PostgresEconomyStore implements EconomyStore {
     const result = await client.query<CatalogRow>(
       `select c.id, c.category, c.equip_slot, c.rarity, c.name_ko, c.name_en, c.localized_names,
               c.description_ko, c.chip_price, c.visual_kind, c.visual_config,
-              c.representative_color, c.availability,
+              c.representative_color, c.availability, c.collection_key, c.duration_ms,
               ac_owned.first_equipped_at,
+              exists (
+                select 1 from account_cosmetic_wishlist aw
+                where aw.account_id = $1 and aw.cosmetic_id = c.id
+              ) as wishlisted,
               exists (
                 select 1 from account_cosmetics ac
                 where ac.account_id = $1 and ac.cosmetic_id = c.id
@@ -691,9 +767,19 @@ export class PostgresEconomyStore implements EconomyStore {
     return loadout;
   }
 
+  private styleLoadoutFromRow(row: LoadoutRow | undefined): StyleLoadout {
+    const loadout: StyleLoadout = {};
+    if (row?.board_theme_id) loadout.boardTheme = row.board_theme_id;
+    if (row?.placement_effect_id) loadout.placementEffect = row.placement_effect_id;
+    if (row?.score_effect_id) loadout.scoreEffect = row.score_effect_id;
+    if (row?.victory_effect_id) loadout.victoryEffect = row.victory_effect_id;
+    return loadout;
+  }
+
   private async readLoadout(client: PoolClient, accountId: string): Promise<TileLoadout> {
     const result = await client.query<LoadoutRow>(
-      `select tile_color_a_id, tile_color_b_id, tile_color_c_id
+      `select tile_color_a_id, tile_color_b_id, tile_color_c_id,
+              board_theme_id, placement_effect_id, score_effect_id, victory_effect_id
        from account_loadouts where account_id = $1`,
       [accountId],
     );
@@ -722,6 +808,13 @@ export class PostgresEconomyStore implements EconomyStore {
     const questWeek = seoulQuestWeek();
     const dayKey = seoulDayKey();
     const loadout = await this.readLoadout(client, accountId);
+    const loadoutResult = await client.query<LoadoutRow>(
+      `select tile_color_a_id, tile_color_b_id, tile_color_c_id,
+              board_theme_id, placement_effect_id, score_effect_id, victory_effect_id
+       from account_loadouts where account_id = $1`,
+      [accountId],
+    );
+    const styleLoadout = this.styleLoadoutFromRow(loadoutResult.rows[0]);
     const [
       walletResult,
       ticketResult,
@@ -761,7 +854,8 @@ export class PostgresEconomyStore implements EconomyStore {
       this.readCatalog(
         client,
         accountId,
-        `where c.active and c.category = 'tile_color' and c.availability = 'active'
+        `where c.active and c.category in ('tile_color','board_theme','placement_effect','score_effect','victory_effect')
+           and c.availability = 'active'
          order by
            case c.rarity
              when 'common' then 1
@@ -917,8 +1011,10 @@ export class PostgresEconomyStore implements EconomyStore {
       catalog: catalogWithLoadout(catalogRows),
       inventory: catalogWithLoadout(inventoryRows),
       loadout,
+      styleLoadout,
+      wishlist: catalogWithLoadout(catalogRows).filter((item) => item.wishlisted).map((item) => item.id),
       tilePalettes,
-      upcomingCategories: ["placement_effect", "score_effect", "profile", "victory_effect"],
+      upcomingCategories: ["profile"],
       quests: [
         {
           key: "welcome",
@@ -1195,6 +1291,40 @@ export class PostgresEconomyStore implements EconomyStore {
     return this.getOverview(accountId, attendanceStreak);
   }
 
+  async getMatchCosmetics(accountId: string): Promise<MatchCosmetics | undefined> {
+    const result = await this.pool.query<{
+      id: string;
+      equip_slot: "placement_effect" | "score_effect";
+      visual_config: CatalogRow["visual_config"];
+      duration_ms: number | null;
+    }>(
+      `select c.id, c.equip_slot, c.visual_config, c.duration_ms
+       from account_loadouts l
+       join cosmetic_catalog c
+         on c.id = l.placement_effect_id or c.id = l.score_effect_id
+       where l.account_id = $1 and c.active
+         and c.availability in ('active', 'pack_only')
+         and c.equip_slot in ('placement_effect', 'score_effect')`,
+      [accountId],
+    );
+    const cosmetics: MatchCosmetics = {};
+    for (const row of result.rows) {
+      const visual = {
+        id: row.id,
+        preset: typeof row.visual_config?.preset === "string"
+          ? row.visual_config.preset
+          : "default",
+        colors: readColors(row.visual_config),
+        durationMs: row.duration_ms ?? (row.equip_slot === "placement_effect" ? 240 : 450),
+      };
+      if (row.equip_slot === "placement_effect") cosmetics.placementEffect = visual;
+      if (row.equip_slot === "score_effect") cosmetics.scoreEffect = visual;
+    }
+    return cosmetics.placementEffect === undefined && cosmetics.scoreEffect === undefined
+      ? undefined
+      : cosmetics;
+  }
+
   async claimProgressQuest(
     accountId: string,
     questKey: "daily_complete" | "weekly_attendance" | "weekly_matches" | "weekly_wins" | "weekly_complete",
@@ -1284,17 +1414,19 @@ export class PostgresEconomyStore implements EconomyStore {
     accountId: string,
     rarity: CosmeticRarity,
     source: string,
+    category?: CraftCategory,
   ): Promise<CatalogRow | null> {
     const candidates = await this.readCatalog(
       client,
       accountId,
       `where c.active and c.availability = 'active' and c.available_in_boxes
          and c.rarity = $2
+         and ($3::text is null or c.category = $3)
          and not exists (
            select 1 from account_cosmetics ac
            where ac.account_id = $1 and ac.cosmetic_id = c.id
          )`,
-      [rarity],
+      [rarity, category ?? null],
     );
     if (candidates.length === 0) return null;
     const cosmetic = candidates[randomInt(candidates.length)];
@@ -1307,7 +1439,11 @@ export class PostgresEconomyStore implements EconomyStore {
     return cosmetic;
   }
 
-  async openBox(accountId: string, attendanceStreak = 0): Promise<BoxOutcome> {
+  async openBox(
+    accountId: string,
+    category: CraftCategory = "tile_color",
+    attendanceStreak = 0,
+  ): Promise<BoxOutcome> {
     const client = await this.pool.connect();
     let result!: Omit<BoxOutcome, "overview">;
     try {
@@ -1331,7 +1467,7 @@ export class PostgresEconomyStore implements EconomyStore {
       const selected = boxOutcomeForRoll(roll);
       let cosmetic: CatalogRow | null = null;
       if (selected.type === "cosmetic") {
-        cosmetic = await this.grantRandomCosmetic(client, accountId, selected.rarity, "palette_box");
+        cosmetic = await this.grantRandomCosmetic(client, accountId, selected.rarity, "palette_box", category);
       }
       const fragmentQuantity = selected.type === "fragment" || cosmetic === null ? 1 : 0;
       if (fragmentQuantity > 0) {
@@ -1344,8 +1480,8 @@ export class PostgresEconomyStore implements EconomyStore {
       await client.query(
         `insert into cosmetic_box_openings (
            id, account_id, price_chips, outcome_type, rarity, cosmetic_id,
-           fragment_quantity, probability_version, roll, payment_method
-         ) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+           fragment_quantity, probability_version, roll, payment_method, category
+         ) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
         [
           openingId,
           accountId,
@@ -1357,6 +1493,7 @@ export class PostgresEconomyStore implements EconomyStore {
           probabilityVersion,
           roll,
           usedTicket ? "ticket" : "chips",
+          category,
         ],
       );
       result = {
@@ -1378,6 +1515,7 @@ export class PostgresEconomyStore implements EconomyStore {
   async combineFragments(
     accountId: string,
     rarity: CosmeticRarity,
+    category: CraftCategory = "tile_color",
     attendanceStreak = 0,
   ): Promise<BoxOutcome> {
     const client = await this.pool.connect();
@@ -1392,9 +1530,77 @@ export class PostgresEconomyStore implements EconomyStore {
         [accountId, rarity, fragmentRequirement],
       );
       if ((available.rowCount ?? 0) === 0) throw new Error("NOT_ENOUGH_FRAGMENTS");
-      const granted = await this.grantRandomCosmetic(client, accountId, rarity, "fragment_combine");
+      const granted = await this.grantRandomCosmetic(client, accountId, rarity, "fragment_combine", category);
       if (granted === null) throw new Error("NO_UNOWNED_COSMETICS");
       cosmetic = granted;
+      await client.query("commit");
+    } catch (error) {
+      await client.query("rollback");
+      throw error;
+    } finally {
+      client.release();
+    }
+    return {
+      type: "cosmetic",
+      rarity,
+      cosmetic: toCatalogItem(cosmetic),
+      fragmentQuantity: 0,
+      overview: await this.getOverview(accountId, attendanceStreak),
+    };
+  }
+
+  async craftCosmetic(
+    accountId: string,
+    mode: "random" | "targeted",
+    category: CraftCategory,
+    rarity: CosmeticRarity,
+    cosmeticId?: string,
+    attendanceStreak = 0,
+  ): Promise<BoxOutcome> {
+    const client = await this.pool.connect();
+    const cost = mode === "targeted" ? 8 : 4;
+    let cosmetic!: CatalogRow;
+    try {
+      await client.query("begin");
+      await this.ensureAccount(client, accountId);
+      const spent = await client.query(
+        `update economy_fragments set quantity = quantity - $3, updated_at = now()
+         where account_id = $1 and rarity = $2 and quantity >= $3 returning quantity`,
+        [accountId, rarity, cost],
+      );
+      if ((spent.rowCount ?? 0) === 0) throw new Error("NOT_ENOUGH_FRAGMENTS");
+      if (mode === "random") {
+        const granted = await this.grantRandomCosmetic(client, accountId, rarity, "atelier_random", category);
+        if (granted === null) throw new Error("NO_UNOWNED_COSMETICS");
+        cosmetic = granted;
+      } else {
+        if (!cosmeticId) throw new Error("COSMETIC_REQUIRED");
+        const rows = await this.readCatalog(
+          client,
+          accountId,
+          `where c.id = $2 and c.category = $3 and c.rarity = $4
+             and c.active and c.availability = 'active'
+             and not exists (
+               select 1 from account_cosmetics ac
+               where ac.account_id = $1 and ac.cosmetic_id = c.id
+             )`,
+          [cosmeticId, category, rarity],
+        );
+        const selected = rows[0];
+        if (selected === undefined) throw new Error("COSMETIC_NOT_CRAFTABLE");
+        await client.query(
+          `insert into account_cosmetics (account_id, cosmetic_id, source)
+           values ($1, $2, 'atelier_targeted')`,
+          [accountId, selected.id],
+        );
+        cosmetic = selected;
+      }
+      await client.query(
+        `insert into cosmetic_craft_history (
+           id, account_id, mode, category, rarity, cosmetic_id, fragments_spent
+         ) values ($1, $2, $3, $4, $5, $6, $7)`,
+        [randomUUID(), accountId, mode, category, rarity, cosmetic.id, cost],
+      );
       await client.query("commit");
     } catch (error) {
       await client.query("rollback");
@@ -1619,6 +1825,100 @@ export class PostgresEconomyStore implements EconomyStore {
          where account_id = $1`,
         [accountId],
       );
+      await client.query("commit");
+    } catch (error) {
+      await client.query("rollback");
+      throw error;
+    } finally {
+      client.release();
+    }
+    return this.getOverview(accountId, attendanceStreak);
+  }
+
+  async equipStyleCosmetic(
+    accountId: string,
+    slot: StyleLoadoutSlot,
+    cosmeticId: string | null,
+    attendanceStreak = 0,
+  ): Promise<EconomyOverview> {
+    const slots: Record<StyleLoadoutSlot, { column: string; equipSlot: CosmeticEquipSlot }> = {
+      boardTheme: { column: "board_theme_id", equipSlot: "board_theme" },
+      placementEffect: { column: "placement_effect_id", equipSlot: "placement_effect" },
+      scoreEffect: { column: "score_effect_id", equipSlot: "score_effect" },
+      victoryEffect: { column: "victory_effect_id", equipSlot: "victory_effect" },
+    };
+    const target = slots[slot];
+    const client = await this.pool.connect();
+    try {
+      await client.query("begin");
+      await this.ensureAccount(client, accountId);
+      if (cosmeticId !== null) {
+        const owned = await client.query(
+          `select 1 from cosmetic_catalog c
+           join account_cosmetics ac on ac.cosmetic_id = c.id
+           where ac.account_id = $1 and c.id = $2 and c.equip_slot = $3
+             and c.active and c.availability in ('active', 'pack_only')`,
+          [accountId, cosmeticId, target.equipSlot],
+        );
+        if ((owned.rowCount ?? 0) === 0) throw new Error("COSMETIC_NOT_OWNED");
+      }
+      await client.query(
+        `update account_loadouts set ${target.column} = $2, updated_at = now() where account_id = $1`,
+        [accountId, cosmeticId],
+      );
+      if (cosmeticId !== null) {
+        await client.query(
+          `update account_cosmetics set first_equipped_at = coalesce(first_equipped_at, now())
+           where account_id = $1 and cosmetic_id = $2`,
+          [accountId, cosmeticId],
+        );
+      }
+      await client.query("commit");
+    } catch (error) {
+      await client.query("rollback");
+      throw error;
+    } finally {
+      client.release();
+    }
+    return this.getOverview(accountId, attendanceStreak);
+  }
+
+  async setWishlist(
+    accountId: string,
+    cosmeticId: string,
+    wished: boolean,
+    attendanceStreak = 0,
+  ): Promise<EconomyOverview> {
+    const client = await this.pool.connect();
+    try {
+      await client.query("begin");
+      await this.ensureAccount(client, accountId);
+      await client.query("select 1 from accounts where id = $1 for update", [accountId]);
+      if (wished) {
+        const item = await client.query(
+          `select 1 from cosmetic_catalog where id = $1 and active and availability = 'active'`,
+          [cosmeticId],
+        );
+        if ((item.rowCount ?? 0) === 0) throw new Error("COSMETIC_NOT_FOUND");
+        const count = await client.query<{ count: string }>(
+          `select count(*)::text as count from account_cosmetic_wishlist
+           where account_id = $1 and cosmetic_id <> $2`,
+          [accountId, cosmeticId],
+        );
+        if (Number.parseInt(count.rows[0]?.count ?? "0", 10) >= 10) {
+          throw new Error("WISHLIST_LIMIT_REACHED");
+        }
+        await client.query(
+          `insert into account_cosmetic_wishlist (account_id, cosmetic_id)
+           values ($1, $2) on conflict do nothing`,
+          [accountId, cosmeticId],
+        );
+      } else {
+        await client.query(
+          `delete from account_cosmetic_wishlist where account_id = $1 and cosmetic_id = $2`,
+          [accountId, cosmeticId],
+        );
+      }
       await client.query("commit");
     } catch (error) {
       await client.query("rollback");

@@ -12,6 +12,7 @@ import type {
   GamePlayer,
   GameState,
   Move,
+  MatchCosmetics,
   RoomPlayerSnapshot,
   RoomSnapshot,
   RoomStatus,
@@ -28,6 +29,7 @@ export interface RoomPlayer {
   ready: boolean;
   connected: boolean;
   socketId: string | null;
+  cosmetics?: MatchCosmetics;
 }
 
 export interface PlayerProfile {
@@ -37,6 +39,7 @@ export interface PlayerProfile {
   avatarId: string;
   isGuest: boolean;
   socketId?: string | null;
+  cosmetics?: MatchCosmetics;
 }
 
 export type RoomErrorCode =
@@ -102,6 +105,7 @@ const toGamePlayer = (player: RoomPlayer): GamePlayer => ({
   score: 0,
   connectionStatus: player.connected ? "connected" : "disconnected",
   isGuest: player.isGuest,
+  ...(player.cosmetics === undefined ? {} : { cosmetics: player.cosmetics }),
 });
 
 const toPlayerSnapshot = (player: RoomPlayer) => ({
@@ -112,6 +116,7 @@ const toPlayerSnapshot = (player: RoomPlayer) => ({
   isGuest: player.isGuest,
   ready: player.ready,
   connected: player.connected,
+  ...(player.cosmetics === undefined ? {} : { cosmetics: player.cosmetics }),
 });
 
 const fromPlayerSnapshot = (player: RoomPlayerSnapshot): RoomPlayer => ({
@@ -124,6 +129,7 @@ const fromPlayerSnapshot = (player: RoomPlayerSnapshot): RoomPlayer => ({
   ready: player.ready,
   connected: false,
   socketId: null,
+  ...(player.cosmetics === undefined ? {} : { cosmetics: player.cosmetics }),
 });
 
 const disconnectGamePlayers = (game: GameState | null): GameState | null => {
@@ -213,6 +219,7 @@ export class GameRoomService {
       ready: false,
       connected: true,
       socketId: profile.socketId ?? null,
+      ...(profile.cosmetics === undefined ? {} : { cosmetics: profile.cosmetics }),
     };
 
     const room: RoomSession = {
@@ -254,6 +261,7 @@ export class GameRoomService {
       ready: true,
       connected: true,
       socketId: firstProfile.socketId ?? null,
+      ...(firstProfile.cosmetics === undefined ? {} : { cosmetics: firstProfile.cosmetics }),
     };
     const second: RoomPlayer = {
       id: this.idGenerator(),
@@ -265,6 +273,7 @@ export class GameRoomService {
       ready: true,
       connected: true,
       socketId: secondProfile.socketId ?? null,
+      ...(secondProfile.cosmetics === undefined ? {} : { cosmetics: secondProfile.cosmetics }),
     };
 
     const matchConfig = {
@@ -344,6 +353,7 @@ export class GameRoomService {
       ready: false,
       connected: true,
       socketId: profile.socketId ?? null,
+      ...(profile.cosmetics === undefined ? {} : { cosmetics: profile.cosmetics }),
     };
     room.updatedAt = this.now();
 
