@@ -19,6 +19,7 @@ import {
 import { AppSidebar } from "../components/AppSidebar";
 import { SettingsPanel } from "../components/SettingsPanel";
 import { CosmeticPreview } from "../components/CosmeticPreview";
+import { CosmeticCategoryIcon } from "../components/CosmeticCategoryIcon";
 import { CosmeticOutcomeModal } from "../components/CosmeticOutcomeModal";
 import { loadoutChangedEvent } from "../components/CosmeticLoadoutBridge";
 import { localizedCosmeticName } from "../cosmetic-localization";
@@ -82,9 +83,6 @@ export function StorePage() {
   const [category, setCategory] = useState<CraftCategory>("tile_color");
   const [craftMode, setCraftMode] = useState<"random" | "targeted">("random");
   const [craftTarget, setCraftTarget] = useState<string | null>(null);
-  const [wideCatalog, setWideCatalog] = useState(
-    () => typeof window !== "undefined" && window.matchMedia("(min-width: 901px)").matches,
-  );
 
   useEffect(() => {
     if (getAuthToken() === null) {
@@ -96,14 +94,6 @@ export function StorePage() {
       .then(setEconomy)
       .catch((error) => setMessage(error instanceof ApiError ? error.code : "상점을 불러오지 못했습니다."))
       .finally(() => setLoading(false));
-  }, []);
-
-  useEffect(() => {
-    const media = window.matchMedia("(min-width: 901px)");
-    const updateCatalogMode = () => setWideCatalog(media.matches);
-    updateCatalogMode();
-    media.addEventListener("change", updateCatalogMode);
-    return () => media.removeEventListener("change", updateCatalogMode);
   }, []);
 
   const buy = async (item: CosmeticItem) => {
@@ -194,6 +184,9 @@ export function StorePage() {
   const selectedCraftItem = craftCandidates.find((item) => item.id === craftTarget);
   const craftReady = craftFragmentShortage === 0
     && (craftMode === "random" ? craftCandidates.length > 0 : selectedCraftItem !== undefined);
+  const weeklyCategoryItems = economy?.weeklyStore.items
+    .filter((item) => item.category === category)
+    .sort((left, right) => rarityOrder.indexOf(left.rarity) - rarityOrder.indexOf(right.rarity)) ?? [];
 
   const cosmeticCard = (item: CosmeticItem) => (
     <article className={`cosmetic-card rarity-border-${item.rarity}`} key={item.id}>
@@ -203,11 +196,14 @@ export function StorePage() {
         aria-label={item.wishlisted ? t("찜 해제") : t("찜하기")}
         onClick={() => void toggleWishlist(item)}
       >{item.wishlisted ? "★" : "☆"}</button>
-      <CosmeticPreview
-        item={item}
-        className="store-tile-preview"
-        label={localizedCosmeticName(item, locale)}
-      />
+      <div className="cosmetic-card-visual">
+        <span className={`cosmetic-rarity-chip rarity-${item.rarity}`}>{rarityLabel(item.rarity)}</span>
+        <CosmeticPreview
+          item={item}
+          className="store-tile-preview"
+          label={localizedCosmeticName(item, locale)}
+        />
+      </div>
       <div className="cosmetic-card-copy">
         <small>{t(categoryLabels[item.category as CraftCategory] ?? item.visualKind)}</small>
         <h4>{localizedCosmeticName(item, locale)}</h4>
@@ -215,6 +211,7 @@ export function StorePage() {
       </div>
       {item.owned && item.category !== "tile_color" && item.category !== "profile" ? (
         <button className="secondary-action" type="button" disabled={busyId !== null} onClick={() => void equip(item)}>
+          <span aria-hidden="true">{economy?.styleLoadout[styleSlots[item.category]] === item.id ? "✓" : "+"}</span>
           {economy?.styleLoadout[styleSlots[item.category]] === item.id ? t("장착 중") : t("장착")}
         </button>
       ) : <button
@@ -223,9 +220,11 @@ export function StorePage() {
         disabled={item.owned || busyId !== null}
         onClick={() => setPurchaseCandidate(item)}
       >
-        {item.owned
-          ? t("보유 중")
-          : t("{chips} 칩", { chips: formatNumber(item.chipPrice) })}
+        {item.owned ? (
+          <><span aria-hidden="true">✓</span>{t("보유 중")}</>
+        ) : (
+          <><span className="chip-price-gem" aria-hidden="true">◆</span>{formatNumber(item.chipPrice)}</>
+        )}
       </button>}
     </article>
   );
@@ -295,53 +294,42 @@ export function StorePage() {
                   </div>
                   <span>{t("{date}에 변경", { date: formatDate(economy.weeklyStore.endsAt) })}</span>
                 </div>
-                <nav className="atelier-category-tabs" aria-label={t("꾸미기 카테고리")}>
+                <nav className="atelier-category-tabs store-category-rail" aria-label={t("꾸미기 카테고리")}>
                   {craftCategories.map((entry) => (
                     <button key={entry} type="button" className={category === entry ? "active" : ""} onClick={() => setCategory(entry)}>
-                      {t(categoryLabels[entry])}
+                      <CosmeticCategoryIcon category={entry} />
+                      <span>
+                        <strong>{t(categoryLabels[entry])}</strong>
+                        <small>{economy.weeklyStore.items.filter((item) => item.category === entry).length}</small>
+                      </span>
                     </button>
                   ))}
                 </nav>
-                {wideCatalog ? (
-                  <div className="store-expanded-catalog">
-                    {rarityOrder.map((entry) => {
-                      const items = economy.weeklyStore.items.filter((item) => item.category === category && item.rarity === entry);
-                      if (items.length === 0) return null;
-                      return (
-                        <section className={`store-rarity-row rarity-${entry}`} key={entry}>
-                          <div className="store-rarity-heading">
-                            <strong>{rarityLabel(entry)}</strong>
-                            <small>{items.length}</small>
-                          </div>
-                          <div className="cosmetic-grid">
-                            {items.map(cosmeticCard)}
-                          </div>
-                        </section>
-                      );
-                    })}
+                <div className="weekly-catalog-bar">
+                  <div>
+                    <CosmeticCategoryIcon category={category} />
+                    <span>
+                      <strong>{t(categoryLabels[category])}</strong>
+                      <small>{t("이번 주 {count}개", { count: weeklyCategoryItems.length })}</small>
+                    </span>
+                  </div>
+                  <div className="weekly-rarity-legend" aria-label={t("등급")}>
+                    {rarityOrder.map((entry) => (
+                      <span className={`rarity-${entry}`} key={entry}>
+                        <i aria-hidden="true" />{rarityLabel(entry)} {weeklyCategoryItems.filter((item) => item.rarity === entry).length}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                {weeklyCategoryItems.length > 0 ? (
+                  <div className={`weekly-cosmetic-grid item-count-${Math.min(weeklyCategoryItems.length, 4)}`}>
+                    {weeklyCategoryItems.map(cosmeticCard)}
                   </div>
                 ) : (
-                  <>
-                    <div className="rarity-tabs" role="tablist" aria-label={t("등급")}>
-                      {rarityOrder.map((entry) => (
-                        <button
-                          key={entry}
-                          type="button"
-                          role="tab"
-                          aria-selected={rarity === entry}
-                          className={`${rarity === entry ? "active" : ""} rarity-${entry}`}
-                          onClick={() => setRarity(entry)}
-                        >
-                          <span className="rarity-label-full">{rarityLabel(entry)}</span>
-                          <span className="rarity-label-compact">{rarityLabel(entry)}</span>
-                          <small>{economy.weeklyStore.items.filter((item) => item.category === category && item.rarity === entry).length}</small>
-                        </button>
-                      ))}
-                    </div>
-                    <div className="cosmetic-grid">
-                      {economy.weeklyStore.items.filter((item) => item.category === category && item.rarity === rarity).map(cosmeticCard)}
-                    </div>
-                  </>
+                  <div className="weekly-empty-state">
+                    <CosmeticCategoryIcon category={category} />
+                    <strong>{t("이번 주에는 이 종류의 상품이 없습니다.")}</strong>
+                  </div>
                 )}
               </section>
             )}
@@ -358,15 +346,15 @@ export function StorePage() {
 
                 <ol className="atelier-progress" aria-label={t("제작 순서")}>
                   {["꾸미기 종류", "등급", "제작 방식", "제작 확인"].map((label, index) => (
-                    <li className={index < 3 || craftReady ? "ready" : ""} key={label}>
-                      <b>{index + 1}</b><span>{t(label)}</span>
+                    <li className={index < 3 ? "complete" : craftReady ? "ready active" : "active"} key={label}>
+                      <b>{index < 3 ? "✓" : index + 1}</b><span>{t(label)}</span>
                     </li>
                   ))}
                 </ol>
 
                 <div className="atelier-layout">
                   <div className="atelier-builder">
-                    <section className="atelier-choice-section" aria-labelledby="atelier-category-title">
+                    <section className="atelier-choice-section atelier-step-category" aria-labelledby="atelier-category-title">
                       <header>
                         <b>1</b>
                         <div><small>STYLE TYPE</small><h3 id="atelier-category-title">{t("어떤 꾸미기를 만들까요?")}</h3></div>
@@ -380,15 +368,18 @@ export function StorePage() {
                             aria-pressed={category === entry}
                             onClick={() => { setCategory(entry); setCraftTarget(null); }}
                           >
-                            <span className={`atelier-category-icon category-${entry}`} aria-hidden="true"><i /><i /><i /></span>
-                            <strong>{t(categoryLabels[entry])}</strong>
-                            <small>{t(category === entry ? "선택됨" : "선택")}</small>
+                            <CosmeticCategoryIcon category={entry} />
+                            <span>
+                              <strong>{t(categoryLabels[entry])}</strong>
+                              <small>{t(category === entry ? "선택됨" : "선택")}</small>
+                            </span>
+                            <b aria-hidden="true">{category === entry ? "✓" : "›"}</b>
                           </button>
                         ))}
                       </div>
                     </section>
 
-                    <section className="atelier-choice-section" aria-labelledby="atelier-rarity-title">
+                    <section className="atelier-choice-section atelier-step-rarity" aria-labelledby="atelier-rarity-title">
                       <header>
                         <b>2</b>
                         <div><small>RARITY</small><h3 id="atelier-rarity-title">{t("사용할 파편 등급을 고르세요")}</h3></div>
@@ -404,7 +395,7 @@ export function StorePage() {
                       </div>
                     </section>
 
-                    <section className="atelier-choice-section" aria-labelledby="atelier-mode-title">
+                    <section className="atelier-choice-section atelier-step-method" aria-labelledby="atelier-mode-title">
                       <header>
                         <b>3</b>
                         <div><small>CRAFT METHOD</small><h3 id="atelier-mode-title">{t("어떻게 만들까요?")}</h3></div>
@@ -449,13 +440,30 @@ export function StorePage() {
                       <span>4</span>
                       <div><small>CRAFT SUMMARY</small><h3 id="atelier-summary-title">{t("제작 확인")}</h3></div>
                     </div>
+                    <div className="atelier-summary-hero">
+                      {selectedCraftItem ? (
+                        <CosmeticPreview item={selectedCraftItem} label={localizedCosmeticName(selectedCraftItem, locale)} />
+                      ) : (
+                        <span className="atelier-summary-random" aria-hidden="true">
+                          <CosmeticCategoryIcon category={category} />
+                          <b>?</b>
+                        </span>
+                      )}
+                      <span>
+                        <small>{t(craftMode === "random" ? "무작위 결과" : "선택한 결과")}</small>
+                        <strong>
+                          {selectedCraftItem
+                            ? localizedCosmeticName(selectedCraftItem, locale)
+                            : t("{rarity} {category}", { rarity: rarityLabel(rarity), category: t(categoryLabels[category]) })}
+                        </strong>
+                      </span>
+                    </div>
                     <dl className="atelier-summary-list">
                       <div><dt>{t("꾸미기 종류")}</dt><dd>{t(categoryLabels[category])}</dd></div>
                       <div><dt>{t("등급")}</dt><dd>{rarityLabel(rarity)}</dd></div>
                       <div><dt>{t("제작 방식")}</dt><dd>{t(craftMode === "random" ? "무작위로 만들기" : "원하는 항목 만들기")}</dd></div>
                       {selectedCraftItem && <div><dt>{t("선택 항목")}</dt><dd>{localizedCosmeticName(selectedCraftItem, locale)}</dd></div>}
                     </dl>
-                    {selectedCraftItem && <CosmeticPreview item={selectedCraftItem} className="atelier-summary-preview" label={localizedCosmeticName(selectedCraftItem, locale)} />}
                     <div className="atelier-fragment-status">
                       <span><small>{t("보유 파편")}</small><strong>{formatNumber(craftFragmentBalance)}</strong></span>
                       <i aria-hidden="true">/</i>
@@ -499,10 +507,14 @@ export function StorePage() {
                   </div>
                 </div>
 
-                <nav className="atelier-category-tabs" aria-label={t("도감 카테고리")}>
+                <nav className="atelier-category-tabs store-category-rail" aria-label={t("도감 카테고리")}>
                   {craftCategories.map((entry) => (
                     <button key={entry} type="button" className={category === entry ? "active" : ""} onClick={() => setCategory(entry)}>
-                      {t(categoryLabels[entry])}
+                      <CosmeticCategoryIcon category={entry} />
+                      <span>
+                        <strong>{t(categoryLabels[entry])}</strong>
+                        <small>{economy.catalog.filter((item) => item.category === entry).length}</small>
+                      </span>
                     </button>
                   ))}
                 </nav>

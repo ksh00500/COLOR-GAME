@@ -38,4 +38,24 @@ describe("CosmeticPreview", () => {
       expect(html).toContain('aria-label="preview"');
     },
   );
+
+  it("renders a complete 5 by 5 board preview with three sample tiles", () => {
+    const html = renderToStaticMarkup(<CosmeticPreview item={cosmetic("board_theme")} label="board" />);
+
+    expect((html.match(/<i/g) ?? [])).toHaveLength(25);
+    expect(html).toContain("sample-a");
+    expect(html).toContain("sample-b");
+    expect(html).toContain("sample-c");
+  });
+
+  it("uses descriptive vector scenes instead of letter placeholders", () => {
+    const score = renderToStaticMarkup(<CosmeticPreview item={cosmetic("score_effect")} label="score" />);
+    const victory = renderToStaticMarkup(<CosmeticPreview item={cosmetic("victory_effect")} label="victory" />);
+
+    expect(score).toContain("atelier-cosmetic-preview-score-row");
+    expect(score).toContain("+4");
+    expect(victory).toContain("victory-cup");
+    expect(victory).toContain("victory-laurel");
+    expect(victory).toContain("WIN");
+  });
 });
