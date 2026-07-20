@@ -112,7 +112,7 @@ export const patchNoteReleases: PatchNoteRelease[] = [
       {
         tag: "CHECK-IN",
         title: "이번 주 출석 횟수 기준으로 변경",
-        body: "연속 출석 대신 이번 주 출석 횟수를 보여주도록 바꿨습니다. 주간 출석은 일요일 00:00 KST에 초기화됩니다.",
+        body: "연속 출석 대신 이번 주 출석 횟수를 보여주도록 바꿨습니다. 주간 출석은 일요일이 끝난 뒤 월요일 00:00 KST에 초기화됩니다.",
       },
       {
         tag: "QUEST",

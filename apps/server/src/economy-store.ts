@@ -409,19 +409,8 @@ export const seoulWeek = (now = new Date()): { weekKey: string; startsAt: Date; 
 };
 
 export const seoulQuestWeek = (now = new Date()): { weekKey: string; startsAt: Date; endsAt: Date } => {
-  const shifted = new Date(now.getTime() + 9 * 60 * 60 * 1000);
-  const midnightUtc = Date.UTC(
-    shifted.getUTCFullYear(),
-    shifted.getUTCMonth(),
-    shifted.getUTCDate(),
-  );
-  const daysSinceSunday = shifted.getUTCDay();
-  const startsAt = new Date(midnightUtc - daysSinceSunday * 86_400_000 - 9 * 60 * 60 * 1000);
-  return {
-    weekKey: new Date(midnightUtc - daysSinceSunday * 86_400_000).toISOString().slice(0, 10),
-    startsAt,
-    endsAt: new Date(startsAt.getTime() + 7 * 86_400_000),
-  };
+  // Weekly attendance and quests reset after Sunday ends: Monday 00:00 KST.
+  return seoulWeek(now);
 };
 
 const stableScore = (weekKey: string, id: string): string =>

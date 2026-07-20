@@ -93,12 +93,13 @@ describe("economy policy", () => {
     expect(after.startsAt.toISOString()).toBe("2026-06-28T15:00:00.000Z");
   });
 
-  it("resets weekly quests on Sunday midnight KST", () => {
-    const before = seoulQuestWeek(new Date("2026-07-04T14:59:59.999Z"));
-    const after = seoulQuestWeek(new Date("2026-07-04T15:00:00.000Z"));
-    expect(before.weekKey).toBe("2026-06-28");
-    expect(after.weekKey).toBe("2026-07-05");
-    expect(after.startsAt.toISOString()).toBe("2026-07-04T15:00:00.000Z");
+  it("resets weekly quests after Sunday ends at Monday midnight KST", () => {
+    const before = seoulQuestWeek(new Date("2026-07-05T14:59:59.999Z"));
+    const after = seoulQuestWeek(new Date("2026-07-05T15:00:00.000Z"));
+    expect(before.weekKey).toBe("2026-06-29");
+    expect(after.weekKey).toBe("2026-07-06");
+    expect(after.startsAt.toISOString()).toBe("2026-07-05T15:00:00.000Z");
+    expect(after.endsAt.toISOString()).toBe("2026-07-12T15:00:00.000Z");
   });
 
   it("keeps the disclosed box odds at exactly 100 percent", () => {
