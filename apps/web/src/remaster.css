@@ -2435,13 +2435,13 @@ html[data-tango-board-theme="cosmos"] .game-board-frame {
 html[data-tango-board-theme="tango"] .game-board-frame {
   --board-frame-material:
     repeating-linear-gradient(4deg,rgba(255,255,255,.026) 0 1px,transparent 1px 10px),
-    linear-gradient(90deg,#ae455f 0 40%,#4565a5 40% 60%,#418b78 60%);
+    linear-gradient(122deg,#ae455f 0 33%,#4565a5 33.2% 66.5%,#418b78 66.7%);
   --board-field-material:
     radial-gradient(circle at 50% 45%,rgba(255,255,255,.07),transparent 52%),
-    linear-gradient(90deg,#963b51 0 40%,#3b558d 40% 60%,#377866 60%);
+    linear-gradient(122deg,#963b51 0 33%,#3b558d 33.2% 66.5%,#377866 66.7%);
   --board-cell-material:linear-gradient(145deg,#873347,#572431);
   --board-cell-material-alt:linear-gradient(145deg,#96394f,#612736);
-  --board-rim:#604d58; --board-groove:rgba(245,230,205,.2); --board-inlay:rgba(249,231,199,.58); --board-cell-shadow:rgba(17,12,18,.52); --board-field-pattern:repeating-linear-gradient(4deg,rgba(255,255,255,.02) 0 1px,transparent 1px 11px);
+  --board-rim:#232326; --board-groove:rgba(245,230,205,.2); --board-inlay:rgba(249,231,199,.58); --board-cell-shadow:rgba(17,12,18,.52); --board-field-pattern:repeating-linear-gradient(4deg,rgba(255,255,255,.02) 0 1px,transparent 1px 11px);
 }
 
 html[data-tango-board-theme="tango"] .board-cell[data-cell-col="2"] .board-cell-material {
@@ -2537,12 +2537,12 @@ html[data-tango-board-theme="tango"] .board-cell:nth-child(even)[data-cell-col="
 .atelier-cosmetic-preview-board_theme.preset-ember { --preview-frame:radial-gradient(circle at 20% 80%,rgba(255,103,42,.34),transparent 31%),linear-gradient(145deg,#5d3025,#1d1614);--preview-field:linear-gradient(145deg,#452720,#16110f);--preview-cell:linear-gradient(145deg,#3c201c,#130e0d);--preview-cell-alt:linear-gradient(145deg,#47251f,#18110f);--preview-rim:#6a2a19; }
 .atelier-cosmetic-preview-board_theme.preset-prism { --preview-frame:linear-gradient(42deg,transparent 0 31%,rgba(61,157,145,.35) 32% 39%,transparent 40% 63%,rgba(144,84,166,.32) 64% 71%,transparent 72%),linear-gradient(145deg,#9b405c,#263e68);--preview-field:linear-gradient(125deg,#8e3d58,#344f83 50%,#367d6d);--preview-cell:linear-gradient(135deg,#84364f,#304675 52%,#347664);--preview-cell-alt:linear-gradient(315deg,#84364f,#304675 52%,#347664);--preview-rim:#28375f; }
 .atelier-cosmetic-preview-board_theme.preset-cosmos { --preview-frame:radial-gradient(ellipse at 45% 40%,rgba(59,66,154,.65),transparent 45%),radial-gradient(circle at 75% 65%,rgba(26,135,139,.4),transparent 34%),linear-gradient(145deg,#17193d,#060811);--preview-field:radial-gradient(ellipse at 58% 44%,rgba(69,54,154,.42),transparent 42%),linear-gradient(145deg,#111632,#05070f);--preview-cell:linear-gradient(145deg,#151b3d,#060815);--preview-cell-alt:linear-gradient(145deg,#171c42,#070916);--preview-rim:#34418c; }
-.atelier-cosmetic-preview-board_theme.preset-tango { --preview-frame:linear-gradient(90deg,#a43f58 0 40%,#405c98 40% 60%,#3b806f 60%);--preview-field:linear-gradient(90deg,#963b51 0 40%,#3b558d 40% 60%,#377866 60%);--preview-cell:linear-gradient(145deg,#843348,#5e2839);--preview-cell-alt:linear-gradient(145deg,#92394f,#682b3d);--preview-rim:#66515e; }
+.atelier-cosmetic-preview-board_theme.preset-tango { --preview-frame:linear-gradient(120deg,#a43f58 0 33%,#405c98 33.2% 66.5%,#3b806f 66.7%);--preview-field:linear-gradient(120deg,#963b51 0 33%,#3b558d 33.2% 66.5%,#377866 66.7%);--preview-cell:rgba(14,12,16,.3);--preview-cell-alt:rgba(14,12,16,.3);--preview-rim:#222226; }
 .atelier-cosmetic-preview-board_theme.preset-tango .atelier-cosmetic-preview-board-grid i:nth-child(5n+1),
-.atelier-cosmetic-preview-board_theme.preset-tango .atelier-cosmetic-preview-board-grid i:nth-child(5n+2) { background:linear-gradient(145deg,#984058,#6f2d41); }
-.atelier-cosmetic-preview-board_theme.preset-tango .atelier-cosmetic-preview-board-grid i:nth-child(5n+3) { background:linear-gradient(145deg,#455f9b,#2e4271); }
+.atelier-cosmetic-preview-board_theme.preset-tango .atelier-cosmetic-preview-board-grid i:nth-child(5n+2),
+.atelier-cosmetic-preview-board_theme.preset-tango .atelier-cosmetic-preview-board-grid i:nth-child(5n+3),
 .atelier-cosmetic-preview-board_theme.preset-tango .atelier-cosmetic-preview-board-grid i:nth-child(5n+4),
-.atelier-cosmetic-preview-board_theme.preset-tango .atelier-cosmetic-preview-board-grid i:nth-child(5n) { background:linear-gradient(145deg,#428873,#2d6555); }
+.atelier-cosmetic-preview-board_theme.preset-tango .atelier-cosmetic-preview-board-grid i:nth-child(5n) { background:rgba(14,12,16,.3); }
 .atelier-cosmetic-preview-board_theme.preset-tango .atelier-cosmetic-preview-board-grid i.sample-a { background:#a43f58; }
 .atelier-cosmetic-preview-board_theme.preset-tango .atelier-cosmetic-preview-board-grid i.sample-b { background:#405c98; }
 .atelier-cosmetic-preview-board_theme.preset-tango .atelier-cosmetic-preview-board-grid i.sample-c { background:#3b806f; }
