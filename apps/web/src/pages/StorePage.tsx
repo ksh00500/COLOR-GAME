@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
   ApiError,
@@ -83,6 +83,7 @@ export function StorePage() {
   const [collectionRarity, setCollectionRarity] = useState<CollectionRarity>("all");
   const [collectionQuery, setCollectionQuery] = useState("");
   const [wishlistOnly, setWishlistOnly] = useState(false);
+  const [selectedCollectionId, setSelectedCollectionId] = useState<string | null>(null);
   const [category, setCategory] = useState<CraftCategory>("tile_color");
   const [craftMode, setCraftMode] = useState<"random" | "targeted">("random");
   const [craftTarget, setCraftTarget] = useState<string | null>(null);
@@ -191,6 +192,16 @@ export function StorePage() {
   const weeklyCategoryItems = economy?.weeklyStore.items
     .filter((item) => item.category === category)
     .sort((left, right) => rarityOrder.indexOf(left.rarity) - rarityOrder.indexOf(right.rarity)) ?? [];
+  const collectionItems = economy?.catalog
+    .filter((item) => item.category === category
+      && (collectionRarity === "all" || item.rarity === collectionRarity)
+      && (!wishlistOnly || item.wishlisted)
+      && [localizedCosmeticName(item, locale), item.nameKo, item.nameEn]
+        .some((name) => name.toLocaleLowerCase(locale).includes(collectionQuery.trim().toLocaleLowerCase(locale)))) ?? [];
+  const selectedCollectionItem = collectionItems.find((item) => item.id === selectedCollectionId)
+    ?? collectionItems[0];
+  const categoryCollectionItems = economy?.catalog.filter((item) => item.category === category) ?? [];
+  const categoryOwnedCount = categoryCollectionItems.filter((item) => item.owned).length;
 
   const cosmeticCard = (item: CosmeticItem) => (
     <article className={`cosmetic-card rarity-border-${item.rarity}`} key={item.id}>
@@ -513,122 +524,215 @@ export function StorePage() {
             )}
 
             {storeTab === "collection" && (
-              <section className="store-section collection-section">
-                <div className="collection-heading">
+              <section className="collection-explorer" aria-labelledby="collection-title">
+                <header className="collection-explorer-hero">
                   <div>
-                    <p className="eyebrow">TILE COLLECTION</p>
-                    <h2>{t("스킨 도감")}</h2>
+                    <p className="eyebrow">TANGO ARCHIVE</p>
+                    <h2 id="collection-title">{t("스킨 도감")}</h2>
                     <p>{t("Tango의 모든 꾸미기와 테마 컬렉션을 확인하세요.")}</p>
                   </div>
-                  <div className="collection-progress">
-                    <strong>
-                      {formatNumber(economy.catalog.filter((item) => item.owned).length)}
-                      <small> / {formatNumber(economy.catalog.length)}</small>
-                    </strong>
-                    <span>{t("수집 완료")}</span>
-                  </div>
-                </div>
-
-                <nav className="atelier-category-tabs store-category-rail" aria-label={t("도감 카테고리")}>
-                  {craftCategories.map((entry) => (
-                    <button key={entry} type="button" className={category === entry ? "active" : ""} onClick={() => setCategory(entry)}>
-                      <CosmeticCategoryIcon category={entry} />
-                      <span>
-                        <strong>{t(categoryLabels[entry])}</strong>
-                        <small>{economy.catalog.filter((item) => item.category === entry).length}</small>
-                      </span>
-                    </button>
-                  ))}
-                </nav>
-
-                <nav className="collection-filters" aria-label={t("도감 등급 필터")}>
-                  {(["all", ...rarityOrder] as const).map((entry) => (
-                    <button
-                      key={entry}
-                      type="button"
-                      className={collectionRarity === entry ? "active" : ""}
-                      onClick={() => setCollectionRarity(entry)}
-                    >
-                      {entry === "all" ? t("모두") : rarityLabel(entry)}
-                      <small>
-                        {economy.catalog.filter((item) => item.category === category && (entry === "all" || item.rarity === entry)).length}
-                      </small>
-                    </button>
-                  ))}
-                  <button
-                    type="button"
-                    className={wishlistOnly ? "active" : ""}
-                    onClick={() => setWishlistOnly((current) => !current)}
+                  <div
+                    className="collection-total-progress"
+                    style={{
+                      "--collection-progress": `${economy.catalog.length === 0 ? 0 : Math.round((economy.catalog.filter((item) => item.owned).length / economy.catalog.length) * 100)}%`,
+                    } as CSSProperties}
                   >
-                    ★ {t("찜 목록")} <small>{economy.wishlist.length}/10</small>
-                  </button>
-                </nav>
+                    <span>
+                      <strong>{formatNumber(economy.catalog.filter((item) => item.owned).length)}</strong>
+                      <small>/ {formatNumber(economy.catalog.length)}</small>
+                    </span>
+                    <b>{t("수집 완료")}</b>
+                  </div>
+                </header>
 
-                <label className="collection-search-field">
-                  <span>{t("도감 검색")}</span>
-                  <input
-                    type="search"
-                    value={collectionQuery}
-                    placeholder={t("꾸미기 이름으로 검색")}
-                    onChange={(event) => setCollectionQuery(event.target.value)}
-                  />
-                </label>
-
-                <div className="collection-grid">
-                  {economy.catalog
-                    .filter((item) => item.category === category
-                      && (collectionRarity === "all" || item.rarity === collectionRarity)
-                      && (!wishlistOnly || item.wishlisted)
-                      && [localizedCosmeticName(item, locale), item.nameKo, item.nameEn]
-                        .some((name) => name.toLocaleLowerCase(locale).includes(collectionQuery.trim().toLocaleLowerCase(locale))))
-                    .map((item) => (
-                      <article
-                        className={`collection-card rarity-border-${item.rarity}${item.owned ? " owned" : " locked"}`}
-                        key={item.id}
-                      >
+                <div className="collection-explorer-layout">
+                  <nav className="collection-category-list" aria-label={t("도감 카테고리")}>
+                    <p>{t("도감 카테고리")}</p>
+                    {craftCategories.map((entry) => {
+                      const entries = economy.catalog.filter((item) => item.category === entry);
+                      const owned = entries.filter((item) => item.owned).length;
+                      return (
                         <button
-                          className={`cosmetic-wishlist-button${item.wishlisted ? " active" : ""}`}
+                          key={entry}
                           type="button"
-                          aria-label={item.wishlisted ? t("찜 해제") : t("찜하기")}
-                          onClick={() => void toggleWishlist(item)}
-                        >{item.wishlisted ? "★" : "☆"}</button>
-                        <CosmeticPreview
-                          item={item}
-                          className="collection-tile-preview"
-                          label={localizedCosmeticName(item, locale)}
+                          className={category === entry ? "active" : ""}
+                          onClick={() => {
+                            setCategory(entry);
+                            setSelectedCollectionId(null);
+                          }}
+                        >
+                          <CosmeticCategoryIcon category={entry} />
+                          <span>
+                            <strong>{t(categoryLabels[entry])}</strong>
+                            <small>{owned} / {entries.length}</small>
+                          </span>
+                          <i aria-hidden="true">›</i>
+                        </button>
+                      );
+                    })}
+                  </nav>
+
+                  <div className="collection-library">
+                    <header className="collection-library-heading">
+                      <div>
+                        <small>{t(categoryLabels[category])}</small>
+                        <h3>{categoryOwnedCount} / {categoryCollectionItems.length}</h3>
+                      </div>
+                      <label className="collection-search-field">
+                        <span>{t("도감 검색")}</span>
+                        <input
+                          type="search"
+                          value={collectionQuery}
+                          placeholder={t("꾸미기 이름으로 검색")}
+                          onChange={(event) => {
+                            setCollectionQuery(event.target.value);
+                            setSelectedCollectionId(null);
+                          }}
                         />
-                        <span>
-                          <small>{rarityLabel(item.rarity)}</small>
-                          <strong>{localizedCosmeticName(item, locale)}</strong>
-                        </span>
-                        <b className={item.owned ? "owned-label" : "locked-label"}>
-                          <span aria-hidden="true">{item.owned ? "✓" : "•"}</span>
-                          {t(item.owned ? "보유 중" : "미보유")}
-                        </b>
-                      </article>
-                    ))}
-                </div>
-                {wishlistOnly && !economy.catalog.some((item) => item.category === category
-                  && item.wishlisted
-                  && (collectionRarity === "all" || item.rarity === collectionRarity)) && (
-                  <p className="online-message">{t("이 카테고리에 찜한 꾸미기가 없습니다.")}</p>
-                )}
-                <div className="collection-set-grid">
-                  {[...new Set(economy.catalog.map((item) => item.collectionKey).filter((key): key is string => key !== null))].map((collectionKey) => {
-                    const items = economy.catalog.filter((item) => item.collectionKey === collectionKey);
-                    const owned = items.filter((item) => item.owned).length;
-                    return (
-                      <article className="collection-set-card" key={collectionKey}>
-                        <small>THEMED COLLECTION</small>
-                        <h3>{collectionKey.toUpperCase()}</h3>
-                        <div className="collection-set-previews">
-                          {items.slice(0, 4).map((item) => <CosmeticPreview key={item.id} item={item} />)}
+                      </label>
+                    </header>
+
+                    <nav className="collection-filter-bar" aria-label={t("도감 등급 필터")}>
+                      {(["all", ...rarityOrder] as const).map((entry) => (
+                        <button
+                          key={entry}
+                          type="button"
+                          className={collectionRarity === entry ? "active" : ""}
+                          onClick={() => {
+                            setCollectionRarity(entry);
+                            setSelectedCollectionId(null);
+                          }}
+                        >
+                          <span className={entry === "all" ? "rarity-dot-all" : `rarity-dot rarity-${entry}`} aria-hidden="true" />
+                          {entry === "all" ? t("모두") : rarityLabel(entry)}
+                          <small>{categoryCollectionItems.filter((item) => entry === "all" || item.rarity === entry).length}</small>
+                        </button>
+                      ))}
+                      <button
+                        type="button"
+                        className={wishlistOnly ? "active wishlist" : "wishlist"}
+                        onClick={() => {
+                          setWishlistOnly((current) => !current);
+                          setSelectedCollectionId(null);
+                        }}
+                      >
+                        <span aria-hidden="true">★</span>{t("찜 목록")}<small>{economy.wishlist.length}/10</small>
+                      </button>
+                    </nav>
+
+                    {collectionItems.length > 0 ? (
+                      <div className="collection-gallery" role="list">
+                        {collectionItems.map((item) => (
+                          <article
+                            className={`collection-gallery-card rarity-border-${item.rarity}${item.owned ? " owned" : " locked"}${selectedCollectionItem?.id === item.id ? " selected" : ""}`}
+                            key={item.id}
+                            role="listitem"
+                            onClick={() => setSelectedCollectionId(item.id)}
+                          >
+                            <button
+                              className={`cosmetic-wishlist-button${item.wishlisted ? " active" : ""}`}
+                              type="button"
+                              aria-label={item.wishlisted ? t("찜 해제") : t("찜하기")}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                void toggleWishlist(item);
+                              }}
+                            >{item.wishlisted ? "★" : "☆"}</button>
+                            <button
+                              type="button"
+                              className="collection-gallery-select"
+                              aria-label={localizedCosmeticName(item, locale)}
+                              onClick={() => setSelectedCollectionId(item.id)}
+                            >
+                              <CosmeticPreview item={item} label={localizedCosmeticName(item, locale)} />
+                              <span>
+                                <small>{rarityLabel(item.rarity)}</small>
+                                <strong>{localizedCosmeticName(item, locale)}</strong>
+                              </span>
+                              <b className={item.owned ? "owned-label" : "locked-label"}>
+                                <span aria-hidden="true">{item.owned ? "✓" : "◇"}</span>
+                                {t(item.owned ? "보유 중" : "미보유")}
+                              </b>
+                            </button>
+                          </article>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="collection-empty-state">
+                        <CosmeticCategoryIcon category={category} />
+                        <strong>{t(wishlistOnly ? "이 카테고리에 찜한 꾸미기가 없습니다." : "검색 결과가 없습니다.")}</strong>
+                      </div>
+                    )}
+                  </div>
+
+                  <aside className="collection-inspector" aria-live="polite">
+                    {selectedCollectionItem ? (
+                      <>
+                        <div className={`collection-inspector-stage rarity-border-${selectedCollectionItem.rarity}`}>
+                          <CosmeticPreview
+                            item={selectedCollectionItem}
+                            label={localizedCosmeticName(selectedCollectionItem, locale)}
+                          />
+                          <span className={`cosmetic-rarity-chip rarity-${selectedCollectionItem.rarity}`}>
+                            {rarityLabel(selectedCollectionItem.rarity)}
+                          </span>
                         </div>
-                        <strong>{owned} / {items.length}</strong>
-                      </article>
-                    );
-                  })}
+                        <div className="collection-inspector-copy">
+                          <small>{t(categoryLabels[selectedCollectionItem.category as CraftCategory])}</small>
+                          <h3>{localizedCosmeticName(selectedCollectionItem, locale)}</h3>
+                          <p>{locale === "ko" ? selectedCollectionItem.descriptionKo : selectedCollectionItem.nameEn}</p>
+                        </div>
+                        <div className={`collection-owned-state${selectedCollectionItem.owned ? " owned" : ""}`}>
+                          <span aria-hidden="true">{selectedCollectionItem.owned ? "✓" : "◇"}</span>
+                          <div>
+                            <small>{t("보유 상태")}</small>
+                            <strong>{t(selectedCollectionItem.owned ? "보유 중" : "미보유")}</strong>
+                          </div>
+                        </div>
+                        <div className="collection-inspector-actions">
+                          <button
+                            type="button"
+                            className={`secondary-action${selectedCollectionItem.wishlisted ? " active" : ""}`}
+                            onClick={() => void toggleWishlist(selectedCollectionItem)}
+                          >
+                            {selectedCollectionItem.wishlisted ? "★" : "☆"} {t(selectedCollectionItem.wishlisted ? "찜 해제" : "찜하기")}
+                          </button>
+                          {selectedCollectionItem.owned
+                          && selectedCollectionItem.category !== "tile_color"
+                          && selectedCollectionItem.category !== "profile" ? (
+                            <button className="primary-action" type="button" disabled={busyId !== null} onClick={() => void equip(selectedCollectionItem)}>
+                              {economy.styleLoadout[styleSlots[selectedCollectionItem.category]] === selectedCollectionItem.id ? t("장착 중") : t("장착")}
+                            </button>
+                          ) : selectedCollectionItem.category === "tile_color" && selectedCollectionItem.owned ? (
+                            <Link className="primary-action" to="/account">{t("마이 페이지에서 장착")}</Link>
+                          ) : null}
+                        </div>
+                      </>
+                    ) : null}
+                  </aside>
                 </div>
+
+                <section className="collection-set-showcase" aria-labelledby="collection-set-title">
+                  <header>
+                    <div><small>THEMED SERIES</small><h3 id="collection-set-title">{t("테마 컬렉션")}</h3></div>
+                    <p>{t("같은 테마의 꾸미기를 한눈에 확인하세요.")}</p>
+                  </header>
+                  <div className="collection-set-grid">
+                    {[...new Set(economy.catalog.map((item) => item.collectionKey).filter((key): key is string => key !== null))].map((collectionKey) => {
+                      const items = economy.catalog.filter((item) => item.collectionKey === collectionKey);
+                      const owned = items.filter((item) => item.owned).length;
+                      return (
+                        <article className="collection-set-card" key={collectionKey}>
+                          <div className="collection-set-copy"><small>COLLECTION</small><h4>{collectionKey.toUpperCase()}</h4></div>
+                          <div className="collection-set-previews">
+                            {items.slice(0, 5).map((item) => <CosmeticPreview key={item.id} item={item} />)}
+                          </div>
+                          <strong>{owned} / {items.length}</strong>
+                        </article>
+                      );
+                    })}
+                  </div>
+                </section>
               </section>
             )}
 

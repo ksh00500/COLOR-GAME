@@ -21,7 +21,7 @@ export function CosmeticPreview({ item, className = "", label }: CosmeticPreview
   } as CSSProperties;
   return (
     <span
-      className={`atelier-cosmetic-preview atelier-cosmetic-preview-${item.category} preset-${item.preset ?? "default"} ${className}`}
+      className={`atelier-cosmetic-preview atelier-cosmetic-preview-${item.category} preset-${item.preset ?? "default"} rarity-${item.rarity} ${className}`}
       style={style}
       role="img"
       aria-label={label}

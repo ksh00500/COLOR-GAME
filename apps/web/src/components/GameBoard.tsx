@@ -99,6 +99,7 @@ export function GameBoard({
         <i className="board-surface-inlay" />
         <i className="board-surface-emblem" />
         <i className="board-surface-light" />
+        <i className="board-surface-pattern" />
       </span>
       <div
         className="game-board"
@@ -129,6 +130,8 @@ export function GameBoard({
                 role="gridcell"
                 key={key}
                 data-cell-index={index}
+                data-cell-row={rowIndex}
+                data-cell-col={colIndex}
                 tabIndex={index === focusedIndex ? 0 : -1}
                 className={`board-cell ${cell ?? "empty"} ${scoring ? "scoring" : ""} ${placed ? "placed" : ""} ${opponentLast ? "opponent-last" : ""} ${invalid ? "invalid" : ""}`}
                 aria-label={label}
@@ -146,6 +149,7 @@ export function GameBoard({
                   }
                 }}
               >
+                <span className="board-cell-material" aria-hidden="true" />
                 {cell !== null && (
                   <span className="tile-face">
                     {showShapes ? shapeForColor[cell] : ""}

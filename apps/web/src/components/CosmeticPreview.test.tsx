@@ -34,6 +34,7 @@ describe("CosmeticPreview", () => {
       const html = renderToStaticMarkup(<CosmeticPreview item={cosmetic(category)} label="preview" />);
 
       expect(html).toContain(`atelier-cosmetic-preview-${category}`);
+      expect(html).toContain("rarity-common");
       expect(html).not.toMatch(/class="cosmetic-preview(?:\s|")/);
       expect(html).toContain('aria-label="preview"');
     },
@@ -43,6 +44,8 @@ describe("CosmeticPreview", () => {
     const html = renderToStaticMarkup(<CosmeticPreview item={cosmetic("board_theme")} label="board" />);
 
     expect((html.match(/<i/g) ?? [])).toHaveLength(25);
+    expect(html).toContain("atelier-cosmetic-preview-board-shell");
+    expect(html).toContain("preview-board-inlay");
     expect(html).toContain("sample-a");
     expect(html).toContain("sample-b");
     expect(html).toContain("sample-c");
