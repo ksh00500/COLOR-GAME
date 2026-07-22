@@ -35,11 +35,12 @@ sudo systemctl enable --now color-game-server
 
 sudo cp deploy/ec2/nginx-color-game.conf.example /etc/nginx/conf.d/color-game.conf
 sudo cp deploy/ec2/nginx-color-game-locations.inc.example /etc/nginx/conf.d/color-game-locations.inc
+sudo cp deploy/ec2/nginx-color-game-security-headers.inc.example /etc/nginx/conf.d/color-game-security-headers.inc
 sudo nginx -t
 sudo systemctl reload nginx
 ```
 
-HTTPS 설정은 `colortile.kro.kr`과 `tangogame.kro.kr`의 Certbot 인증서를 사용하며 HTTP와 HTTPS를 모두 제공합니다.
+HTTPS 설정은 `colortile.kro.kr`과 `tangogame.kro.kr`의 Certbot 인증서를 사용합니다. HTTP 요청은 ACME 인증 경로를 제외하고 정식 HTTPS 주소로 영구 리다이렉트하며, HTTPS 응답에는 HSTS·CSP·클릭재킹 방지 등의 보안 헤더를 적용합니다.
 
 인증서 갱신 뒤 Nginx가 새 인증서를 즉시 읽도록 `reload-nginx-after-cert-renewal.sh`를 `/etc/letsencrypt/renewal-hooks/deploy/`에 실행 가능하게 설치합니다.
 

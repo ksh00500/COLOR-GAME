@@ -35,6 +35,7 @@ interface RoomAck {
   ok: boolean;
   room?: RoomSnapshot;
   playerId?: string;
+  reconnectToken?: string;
   error?: ServerError;
 }
 
@@ -52,6 +53,7 @@ interface PlayerProfile {
 
 const profileKey = "color-game-player-profile";
 const roomPlayerPrefix = "color-game-room-player:";
+const roomReconnectPrefix = "color-game-room-reconnect:";
 const roomSnapshotPrefix = "color-game-room-snapshot:";
 
 const defaultProfile = (): PlayerProfile => ({
@@ -82,6 +84,9 @@ const saveRoomPlayer = (code: string, playerId: string) => {
 
 const readRoomPlayer = (code: string): string | null =>
   window.localStorage.getItem(`${roomPlayerPrefix}${code}`);
+
+const readReconnectToken = (code: string): string | null =>
+  window.localStorage.getItem(`${roomReconnectPrefix}${code}`);
 
 const saveRoomSnapshot = (room: RoomSnapshot) => {
   try {
@@ -261,11 +266,18 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
     }
   }, []);
 
-  const rememberPlayer = useCallback((code: string, nextPlayerId: string) => {
+  const rememberPlayer = useCallback((
+    code: string,
+    nextPlayerId: string,
+    reconnectToken?: string,
+  ) => {
     roomCodeRef.current = code;
     playerIdRef.current = nextPlayerId;
     setPlayerId(nextPlayerId);
     saveRoomPlayer(code, nextPlayerId);
+    if (reconnectToken !== undefined) {
+      window.localStorage.setItem(`${roomReconnectPrefix}${code}`, reconnectToken);
+    }
   }, []);
 
   useEffect(() => clearEffectTimers, [clearEffectTimers]);
@@ -287,10 +299,15 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
       const reconnectCode = roomCodeRef.current || initialCode;
       const reconnectPlayerId = playerIdRef.current
         ?? (reconnectCode === "" ? null : readRoomPlayer(reconnectCode));
-      if (reconnectCode !== "" && reconnectPlayerId !== null) {
-        socket.emit("game:reconnect", { code: reconnectCode, playerId: reconnectPlayerId }, (response: RoomAck) => {
+      const reconnectToken = reconnectCode === "" ? null : readReconnectToken(reconnectCode);
+      if (reconnectCode !== "" && reconnectPlayerId !== null && reconnectToken !== null) {
+        socket.emit("game:reconnect", {
+          code: reconnectCode,
+          playerId: reconnectPlayerId,
+          reconnectToken,
+        }, (response: RoomAck) => {
           if (response.ok && response.room !== undefined) {
-            rememberPlayer(response.room.code, reconnectPlayerId);
+            rememberPlayer(response.room.code, reconnectPlayerId, response.reconnectToken ?? reconnectToken);
             applyRoom(response.room);
             return;
           }
@@ -307,6 +324,11 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
     });
     socket.on("game:state", (nextRoom: RoomSnapshot) => applyRoom(nextRoom));
     socket.on("game:error", (error: ServerError) => setMessage(describeError(error)));
+    socket.on("game:session-replaced", () => {
+      playerIdRef.current = null;
+      setPlayerId(null);
+      setMessage("다른 창에서 이 경기에 다시 연결했습니다.");
+    });
 
     return () => {
       socket.disconnect();
@@ -407,7 +429,7 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
         setMessage(describeError(response.error));
         return;
       }
-      rememberPlayer(response.room.code, response.playerId);
+      rememberPlayer(response.room.code, response.playerId, response.reconnectToken);
       applyRoom(response.room);
       navigate(`/private?code=${response.room.code}`, { replace: true });
     });
@@ -425,7 +447,7 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
         setMessage(describeError(response.error));
         return;
       }
-      rememberPlayer(response.room.code, response.playerId);
+      rememberPlayer(response.room.code, response.playerId, response.reconnectToken);
       applyRoom(response.room);
       navigate(`/private?code=${response.room.code}`, { replace: true });
     });

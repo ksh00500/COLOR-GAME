@@ -125,6 +125,38 @@ describe("GameRoomService", () => {
     expect(room.game?.config.turnTimeLimitSeconds).toBe(60);
   });
 
+  it("rejects the same account or signed guest identity in both private-room slots", () => {
+    const accountHarness = createDeterministicService();
+    const accountRoom = accountHarness.service.createRoom({
+      ...profile("Host"),
+      accountId: "account-1",
+      isGuest: false,
+    });
+    const accountDuplicate = accountHarness.service.joinRoom(accountRoom.code, {
+      ...profile("Second tab"),
+      accountId: "account-1",
+      isGuest: false,
+    });
+    expect(accountDuplicate.ok).toBe(false);
+    if (!accountDuplicate.ok) {
+      expect(accountDuplicate.error.code).toBe("DUPLICATE_PLAYER_IDENTITY");
+    }
+
+    const guestHarness = createDeterministicService();
+    const guestRoom = guestHarness.service.createRoom({
+      ...profile("Guest host"),
+      guestId: "signed-guest-1",
+    });
+    const guestDuplicate = guestHarness.service.joinRoom(guestRoom.code, {
+      ...profile("Guest second tab"),
+      guestId: "signed-guest-1",
+    });
+    expect(guestDuplicate.ok).toBe(false);
+    if (!guestDuplicate.ok) {
+      expect(guestDuplicate.error.code).toBe("DUPLICATE_PLAYER_IDENTITY");
+    }
+  });
+
   it("snapshots the performers' public placement and score effects", () => {
     const { service } = createDeterministicService();
     const cosmetics = {

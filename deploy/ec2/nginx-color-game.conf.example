@@ -3,7 +3,13 @@ server {
   listen [::]:80;
   server_name colortile.kro.kr tangogame.kro.kr 3.26.178.31;
 
-  include /etc/nginx/conf.d/color-game-locations.inc;
+  root /srv/color-game/COLOR-GAME/apps/web/dist;
+  location /.well-known/acme-challenge/ {
+    try_files $uri =404;
+  }
+  location / {
+    return 308 https://tangogame.kro.kr$request_uri;
+  }
 }
 
 server {
@@ -17,6 +23,7 @@ server {
   ssl_session_cache shared:ColorGameTLS:10m;
   ssl_session_timeout 1d;
 
+  include /etc/nginx/conf.d/color-game-security-headers.inc;
   include /etc/nginx/conf.d/color-game-locations.inc;
 }
 
@@ -31,5 +38,6 @@ server {
   ssl_session_cache shared:ColorGameTLS:10m;
   ssl_session_timeout 1d;
 
+  include /etc/nginx/conf.d/color-game-security-headers.inc;
   include /etc/nginx/conf.d/color-game-locations.inc;
 }

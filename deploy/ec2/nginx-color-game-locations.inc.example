@@ -6,16 +6,19 @@ location /.well-known/acme-challenge/ {
 }
 
 location = /index.html {
+  include /etc/nginx/conf.d/color-game-security-headers.inc;
   add_header Cache-Control "no-cache, no-store, must-revalidate" always;
 }
 
 location ~* \.(?:css|js|gif|ico|jpe?g|png|svg|woff2?|map|json)$ {
+  include /etc/nginx/conf.d/color-game-security-headers.inc;
   expires 1y;
   add_header Cache-Control "public, immutable";
   try_files $uri =404;
 }
 
 location / {
+  include /etc/nginx/conf.d/color-game-security-headers.inc;
   add_header Cache-Control "no-cache" always;
   try_files $uri $uri/ /index.html;
 }

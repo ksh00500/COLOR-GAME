@@ -9,6 +9,7 @@ import { createAppSocket } from "../socket";
 import { useI18n } from "../i18n";
 
 const roomPlayerPrefix = "color-game-room-player:";
+const roomReconnectPrefix = "color-game-room-reconnect:";
 
 const segmentLabels: Record<MatchmakingSegment, string> = {
   guest: "게스트",
@@ -44,6 +45,7 @@ interface MatchEvent {
   ok: boolean;
   room: RoomSnapshot;
   playerId: string;
+  reconnectToken: string;
 }
 
 export function MatchmakingPage() {
@@ -80,7 +82,13 @@ export function MatchmakingPage() {
     });
     socket.on("matchmaking:matched", (event: MatchEvent) => {
       window.localStorage.setItem(`${roomPlayerPrefix}${event.room.code}`, event.playerId);
+      window.localStorage.setItem(`${roomReconnectPrefix}${event.room.code}`, event.reconnectToken);
       navigate(`/match?code=${event.room.code}&mode=${mode}`, { replace: true });
+    });
+    socket.on("matchmaking:replaced", () => {
+      setQueued(false);
+      setQueuedAt(null);
+      setStatus("다른 창에서 매칭을 시작해 이 대기열을 종료했습니다.");
     });
 
     return () => {

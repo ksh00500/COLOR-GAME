@@ -392,6 +392,7 @@ const request = async <T>(
 export const deleteAccount = async (input: {
   password?: string;
   confirmation?: "DELETE";
+  idToken?: string;
 }): Promise<void> => {
   await request<void>("/auth/account", {
     method: "DELETE",

@@ -8,7 +8,7 @@ import type {
   PublicProfile,
 } from "./auth-store.js";
 import type { AnalyticsStore, VisitorCounts } from "./analytics-store.js";
-import { createServer } from "./server.js";
+import { createReconnectToken, createServer, verifyReconnectToken } from "./server.js";
 import type { RoomSnapshot } from "@color-game/shared-types";
 import type {
   GoogleTokenVerifier,
@@ -522,13 +522,84 @@ describe("auth routes", () => {
     });
     expect(missingConfirmation.statusCode).toBe(400);
 
-    const deleted = await app.inject({
+    const missingReauthentication = await app.inject({
       method: "DELETE",
       url: "/auth/account",
       headers: { authorization: `Bearer ${googleToken}` },
       payload: { confirmation: "DELETE" },
     });
+    expect(missingReauthentication.statusCode).toBe(400);
+    expect(missingReauthentication.json<{ code: string }>().code).toBe("GOOGLE_REAUTH_REQUIRED");
+
+    const invalidReauthentication = await app.inject({
+      method: "DELETE",
+      url: "/auth/account",
+      headers: { authorization: `Bearer ${googleToken}` },
+      payload: { confirmation: "DELETE", idToken: "invalid-google-token".repeat(10) },
+    });
+    expect(invalidReauthentication.statusCode).toBe(403);
+
+    const deleted = await app.inject({
+      method: "DELETE",
+      url: "/auth/account",
+      headers: { authorization: `Bearer ${googleToken}` },
+      payload: { confirmation: "DELETE", idToken },
+    });
     expect(deleted.statusCode).toBe(204);
+  });
+
+  it("signs reconnect capabilities and rejects tampering or expiry", () => {
+    const secret = "test-auth-secret-with-more-than-32-characters";
+    const now = Date.UTC(2026, 6, 22);
+    const token = createReconnectToken({
+      code: "abcd12",
+      playerId: "player-1",
+      subjectType: "account",
+      subjectId: "account-1",
+    }, secret, now);
+
+    expect(verifyReconnectToken(token, secret, now)).toMatchObject({
+      code: "ABCD12",
+      playerId: "player-1",
+      subjectType: "account",
+      subjectId: "account-1",
+    });
+    expect(verifyReconnectToken(`${token.slice(0, -1)}x`, secret, now)).toBeNull();
+    expect(verifyReconnectToken(token, secret, now + 86_400_000)).toBeNull();
+  });
+
+  it("does not allow arbitrary origins when CORS is not configured", async () => {
+    const { app } = createServer();
+    apps.push(app);
+    const response = await app.inject({
+      method: "OPTIONS",
+      url: "/auth/login",
+      headers: {
+        origin: "https://attacker.example",
+        "access-control-request-method": "POST",
+      },
+    });
+    expect(response.headers["access-control-allow-origin"]).toBeUndefined();
+  });
+
+  it("rate limits repeated authentication attempts", async () => {
+    const { app } = createServer({ accountStore: new MemoryAccountStore() });
+    apps.push(app);
+    for (let attempt = 0; attempt < 10; attempt += 1) {
+      const response = await app.inject({
+        method: "POST",
+        url: "/auth/login",
+        payload: { email: "missing@example.com", password: "password123" },
+      });
+      expect(response.statusCode).toBe(401);
+    }
+    const limited = await app.inject({
+      method: "POST",
+      url: "/auth/login",
+      payload: { email: "missing@example.com", password: "password123" },
+    });
+    expect(limited.statusCode).toBe(429);
+    expect(limited.json<{ code: string }>().code).toBe("RATE_LIMITED");
   });
 
   it("requires the existing password before linking a matching Google email", async () => {

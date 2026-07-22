@@ -10,7 +10,15 @@ import { createServer, type ServerOptions } from "./server.js";
 
 const port = Number.parseInt(process.env.PORT ?? "8080", 10);
 const host = process.env.HOST ?? "0.0.0.0";
-const corsOrigin = process.env.CORS_ORIGIN?.split(",").map((origin) => origin.trim());
+const configuredCorsOrigins = process.env.CORS_ORIGIN
+  ?.split(",")
+  .map((origin) => origin.trim())
+  .filter((origin) => origin.length > 0);
+const corsOrigin = configuredCorsOrigins !== undefined && configuredCorsOrigins.length > 0
+  ? configuredCorsOrigins
+  : process.env.NODE_ENV === "production"
+    ? null
+    : ["http://localhost:5173", "http://127.0.0.1:5173"];
 const databaseRequired = process.env.DATABASE_REQUIRED === "true";
 const authSecret = process.env.AUTH_SECRET
   ?? (process.env.NODE_ENV === "production" ? undefined : "dev-only-color-game-secret-for-local-development");
@@ -34,6 +42,11 @@ if (authSecret === undefined || authSecret.length < 32) {
   process.exit(1);
 }
 
+if (corsOrigin === null) {
+  console.error("CORS_ORIGIN must list explicit trusted origins in production.");
+  process.exit(1);
+}
+
 const roomService = new GameRoomService();
 const serverOptions: ServerOptions = {
   roomService,
@@ -46,11 +59,8 @@ const serverOptions: ServerOptions = {
   googleTokenVerifier,
   authSecret,
   requireDatabaseHealth,
+  corsOrigin,
 };
-
-if (corsOrigin !== undefined) {
-  serverOptions.corsOrigin = corsOrigin;
-}
 
 const { app } = createServer(serverOptions);
 

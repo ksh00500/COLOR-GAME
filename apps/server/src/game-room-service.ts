@@ -1,3 +1,4 @@
+import { randomInt } from "node:crypto";
 import {
   DEFAULT_GAME_CONFIG,
   createInitialGame,
@@ -45,6 +46,7 @@ export interface PlayerProfile {
 export type RoomErrorCode =
   | "ROOM_NOT_FOUND"
   | "ROOM_FULL"
+  | "DUPLICATE_PLAYER_IDENTITY"
   | "PLAYER_NOT_IN_ROOM"
   | "GAME_NOT_STARTED"
   | "GAME_ALREADY_STARTED"
@@ -332,6 +334,18 @@ export class GameRoomService {
     const room = this.rooms.get(code);
     if (room === undefined) {
       return { ok: false, error: makeError("ROOM_NOT_FOUND", "Room was not found.") };
+    }
+    const host = room.players[0];
+    const duplicatesAccount = profile.accountId != null && host.accountId === profile.accountId;
+    const duplicatesGuest = profile.guestId != null && host.guestId === profile.guestId;
+    if (duplicatesAccount || duplicatesGuest) {
+      return {
+        ok: false,
+        error: makeError(
+          "DUPLICATE_PLAYER_IDENTITY",
+          "The same account or guest cannot occupy both player slots.",
+        ),
+      };
     }
     if (room.players[1] !== null) {
       return { ok: false, error: makeError("ROOM_FULL", "Room already has two players.") };
@@ -684,7 +698,7 @@ export class GameRoomService {
   private generateRoomCode(): string {
     const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     return Array.from({ length: 6 }, () => {
-      const index = Math.floor(Math.random() * alphabet.length);
+      const index = randomInt(alphabet.length);
       return alphabet[index] ?? "A";
     }).join("");
   }

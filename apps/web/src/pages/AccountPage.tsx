@@ -241,13 +241,16 @@ export function AccountPage({ deletionEntry = false }: { deletionEntry?: boolean
     setGoogleStep(null);
   };
 
-  const removeAccount = async () => {
+  const removeAccount = async (googleIdToken?: string) => {
     setDeleteBusy(true);
     setMessage(null);
     try {
       await deleteAccount(authMethods.password
         ? { password: deletePassword }
-        : { confirmation: "DELETE" });
+        : {
+            confirmation: "DELETE",
+            ...(googleIdToken === undefined ? {} : { idToken: googleIdToken }),
+          });
       setDeleteOpen(false);
       setDeletePassword("");
       setAccount(null);
@@ -588,14 +591,23 @@ export function AccountPage({ deletionEntry = false }: { deletionEntry?: boolean
                 />
               </label>
             ) : (
-              <p>{t("Google 로그인을 다시 사용할 수 없으며 모든 데이터가 즉시 삭제됩니다.")}</p>
+              <>
+                <p>{t("계정을 삭제하려면 Google 계정으로 다시 인증해 주세요.")}</p>
+                <GoogleSignInButton
+                  busy={deleteBusy}
+                  onCredential={(idToken) => void removeAccount(idToken)}
+                  onError={setMessage}
+                />
+              </>
             )}
             {message !== null && <p className="online-message">{t(message)}</p>}
             <div className="result-actions">
               <button className="secondary-action" type="button" onClick={() => setDeleteOpen(false)}>{t("취소")}</button>
-              <button className="danger-action" type="button" disabled={deleteBusy || (authMethods.password && deletePassword.length < 8)} onClick={() => void removeAccount()}>
-                {t(deleteBusy ? "삭제 처리 중" : "영구 삭제")}
-              </button>
+              {authMethods.password && (
+                <button className="danger-action" type="button" disabled={deleteBusy || deletePassword.length < 8} onClick={() => void removeAccount()}>
+                  {t(deleteBusy ? "삭제 처리 중" : "영구 삭제")}
+                </button>
+              )}
             </div>
           </section>
         </div>

@@ -77,10 +77,50 @@ export interface ServerOptions {
 interface QueuedPlayer {
   socketId: string;
   accountId: string | null;
+  identityKey: string;
   profile: PlayerProfile;
   queuedAt: number;
   segment: MatchmakingSegment;
 }
+
+interface ReconnectTokenPayload {
+  code: string;
+  playerId: string;
+  subjectType: "account" | "guest";
+  subjectId: string;
+  exp: number;
+}
+
+interface RatePolicy {
+  key: string;
+  max: number;
+  windowMs: number;
+}
+
+const httpRatePolicy = (method: string, path: string): RatePolicy => {
+  if (method === "POST" && path === "/admin/auth/login") {
+    return { key: "admin-auth", max: 5, windowMs: 15 * 60_000 };
+  }
+  if (
+    (method === "POST" && [
+      "/auth/guest",
+      "/auth/register",
+      "/auth/login",
+      "/auth/google",
+      "/auth/google/link",
+    ].includes(path))
+    || (method === "DELETE" && path === "/auth/account")
+  ) {
+    return { key: "auth", max: 10, windowMs: 60_000 };
+  }
+  if (method === "POST" && path === "/coupons/redeem") {
+    return { key: "coupon", max: 10, windowMs: 60_000 };
+  }
+  if (method === "POST" && path === "/analytics/heartbeat") {
+    return { key: "analytics", max: 60, windowMs: 60_000 };
+  }
+  return { key: "general", max: 240, windowMs: 60_000 };
+};
 
 const toClientError = (error: RoomError) => ({
   code: error.code,
@@ -117,6 +157,7 @@ const analyticsHeartbeatSchema = z.object({
 const deleteAccountSchema = z.object({
   password: z.string().min(8).max(128).optional(),
   confirmation: z.literal("DELETE").optional(),
+  idToken: z.string().min(100).max(10_000).optional(),
 });
 
 const googleAuthSchema = z.object({
@@ -312,6 +353,57 @@ export const verifyGuestToken = (token: string, secret: string): string | null =
   return timingSafeEqual(actualBytes, expectedBytes) ? guestId : null;
 };
 
+export const createReconnectToken = (
+  input: Omit<ReconnectTokenPayload, "exp">,
+  secret: string,
+  now = Date.now(),
+): string => {
+  const payload = Buffer.from(JSON.stringify({
+    ...input,
+    code: input.code.toUpperCase(),
+    exp: Math.floor(now / 1_000) + 86_400,
+  } satisfies ReconnectTokenPayload)).toString("base64url");
+  const signature = createHmac("sha256", secret).update(payload).digest("base64url");
+  return `${payload}.${signature}`;
+};
+
+export const verifyReconnectToken = (
+  token: string,
+  secret: string,
+  now = Date.now(),
+): ReconnectTokenPayload | null => {
+  if (token.length > 2_048) return null;
+  const [payload, signature, extra] = token.split(".");
+  if (payload === undefined || signature === undefined || extra !== undefined) return null;
+  const expected = createHmac("sha256", secret).update(payload).digest("base64url");
+  const actualBytes = Buffer.from(signature);
+  const expectedBytes = Buffer.from(expected);
+  if (
+    actualBytes.length !== expectedBytes.length
+    || !timingSafeEqual(actualBytes, expectedBytes)
+  ) return null;
+
+  try {
+    const parsed = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as Partial<ReconnectTokenPayload>;
+    if (
+      typeof parsed.code !== "string"
+      || !/^[A-Z0-9]{4,12}$/.test(parsed.code)
+      || typeof parsed.playerId !== "string"
+      || parsed.playerId.length < 1
+      || parsed.playerId.length > 128
+      || (parsed.subjectType !== "account" && parsed.subjectType !== "guest")
+      || typeof parsed.subjectId !== "string"
+      || parsed.subjectId.length < 1
+      || parsed.subjectId.length > 128
+      || typeof parsed.exp !== "number"
+      || parsed.exp <= Math.floor(now / 1_000)
+    ) return null;
+    return parsed as ReconnectTokenPayload;
+  } catch {
+    return null;
+  }
+};
+
 const bearerToken = (authorization: unknown): string | null => {
   if (typeof authorization !== "string") return null;
   const [scheme, token] = authorization.split(" ");
@@ -362,7 +454,7 @@ const publicAccount = (account: AccountSummary) => ({
 });
 
 export const createServer = (options: ServerOptions = {}) => {
-  const app = Fastify({ logger: true });
+  const app = Fastify({ logger: true, trustProxy: "127.0.0.1" });
   const roomService = options.roomService ?? new GameRoomService();
   const historyStore = options.historyStore ?? new NullGameHistoryStore();
   const accountStore = options.accountStore ?? new NullAccountStore();
@@ -382,16 +474,52 @@ export const createServer = (options: ServerOptions = {}) => {
     casual: [],
     ranked: [],
   };
+  const socketRateWindows = new Map<string, { count: number; resetAt: number }>();
+  const httpRateWindows = new Map<string, { count: number; resetAt: number }>();
   const roomPersistence = new RoomPersistenceCoordinator(historyStore);
   const io = new Server(app.server, {
     cors: {
-      origin: options.corsOrigin ?? true,
+      origin: options.corsOrigin ?? false,
     },
   });
 
   void app.register(cors, {
-    origin: options.corsOrigin ?? true,
+    origin: options.corsOrigin ?? false,
     methods: ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  });
+  app.addHook("onRequest", async (request, reply) => {
+    if (request.method === "OPTIONS") return;
+    const path = request.url.split("?", 1)[0] ?? request.url;
+    const policy = httpRatePolicy(request.method, path);
+    const key = `${policy.key}:${request.ip}`;
+    const now = Date.now();
+    const current = httpRateWindows.get(key);
+    if (current === undefined || current.resetAt <= now) {
+      httpRateWindows.set(key, { count: 1, resetAt: now + policy.windowMs });
+      return;
+    }
+    current.count += 1;
+    if (httpRateWindows.size > 2_000) {
+      for (const [entryKey, entry] of httpRateWindows) {
+        if (entry.resetAt <= now) httpRateWindows.delete(entryKey);
+      }
+      while (httpRateWindows.size > 5_000) {
+        const oldestKey = httpRateWindows.keys().next().value as string | undefined;
+        if (oldestKey === undefined) break;
+        httpRateWindows.delete(oldestKey);
+      }
+    }
+    if (current.count <= policy.max) return;
+    const retryAfterSeconds = Math.max(1, Math.ceil((current.resetAt - now) / 1_000));
+    return reply
+      .header("Retry-After", retryAfterSeconds)
+      .code(429)
+      .send({
+        statusCode: 429,
+        code: "RATE_LIMITED",
+        error: "Too Many Requests",
+        message: `Too many requests. Try again in ${retryAfterSeconds} seconds.`,
+      });
   });
 
   const recordFinishedRoom = async (room: RoomSnapshot): Promise<void> => {
@@ -514,6 +642,23 @@ export const createServer = (options: ServerOptions = {}) => {
     }
   };
 
+  const removeIdentityFromMatchmaking = (identityKey: string, exceptSocketId?: string): void => {
+    for (const mode of ["casual", "ranked"] as const) {
+      const removed = matchmakingQueues[mode].filter(
+        (queued) => queued.identityKey === identityKey && queued.socketId !== exceptSocketId,
+      );
+      matchmakingQueues[mode] = matchmakingQueues[mode].filter(
+        (queued) => queued.identityKey !== identityKey || queued.socketId === exceptSocketId,
+      );
+      for (const queued of removed) {
+        io.sockets.sockets.get(queued.socketId)?.emit("matchmaking:replaced", {
+          code: "MATCHMAKING_SESSION_REPLACED",
+        });
+      }
+      metrics.setQueueDepth(mode, matchmakingQueues[mode].length);
+    }
+  };
+
   const clampWaitSeconds = (waitMs: number): number =>
     Math.max(5, Math.min(120, Math.round(waitMs / 1_000)));
 
@@ -564,6 +709,89 @@ export const createServer = (options: ServerOptions = {}) => {
   const getSocketAccount = (socket: Socket): AccountSummary | null => {
     const account = socket.data.account;
     return account === undefined ? null : account as AccountSummary;
+  };
+
+  const getSocketIdentity = (socket: Socket): {
+    type: "account" | "guest";
+    id: string;
+    key: string;
+  } => {
+    const account = getSocketAccount(socket);
+    if (account !== null) {
+      return { type: "account", id: account.id, key: `account:${account.id}` };
+    }
+    const guestId = typeof socket.data.guestId === "string" ? socket.data.guestId : "unknown";
+    return { type: "guest", id: guestId, key: `guest:${guestId}` };
+  };
+
+  const reconnectTokenFor = (socket: Socket, code: string, playerId: string): string => {
+    const identity = getSocketIdentity(socket);
+    return createReconnectToken({
+      code,
+      playerId,
+      subjectType: identity.type,
+      subjectId: identity.id,
+    }, authSecret);
+  };
+
+  const socketRateLimitError = {
+    code: "RATE_LIMITED",
+    message: "Too many realtime requests. Please try again shortly.",
+    gameErrorCode: null,
+  };
+
+  const consumeSocketRateLimit = (
+    socket: Socket,
+    action: string,
+    max: number,
+    windowMs = 60_000,
+  ): boolean => {
+    const forwarded = socket.handshake.headers["x-forwarded-for"];
+    const peerAddress = socket.handshake.address || "unknown";
+    const fromLocalProxy = ["127.0.0.1", "::1", "::ffff:127.0.0.1"].includes(peerAddress);
+    const forwardedIp = fromLocalProxy && typeof forwarded === "string"
+      ? forwarded.split(",")[0]?.trim()
+      : null;
+    const ip = (forwardedIp || peerAddress).slice(0, 64);
+    const identity = getSocketIdentity(socket);
+    const key = `${action}:${identity.type === "account" ? identity.key : `ip:${ip}`}`;
+    const now = Date.now();
+    const current = socketRateWindows.get(key);
+    if (current === undefined || current.resetAt <= now) {
+      socketRateWindows.set(key, { count: 1, resetAt: now + windowMs });
+      return true;
+    }
+    current.count += 1;
+    if (socketRateWindows.size > 2_000) {
+      for (const [entryKey, entry] of socketRateWindows) {
+        if (entry.resetAt <= now) socketRateWindows.delete(entryKey);
+      }
+      while (socketRateWindows.size > 5_000) {
+        const oldestKey = socketRateWindows.keys().next().value as string | undefined;
+        if (oldestKey === undefined) break;
+        socketRateWindows.delete(oldestKey);
+      }
+    }
+    return current.count <= max;
+  };
+
+  const takeOpponent = (
+    mode: MatchmakingMode,
+    identityKey: string,
+  ): QueuedPlayer | undefined => {
+    const queue = matchmakingQueues[mode];
+    while (queue.length > 0) {
+      const candidate = queue.shift();
+      if (candidate === undefined) return undefined;
+      if (candidate.identityKey === identityKey) {
+        io.sockets.sockets.get(candidate.socketId)?.emit("matchmaking:replaced", {
+          code: "MATCHMAKING_SESSION_REPLACED",
+        });
+        continue;
+      }
+      if (io.sockets.sockets.has(candidate.socketId)) return candidate;
+    }
+    return undefined;
   };
 
   const emitMatch = (
@@ -617,8 +845,18 @@ export const createServer = (options: ServerOptions = {}) => {
       });
     }
     persistRoomLater(room, "Failed to persist matched room");
-    firstSocket.emit("matchmaking:matched", { ok: true, room, playerId: firstPlayer.id });
-    secondSocket.emit("matchmaking:matched", { ok: true, room, playerId: secondPlayer.id });
+    firstSocket.emit("matchmaking:matched", {
+      ok: true,
+      room,
+      playerId: firstPlayer.id,
+      reconnectToken: reconnectTokenFor(firstSocket, room.code, firstPlayer.id),
+    });
+    secondSocket.emit("matchmaking:matched", {
+      ok: true,
+      room,
+      playerId: secondPlayer.id,
+      reconnectToken: reconnectTokenFor(secondSocket, room.code, secondPlayer.id),
+    });
     io.to(room.code).emit("game:state", room);
   };
 
@@ -919,8 +1157,24 @@ export const createServer = (options: ServerOptions = {}) => {
       if (verified?.id !== account.id) {
         return reply.code(403).send({ code: "INVALID_PASSWORD", message: "Password is invalid." });
       }
-    } else if (parsed.data.confirmation !== "DELETE") {
-      return reply.code(400).send({ code: "DELETE_CONFIRMATION_REQUIRED" });
+    } else {
+      if (parsed.data.confirmation !== "DELETE") {
+        return reply.code(400).send({ code: "DELETE_CONFIRMATION_REQUIRED" });
+      }
+      if (parsed.data.idToken === undefined) {
+        return reply.code(400).send({ code: "GOOGLE_REAUTH_REQUIRED" });
+      }
+      if (!googleTokenVerifier.enabled) {
+        return reply.code(503).send({ code: "GOOGLE_AUTH_DISABLED" });
+      }
+      const identity = await googleTokenVerifier.verify(parsed.data.idToken);
+      if (identity === null) {
+        return reply.code(403).send({ code: "INVALID_GOOGLE_TOKEN" });
+      }
+      const googleAccount = await accountStore.getAccountByGoogleSubject(identity.subject);
+      if (googleAccount?.id !== account.id) {
+        return reply.code(403).send({ code: "GOOGLE_ACCOUNT_MISMATCH" });
+      }
     }
 
     const activeGameSocket = [...io.sockets.sockets.values()].some((socket) => {
@@ -1710,6 +1964,10 @@ export const createServer = (options: ServerOptions = {}) => {
 
     socket.on("room:create", (payload, callback?: (response: unknown) => void) => {
       void (async () => {
+        if (!consumeSocketRateLimit(socket, "room:create", 10)) {
+          callback?.({ ok: false, error: socketRateLimitError });
+          return;
+        }
         const parsed = roomCreateSchema.safeParse(payload ?? {});
         if (!parsed.success) {
           callback?.({ ok: false, error: parsed.error.flatten() });
@@ -1760,7 +2018,12 @@ export const createServer = (options: ServerOptions = {}) => {
         metrics.roomCreated();
         persistRoomLater(room, "Failed to persist created room");
         io.to(room.code).emit("game:state", room);
-        callback?.({ ok: true, room, playerId: host.id });
+        callback?.({
+          ok: true,
+          room,
+          playerId: host.id,
+          reconnectToken: reconnectTokenFor(socket, room.code, host.id),
+        });
       })().catch((error: unknown) => {
         app.log.error({ err: error }, "Failed to create room");
         callback?.({ ok: false, error: { code: "ROOM_CREATE_FAILED" } });
@@ -1768,6 +2031,10 @@ export const createServer = (options: ServerOptions = {}) => {
     });
 
     socket.on("room:join", async (payload, callback?: (response: unknown) => void) => {
+      if (!consumeSocketRateLimit(socket, "room:join", 30)) {
+        callback?.({ ok: false, error: socketRateLimitError });
+        return;
+      }
       const parsed = roomJoinSchema.safeParse(payload ?? {});
       if (!parsed.success) {
         callback?.({ ok: false, error: parsed.error.flatten() });
@@ -1793,7 +2060,14 @@ export const createServer = (options: ServerOptions = {}) => {
       socket.join(result.value.code);
       persistRoomLater(result.value, "Failed to persist joined room");
       io.to(result.value.code).emit("game:state", result.value);
-      callback?.({ ok: true, room: result.value, playerId: joinedPlayer?.id });
+      callback?.({
+        ok: true,
+        room: result.value,
+        playerId: joinedPlayer?.id,
+        reconnectToken: joinedPlayer == null
+          ? undefined
+          : reconnectTokenFor(socket, result.value.code, joinedPlayer.id),
+      });
     });
 
     socket.on("room:ready", (payload, callback?: (response: unknown) => void) => {
@@ -1820,6 +2094,10 @@ export const createServer = (options: ServerOptions = {}) => {
     });
 
     socket.on("room:spectate", (payload, callback?: (response: unknown) => void) => {
+      if (!consumeSocketRateLimit(socket, "room:spectate", 60)) {
+        callback?.({ ok: false, error: socketRateLimitError });
+        return;
+      }
       const parsed = z.object({ code: z.string().trim().toUpperCase().min(4).max(12) }).safeParse(payload ?? {});
       if (!parsed.success) {
         callback?.({ ok: false, error: parsed.error.flatten() });
@@ -1845,6 +2123,10 @@ export const createServer = (options: ServerOptions = {}) => {
     });
 
     socket.on("game:move", (payload, callback?: (response: unknown) => void) => {
+      if (!consumeSocketRateLimit(socket, "game:move", 120)) {
+        callback?.({ ok: false, error: socketRateLimitError });
+        return;
+      }
       const parsed = gameMoveSchema.safeParse(payload ?? {});
       if (!parsed.success) {
         callback?.({ ok: false, error: parsed.error.flatten() });
@@ -1943,12 +2225,50 @@ export const createServer = (options: ServerOptions = {}) => {
     });
 
     socket.on("game:reconnect", (payload, callback?: (response: unknown) => void) => {
+      if (!consumeSocketRateLimit(socket, "game:reconnect", 30)) {
+        callback?.({ ok: false, error: socketRateLimitError });
+        return;
+      }
       const parsed = z
-        .object({ code: z.string().toUpperCase(), playerId: z.string().min(1) })
+        .object({
+          code: z.string().trim().toUpperCase().min(4).max(12),
+          playerId: z.string().min(1).max(128),
+          reconnectToken: z.string().min(40).max(2_048),
+        })
         .safeParse(payload ?? {});
       if (!parsed.success) {
         callback?.({ ok: false, error: parsed.error.flatten() });
         return;
+      }
+
+      const identity = getSocketIdentity(socket);
+      const capability = verifyReconnectToken(parsed.data.reconnectToken, authSecret);
+      if (
+        capability === null
+        || capability.code !== parsed.data.code
+        || capability.playerId !== parsed.data.playerId
+        || capability.subjectType !== identity.type
+        || capability.subjectId !== identity.id
+      ) {
+        callback?.({
+          ok: false,
+          error: {
+            code: "INVALID_RECONNECT_TOKEN",
+            message: "The reconnect authorization is invalid or expired.",
+            gameErrorCode: null,
+          },
+        });
+        return;
+      }
+
+      for (const existingSocket of io.sockets.sockets.values()) {
+        if (existingSocket.id === socket.id || existingSocket.data.playerId !== parsed.data.playerId) continue;
+        existingSocket.data.playerId = undefined;
+        existingSocket.leave(parsed.data.code);
+        existingSocket.emit("game:session-replaced", {
+          code: "GAME_SESSION_REPLACED",
+          message: "This game was reconnected from another window.",
+        });
       }
 
       const result = roomService.reconnect(parsed.data.code, parsed.data.playerId, socket.id);
@@ -1962,11 +2282,19 @@ export const createServer = (options: ServerOptions = {}) => {
       socket.join(result.value.code);
       persistRoomLater(result.value, "Failed to persist reconnected room");
       io.to(result.value.code).emit("game:state", result.value);
-      callback?.({ ok: true, room: result.value });
+      callback?.({
+        ok: true,
+        room: result.value,
+        reconnectToken: reconnectTokenFor(socket, result.value.code, parsed.data.playerId),
+      });
     });
 
     socket.on("matchmaking:join", (payload, callback?: (response: unknown) => void) => {
       void (async () => {
+        if (!consumeSocketRateLimit(socket, "matchmaking:join", 30)) {
+          callback?.({ ok: false, error: socketRateLimitError });
+          return;
+        }
         const parsed = matchmakingSchema.safeParse(payload ?? {});
         if (!parsed.success) {
           callback?.({ ok: false, error: parsed.error.flatten() });
@@ -1986,11 +2314,14 @@ export const createServer = (options: ServerOptions = {}) => {
           return;
         }
 
+        const identity = getSocketIdentity(socket);
         removeFromMatchmaking(socket.id);
+        removeIdentityFromMatchmaking(identity.key, socket.id);
         const player = playerProfileSchema.parse(parsed.data.player ?? {});
         const queued: QueuedPlayer = {
           socketId: socket.id,
           accountId: account?.id ?? null,
+          identityKey: identity.key,
           profile: await accountProfile(
             player,
             socket.id,
@@ -2002,7 +2333,7 @@ export const createServer = (options: ServerOptions = {}) => {
         };
 
         const queue = matchmakingQueues[parsed.data.mode];
-        let opponent = queue.shift();
+        let opponent = takeOpponent(parsed.data.mode, queued.identityKey);
         metrics.setQueueDepth(parsed.data.mode, queue.length);
 
         if (opponent === undefined) {
@@ -2010,7 +2341,7 @@ export const createServer = (options: ServerOptions = {}) => {
 
           // Another join may have completed while the database estimate was loading.
           // Recheck the queue so two concurrent players cannot both be left waiting.
-          opponent = queue.shift();
+          opponent = takeOpponent(parsed.data.mode, queued.identityKey);
           if (opponent === undefined) {
             queue.push(queued);
             metrics.setQueueDepth(parsed.data.mode, queue.length);
