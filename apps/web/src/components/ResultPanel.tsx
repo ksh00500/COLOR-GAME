@@ -46,20 +46,12 @@ export function ResultPanel({
   const victoryPreset = primaryWon && typeof document !== "undefined"
     ? document.documentElement.dataset.tangoVictoryEffect ?? "default"
     : "default";
-  const victoryLevel = ["tableau", "master-palette"].includes(victoryPreset)
-    ? "legendary"
-    : ["crest", "ember-master", "gallery"].includes(victoryPreset)
-      ? "epic"
-      : ["forest-crown", "horizon", "trophy"].includes(victoryPreset)
-        ? "rare"
-        : "common";
 
   return (
     <div className="modal-backdrop result-backdrop result-scene-backdrop">
       <section
         className={`result-panel result-scene ${primaryWon ? "win" : isDraw ? "draw" : "loss"}`}
         data-victory-preset={victoryPreset}
-        data-victory-level={victoryLevel}
         data-result-status={primaryWon ? "win" : isDraw ? "draw" : "loss"}
         role="dialog"
         aria-modal="true"
@@ -70,14 +62,7 @@ export function ResultPanel({
           <i className="result-scene-beam beam-a" />
           <i className="result-scene-beam beam-b" />
           <i className="result-scene-ribbon" />
-          <span className="result-victory-impact" />
-          <span className="result-victory-board">
-            {Array.from({ length: 25 }, (_, index) => <i key={index} />)}
-          </span>
-          <span className="result-victory-stars">
-            {Array.from({ length: 18 }, (_, index) => <i key={index} />)}
-          </span>
-          {Array.from({ length: 18 }, (_, index) => <b key={index} />)}
+          {Array.from({ length: 6 }, (_, index) => <b key={index} />)}
         </div>
         <div className="result-scene-layout">
           <header className="result-presentation-stage">
