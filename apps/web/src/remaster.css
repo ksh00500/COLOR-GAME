@@ -3517,9 +3517,304 @@ html[data-tango-score-effect]:not([data-tango-score-effect="default"]) .game-boa
   .result-panel.result-scene .result-match-card { animation:none !important;opacity:1; }
 }
 
+/* Tango match result ------------------------------------------------------
+   A compact, scroll-free finish card built from the same maple, cream and
+   burgundy language as the board and the rest of Tango. */
+.result-scene-backdrop {
+  box-sizing:border-box;
+  display:grid;
+  align-items:center;
+  justify-items:center;
+  overflow:hidden;
+  overscroll-behavior:none;
+  padding:clamp(.5rem,2.4vmin,1.25rem);
+  background:
+    radial-gradient(circle at 22% 18%,rgba(151,52,76,.16),transparent 32%),
+    radial-gradient(circle at 82% 78%,rgba(49,116,96,.12),transparent 34%),
+    rgba(15,14,12,.82);
+  backdrop-filter:blur(.7rem) saturate(.78);
+}
+
+.result-panel.result-scene {
+  --result-wood:#8d5634;
+  --result-wood-dark:#3a251b;
+  box-sizing:border-box;
+  display:block;
+  width:min(31rem,calc(100vw - 1.5rem));
+  height:auto;
+  max-width:31rem;
+  max-height:calc(100dvh - 1rem);
+  padding:0;
+  overflow:hidden;
+  overscroll-behavior:none;
+  border:1px solid color-mix(in srgb,var(--result-accent) 35%,#70513c);
+  border-radius:1.3rem;
+  color:#f7eddc;
+  background:
+    repeating-linear-gradient(2deg,rgba(255,255,255,.018) 0 1px,transparent 1px 10px),
+    radial-gradient(circle at 50% -12%,color-mix(in srgb,var(--result-accent) 14%,transparent),transparent 42%),
+    linear-gradient(155deg,#2d251f,#171513 68%,#111211);
+  box-shadow:
+    0 1.4rem 4rem rgba(0,0,0,.52),
+    inset 0 1px rgba(255,247,229,.08),
+    inset 0 0 0 3px rgba(87,57,39,.24);
+}
+
+.result-panel.result-scene::after {
+  position:absolute;
+  inset:0 12% auto;
+  z-index:8;
+  height:3px;
+  border-radius:0 0 999px 999px;
+  background:linear-gradient(90deg,#9e3650 0 33%,#405c91 33% 66%,#34745f 66%);
+  box-shadow:0 .25rem .8rem rgba(0,0,0,.24);
+  content:"";
+  pointer-events:none;
+}
+
+.result-panel.result-scene .result-scene-art { border-radius:inherit;opacity:.5; }
+.result-panel.result-scene .result-scene-ambient {
+  inset:0;
+  height:auto;
+  background:
+    radial-gradient(circle at 50% 24%,color-mix(in srgb,var(--result-accent) 13%,transparent),transparent 28%),
+    linear-gradient(100deg,transparent 46%,rgba(225,171,99,.025) 47% 48%,transparent 49%);
+}
+
+.result-panel.result-scene .result-scene-layout,
+.result-panel.result-scene.win .result-scene-layout {
+  display:grid;
+  height:auto;
+  min-height:0;
+  grid-template:10.8rem auto / 1fr;
+}
+
+.result-panel.result-scene .result-presentation-stage,
+.result-panel.result-scene.win .result-presentation-stage {
+  position:relative;
+  display:grid;
+  min-height:0;
+  place-content:start center;
+  justify-items:center;
+  gap:0;
+  padding:.85rem 1rem .55rem;
+  overflow:hidden;
+  border:0;
+  border-bottom:1px solid rgba(230,200,158,.12);
+  background:
+    linear-gradient(90deg,rgba(151,52,76,.06),transparent 35% 65%,rgba(49,116,96,.05)),
+    repeating-linear-gradient(4deg,rgba(221,174,112,.025) 0 1px,transparent 1px 11px);
+}
+
+.result-panel.result-scene .result-presentation-stage::before,
+.result-panel.result-scene .result-presentation-stage::after,
+.result-panel.result-scene.win .result-presentation-stage::before,
+.result-panel.result-scene.win .result-presentation-stage::after {
+  left:50%;
+  top:3.85rem;
+  width:6.3rem;
+  border-color:color-mix(in srgb,var(--result-accent) 24%,transparent);
+  box-shadow:none;
+}
+.result-panel.result-scene .result-presentation-stage::after,
+.result-panel.result-scene.win .result-presentation-stage::after { width:4.9rem; }
+
+.result-panel.result-scene .result-presentation-stage > .eyebrow,
+.result-panel.result-scene.win .result-presentation-stage > .eyebrow {
+  position:relative;
+  inset:auto;
+  z-index:5;
+  margin:0;
+  color:#d9a55f;
+  font-size:.56rem;
+  letter-spacing:.2em;
+  text-align:center;
+  animation:result-copy-enter .24s .08s ease-out both;
+}
+
+.result-panel.result-scene .result-victory-emblem,
+.result-panel.result-scene.win .result-victory-emblem {
+  left:50%;
+  top:1.9rem;
+  width:4.5rem;
+  color:color-mix(in srgb,var(--result-accent) 68%,#e3b56e);
+  opacity:.64;
+  animation:tango-result-emblem-in .36s .06s cubic-bezier(.18,.78,.2,1) both;
+}
+.result-panel.result-scene .result-victory-emblem::before {
+  border-color:color-mix(in srgb,var(--result-accent) 44%,#b9864f);
+  background:rgba(25,19,15,.42);
+  box-shadow:inset 0 0 1.1rem rgba(225,171,99,.08);
+}
+.result-panel.result-scene .result-emblem-orbit { display:none; }
+
+.result-cinematic-banner {
+  width:min(20rem,100%);
+  grid-template-columns:minmax(1rem,1fr) auto minmax(1rem,1fr);
+  margin-top:3.45rem;
+}
+.result-cinematic-banner::before {
+  height:3.4rem;
+  border-block:1px solid color-mix(in srgb,var(--result-accent) 18%,transparent);
+  background:linear-gradient(90deg,transparent,rgba(18,15,13,.74) 22% 78%,transparent);
+  animation:tango-result-banner-in .3s .12s ease-out both;
+}
+.result-banner-wing { background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--result-accent) 45%,#b9864f));animation:result-wing-open .28s .16s ease-out both; }
+.result-banner-wing.wing-right { background:linear-gradient(90deg,color-mix(in srgb,var(--result-accent) 45%,#b9864f),transparent); }
+
+.result-panel.result-scene .result-outcome-copy,
+.result-panel.result-scene.win .result-outcome-copy {
+  min-width:8.5rem;
+  gap:.06rem;
+  padding:.2rem .6rem;
+}
+.result-panel.result-scene .result-outcome-copy > span { color:#d9a55f;font-size:.52rem;animation:result-copy-enter .22s .18s ease-out both; }
+.result-panel.result-scene .result-outcome-copy h2,
+.result-panel.result-scene.win .result-outcome-copy h2 {
+  color:#f7eddc;
+  -webkit-text-fill-color:currentColor;
+  background:none;
+  background-clip:border-box;
+  -webkit-background-clip:border-box;
+  font-family:var(--font-display);
+  font-size:2.55rem;
+  line-height:.94;
+  letter-spacing:-.035em;
+  text-shadow:0 .12rem .5rem rgba(0,0,0,.5);
+  filter:none;
+  animation:tango-result-verdict-in .34s .16s cubic-bezier(.18,.78,.2,1) both;
+}
+.result-panel.result-scene .result-outcome-copy > strong { color:#e0b66f;font-size:.7rem;animation:result-copy-enter .22s .24s ease-out both; }
+.result-cinematic-reason {
+  max-width:24rem;
+  margin:.38rem 0 0;
+  overflow:hidden;
+  color:#bcb0a2;
+  font-size:.61rem;
+  line-height:1.35;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  animation:result-copy-enter .22s .28s ease-out both;
+}
+
+.result-panel.result-scene .result-match-card,
+.result-panel.result-scene.win .result-match-card {
+  box-sizing:border-box;
+  width:auto;
+  min-height:0;
+  align-content:start;
+  margin:.65rem;
+  padding:.65rem;
+  overflow:hidden;
+  border:1px solid rgba(220,183,134,.14);
+  border-radius:.9rem;
+  background:
+    linear-gradient(155deg,rgba(78,51,36,.3),rgba(15,15,14,.56)),
+    rgba(13,13,12,.6);
+  box-shadow:inset 0 1px rgba(255,247,229,.045);
+  animation:none;
+  opacity:1;
+}
+.result-panel.result-scene .result-scoreboard {
+  gap:.5rem;
+  padding:.4rem .55rem;
+  border-color:rgba(220,183,134,.13);
+  border-radius:.7rem;
+  background:rgba(9,9,8,.34);
+}
+.result-panel.result-scene .result-scoreboard > span { gap:.2rem; }
+.result-panel.result-scene .result-scoreboard small { max-width:9rem;color:#c9bbaa;font-size:.59rem; }
+.result-panel.result-scene .result-scoreboard strong { color:#f6ead7;font-size:1.55rem; }
+.result-panel.result-scene .result-scoreboard .primary-player strong { color:#e0b66f; }
+.result-panel.result-scene .result-match-meta { margin-top:.28rem; }
+.result-panel.result-scene .result-match-meta > div { padding:.3rem .4rem;border-color:rgba(220,183,134,.1);font-size:.62rem; }
+.result-panel.result-scene .result-match-meta dt { color:#a99c8e;font-size:.59rem; }
+.result-panel.result-scene .result-match-meta dd { color:#efe2cf;font-size:.64rem; }
+.result-panel.result-scene .result-match-card .rematch-waiting {
+  max-height:2rem;
+  margin:.3rem 0 0;
+  padding:.35rem;
+  overflow:hidden;
+  border-color:rgba(220,183,134,.16);
+  color:#c8b7a1;
+  background:rgba(115,74,47,.16);
+  font-size:.59rem;
+  line-height:1.25;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.result-panel.result-scene .result-actions { gap:.4rem;margin-top:.42rem; }
+.result-panel.result-scene .result-actions button {
+  min-height:2.4rem;
+  border-radius:.65rem;
+  font-size:.7rem;
+}
+.result-panel.result-scene .result-actions .secondary-action {
+  border-color:rgba(222,192,151,.22);
+  color:#e9dcc8;
+  background:rgba(75,53,40,.25);
+}
+.result-panel.result-scene .result-actions .primary-action {
+  color:#fff7e9;
+  background:linear-gradient(135deg,#a43f58,#713044);
+  box-shadow:0 .35rem .9rem rgba(83,24,43,.22);
+}
+
+@keyframes tango-result-emblem-in {
+  from { opacity:0;transform:translateX(-50%) scale(1.12);filter:blur(.12rem); }
+  to { opacity:.64;transform:translateX(-50%) scale(1);filter:none; }
+}
+@keyframes tango-result-banner-in {
+  from { opacity:0;transform:translateY(-50%) scaleX(.55); }
+  to { opacity:1;transform:translateY(-50%) scaleX(1); }
+}
+@keyframes tango-result-verdict-in {
+  from { opacity:0;transform:translateY(.25rem) scale(1.08);filter:blur(.1rem); }
+  to { opacity:1;transform:none;filter:none; }
+}
+
+@media (max-width:560px) {
+  .result-scene-backdrop { padding:max(.45rem,env(safe-area-inset-top,.45rem)) .45rem max(.45rem,env(safe-area-inset-bottom,.45rem)); }
+  .result-panel.result-scene {
+    width:min(25rem,calc(100vw - .9rem));
+    max-height:calc(100dvh - max(.9rem,env(safe-area-inset-top,0px) + env(safe-area-inset-bottom,0px)));
+    border-radius:1.05rem;
+  }
+  .result-panel.result-scene .result-scene-layout,
+  .result-panel.result-scene.win .result-scene-layout { grid-template-rows:9.9rem auto; }
+  .result-panel.result-scene .result-presentation-stage,
+  .result-panel.result-scene.win .result-presentation-stage { min-height:0;padding:.72rem .65rem .45rem; }
+  .result-cinematic-banner { margin-top:3.05rem; }
+  .result-panel.result-scene .result-outcome-copy h2,
+  .result-panel.result-scene.win .result-outcome-copy h2 { font-size:2.3rem; }
+  .result-cinematic-reason { width:calc(100vw - 3rem);margin-top:.28rem;font-size:.55rem; }
+  .result-panel.result-scene .result-match-card,
+  .result-panel.result-scene.win .result-match-card { margin:.48rem;padding:.52rem; }
+  .result-panel.result-scene .result-scoreboard small { max-width:7rem; }
+  .result-panel.result-scene .result-actions button { min-height:2.32rem; }
+}
+
+@media (max-height:500px) {
+  .result-panel.result-scene { width:min(42rem,calc(100vw - 1rem));max-width:42rem; }
+  .result-panel.result-scene .result-scene-layout,
+  .result-panel.result-scene.win .result-scene-layout { grid-template:1fr / minmax(12rem,.82fr) minmax(17rem,1.18fr); }
+  .result-panel.result-scene .result-presentation-stage,
+  .result-panel.result-scene.win .result-presentation-stage { min-height:0;align-self:stretch;border-right:1px solid rgba(220,183,134,.12);border-bottom:0; }
+  .result-panel.result-scene .result-match-card,
+  .result-panel.result-scene.win .result-match-card { align-self:center;margin:.48rem .48rem .48rem 0; }
+}
+
+@media (max-height:400px) {
+  .result-panel.result-scene .result-scene-layout,
+  .result-panel.result-scene.win .result-scene-layout { grid-template-columns:minmax(11rem,.72fr) minmax(18rem,1.28fr); }
+  .result-panel.result-scene .result-cinematic-reason { display:none; }
+  .result-panel.result-scene .result-match-meta { display:none; }
+}
+
 /* Compact match verdict ---------------------------------------------------
    Keep the end state focused like a match-accept card: one centered surface,
    one short reveal, and no full-screen board destruction or oversized type. */
+@media not all {
 .result-scene-backdrop {
   align-items:center;
   justify-content:center;
@@ -3734,4 +4029,5 @@ html[data-tango-score-effect]:not([data-tango-score-effect="default"]) .game-boa
   .result-panel.result-scene .result-outcome-copy > strong,
   .result-cinematic-reason,
   .result-panel.result-scene .result-match-card { animation:none !important;opacity:1; }
+}
 }
