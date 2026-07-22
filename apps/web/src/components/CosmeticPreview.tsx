@@ -52,20 +52,21 @@ export function CosmeticPreview({ item, className = "", label }: CosmeticPreview
       )}
       {item.category === "score_effect" && (
         <span className="atelier-cosmetic-preview-score-stage">
-          <span className="atelier-cosmetic-preview-score-row"><i /><i /><i /></span>
-          <svg viewBox="0 0 120 44" aria-hidden="true">
-            <path d="M13 35C35 10 78 10 106 24" />
-            <path d="m99 17 9 7-10 5" />
-          </svg>
+          <span className="preview-score-board" aria-hidden="true">
+            {Array.from({ length: 5 }, (_, index) => <i className={index < 4 ? "linked" : "socket"} key={index} />)}
+          </span>
+          <span className="preview-score-link" aria-hidden="true"><i /><i /><i /><i /></span>
+          <span className="preview-score-wave" aria-hidden="true" />
           <strong>+4</strong>
           <span className="preview-score-particles" aria-hidden="true">
-            {Array.from({ length: 8 }, (_, index) => <i key={index} />)}
+            {Array.from({ length: 12 }, (_, index) => <i key={index} />)}
           </span>
         </span>
       )}
       {item.category === "victory_effect" && (
         <span className="atelier-cosmetic-preview-victory">
           <span className="preview-victory-rays" aria-hidden="true" />
+          <span className="preview-victory-impact" aria-hidden="true" />
           <svg viewBox="0 0 100 100" aria-hidden="true">
             <path className="victory-laurel left" d="M33 78C17 65 14 42 25 24M28 69l-12-2M23 57l-11-6M22 44l-8-10M27 33l-3-11" />
             <path className="victory-laurel right" d="M67 78c16-13 19-36 8-54M72 69l12-2M77 57l11-6M78 44l8-10M73 33l3-11" />
@@ -73,8 +74,11 @@ export function CosmeticPreview({ item, className = "", label }: CosmeticPreview
             <path className="victory-star" d="m50 29 3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1 3-6Z" />
           </svg>
           <b>{item.rarity === "legendary" ? "VICTORY" : "WIN"}</b>
+          <span className="preview-victory-shards" aria-hidden="true">
+            {Array.from({ length: 8 }, (_, index) => <i key={index} />)}
+          </span>
           <span className="preview-victory-confetti" aria-hidden="true">
-            {Array.from({ length: 10 }, (_, index) => <i key={index} />)}
+            {Array.from({ length: 12 }, (_, index) => <i key={index} />)}
           </span>
         </span>
       )}

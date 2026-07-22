@@ -46,12 +46,20 @@ export function ResultPanel({
   const victoryPreset = primaryWon && typeof document !== "undefined"
     ? document.documentElement.dataset.tangoVictoryEffect ?? "default"
     : "default";
+  const victoryLevel = ["tableau", "master-palette"].includes(victoryPreset)
+    ? "legendary"
+    : ["crest", "ember-master", "gallery"].includes(victoryPreset)
+      ? "epic"
+      : ["forest-crown", "horizon", "trophy"].includes(victoryPreset)
+        ? "rare"
+        : "common";
 
   return (
     <div className="modal-backdrop result-backdrop result-scene-backdrop">
       <section
         className={`result-panel result-scene ${primaryWon ? "win" : isDraw ? "draw" : "loss"}`}
         data-victory-preset={victoryPreset}
+        data-victory-level={victoryLevel}
         data-result-status={primaryWon ? "win" : isDraw ? "draw" : "loss"}
         role="dialog"
         aria-modal="true"
@@ -62,6 +70,13 @@ export function ResultPanel({
           <i className="result-scene-beam beam-a" />
           <i className="result-scene-beam beam-b" />
           <i className="result-scene-ribbon" />
+          <span className="result-victory-impact" />
+          <span className="result-victory-board">
+            {Array.from({ length: 25 }, (_, index) => <i key={index} />)}
+          </span>
+          <span className="result-victory-stars">
+            {Array.from({ length: 18 }, (_, index) => <i key={index} />)}
+          </span>
           {Array.from({ length: 18 }, (_, index) => <b key={index} />)}
         </div>
         <div className="result-scene-layout">
@@ -77,12 +92,16 @@ export function ResultPanel({
               </svg>
               <strong>{isDraw ? "D" : primaryWon ? "W" : "L"}</strong>
             </div>
-            <div className="result-outcome-copy">
-              <span>{t(primaryWon ? "오늘의 승자" : isDraw ? "경기 종료" : "다음 승부를 준비하세요")}</span>
-              <h2 id="result-title">{t(title)}</h2>
-              <strong>{primary.nickname}</strong>
-              <p>{t(reason, { name: opponent.nickname })}</p>
+            <div className="result-cinematic-banner">
+              <i className="result-banner-wing wing-left" aria-hidden="true" />
+              <div className="result-outcome-copy">
+                <span>{t(primaryWon ? "오늘의 승자" : isDraw ? "경기 종료" : "다음 승부를 준비하세요")}</span>
+                <h2 id="result-title">{t(title)}</h2>
+                <strong>{primary.nickname}</strong>
+              </div>
+              <i className="result-banner-wing wing-right" aria-hidden="true" />
             </div>
+            <p className="result-cinematic-reason">{t(reason, { name: opponent.nickname })}</p>
           </header>
 
           <aside className="result-match-card">

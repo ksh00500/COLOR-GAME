@@ -55,10 +55,13 @@ describe("CosmeticPreview", () => {
     const score = renderToStaticMarkup(<CosmeticPreview item={cosmetic("score_effect")} label="score" />);
     const victory = renderToStaticMarkup(<CosmeticPreview item={cosmetic("victory_effect")} label="victory" />);
 
-    expect(score).toContain("atelier-cosmetic-preview-score-row");
+    expect(score).toContain("preview-score-board");
+    expect((score.match(/class=\"linked\"/g) ?? [])).toHaveLength(4);
+    expect(score).toContain("preview-score-wave");
     expect(score).toContain("+4");
     expect(victory).toContain("victory-cup");
     expect(victory).toContain("victory-laurel");
+    expect(victory).toContain("preview-victory-shards");
     expect(victory).toContain("WIN");
   });
 });

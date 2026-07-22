@@ -57,7 +57,7 @@ export const clearLoadout = (
     root.style.removeProperty(`--equipped-tile-${slot}-accent`);
   }
   for (const datasetName of ["BoardTheme", "PlacementEffect", "ScoreEffect", "VictoryEffect"]) {
-    delete root.dataset[`tango${datasetName}`];
+    root.dataset[`tango${datasetName}`] = "default";
   }
   for (const slot of ["boardTheme", "placementEffect", "scoreEffect", "victoryEffect"]) {
     for (const suffix of ["a", "b", "c", "duration"]) {
