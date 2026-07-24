@@ -5,7 +5,7 @@ import { CosmeticPreview } from "./CosmeticPreview";
 
 type PreviewCategory = "board_theme" | "placement_effect" | "score_effect" | "victory_effect";
 
-const cosmetic = (category: PreviewCategory): CosmeticItem => ({
+const cosmetic = (category: PreviewCategory, preset = "default"): CosmeticItem => ({
   id: `preview-${category}`,
   category,
   equipSlot: category,
@@ -19,7 +19,7 @@ const cosmetic = (category: PreviewCategory): CosmeticItem => ({
   colors: ["#b34f68", "#3d587f", "#d5aa61"],
   pattern: null,
   splitAngle: null,
-  preset: "default",
+  preset,
   representativeColor: "#b34f68",
   availability: "active",
   owned: false,
@@ -52,16 +52,42 @@ describe("CosmeticPreview", () => {
   });
 
   it("uses descriptive vector scenes instead of letter placeholders", () => {
-    const score = renderToStaticMarkup(<CosmeticPreview item={cosmetic("score_effect")} label="score" />);
+    const score = renderToStaticMarkup(<CosmeticPreview item={cosmetic("score_effect", "wash")} label="score" />);
     const victory = renderToStaticMarkup(<CosmeticPreview item={cosmetic("victory_effect")} label="victory" />);
 
-    expect(score).toContain("preview-score-board");
-    expect((score.match(/class=\"linked\"/g) ?? [])).toHaveLength(4);
-    expect(score).toContain("preview-score-wave");
+    expect(score).toContain("score-preview-motif-wash");
+    expect(score).toContain("score-motif-wash-tiles");
+    expect((score.match(/<path/g) ?? [])).toHaveLength(3);
     expect(score).toContain("+4");
     expect(victory).toContain("victory-cup");
     expect(victory).toContain("victory-laurel");
     expect(victory).toContain("preview-victory-shards");
     expect(victory).toContain("WIN");
+  });
+
+  it("renders a distinct visual motif for every scoring preset", () => {
+    const presets = [
+      "fade",
+      "sweep",
+      "lift",
+      "dust",
+      "scatter",
+      "wash",
+      "glint",
+      "dissolve",
+      "ash",
+      "ribbon",
+      "cosmos-fold",
+      "tango-flow",
+    ];
+
+    const scenes = presets.map((preset) =>
+      renderToStaticMarkup(<CosmeticPreview item={cosmetic("score_effect", preset)} label={preset} />)
+    );
+
+    scenes.forEach((scene, index) => {
+      expect(scene).toContain(`score-preview-motif-${presets[index]}`);
+    });
+    expect(new Set(scenes).size).toBe(presets.length);
   });
 });
