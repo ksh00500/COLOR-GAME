@@ -641,6 +641,38 @@ p {
   margin: 0;
 }
 
+.account-logout-shortcut {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  min-width: 112px;
+  min-height: 44px;
+  margin-inline-start: auto;
+  padding: 0.55rem 0.9rem;
+  border: 1px solid color-mix(in srgb, var(--app-accent) 45%, var(--app-line));
+  border-radius: 12px;
+  color: var(--app-ink);
+  background: color-mix(in srgb, var(--app-panel-strong) 88%, var(--app-accent) 12%);
+  box-shadow: 0 5px 16px rgba(18, 12, 9, 0.14);
+  font-size: 0.8rem;
+  font-weight: 850;
+  cursor: pointer;
+  transition: border-color 160ms ease, background 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.account-logout-shortcut:hover {
+  border-color: var(--app-accent);
+  color: var(--app-inverted);
+  background: var(--app-accent);
+  transform: translateY(-1px);
+}
+
+.account-logout-shortcut:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--app-accent) 42%, transparent);
+  outline-offset: 3px;
+}
+
 .rank-badge {
   display: inline-flex;
   align-items: center;
@@ -6857,6 +6889,11 @@ kbd {
 
   .account-security-actions .account-policy-link {
     grid-column: 1 / -1;
+  }
+
+  .account-logout-shortcut {
+    width: 100%;
+    margin-inline-start: 0;
   }
 
   .home-board-card {

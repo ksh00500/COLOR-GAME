@@ -393,6 +393,14 @@ export function AccountPage({ deletionEntry = false }: { deletionEntry?: boolean
                     {t(account.accessTier === "admin" ? "관리자 계정" : "테스터 계정")}
                   </span>
                 )}
+                <button
+                  className="account-logout-shortcut"
+                  type="button"
+                  onClick={logout}
+                >
+                  <span aria-hidden="true">↪</span>
+                  {t("로그아웃")}
+                </button>
               </div>
               <div className="profile-stats">
                 <span><small>{t("레이팅")}</small><strong>{formatNumber(account.rating)}</strong></span>
