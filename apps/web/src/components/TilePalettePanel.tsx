@@ -14,7 +14,7 @@ import {
   type TileLoadoutSlot,
   type TilePalettePreset,
 } from "../api";
-import { localizedCosmeticName } from "../cosmetic-localization";
+import { localizedCosmeticDescription, localizedCosmeticName } from "../cosmetic-localization";
 import { useI18n } from "../i18n";
 import { loadoutChangedEvent } from "./CosmeticLoadoutBridge";
 import { CosmeticCategoryIcon } from "./CosmeticCategoryIcon";
@@ -45,6 +45,14 @@ const styleSlots: Array<{
   { key: "placementEffect", category: "placement_effect", label: "배치 효과", defaultName: "기본 배치 효과" },
   { key: "scoreEffect", category: "score_effect", label: "득점 효과", defaultName: "기본 득점 효과" },
 ];
+
+const styleEffectMoment = (
+  category: "board_theme" | "placement_effect" | "score_effect",
+): string => {
+  if (category === "board_theme") return "게임판 전체에 항상 적용";
+  if (category === "placement_effect") return "타일을 놓는 순간 재생";
+  return "득점 타일이 사라질 때 재생";
+};
 
 export const filterOwnedTileItems = (
   items: CosmeticItem[],
@@ -492,7 +500,11 @@ export function TilePalettePanel({
                 ) : (
                   <>
                     <CosmeticPreview item={equipped} label={localizedCosmeticName(equipped, locale)} />
-                    <strong>{localizedCosmeticName(equipped, locale)}</strong>
+                    <span className="style-current-details">
+                      <strong>{localizedCosmeticName(equipped, locale)}</strong>
+                      <p>{localizedCosmeticDescription(equipped, locale)}</p>
+                      <small>{t(styleEffectMoment(activeStyle.category))}</small>
+                    </span>
                   </>
                 );
               })()}
@@ -548,8 +560,16 @@ export function TilePalettePanel({
                     disabled={busy !== null || equipped}
                     onClick={() => void equipStyle(activeStyle.key, item.id)}
                   >
-                    <CosmeticPreview item={item} label={localizedCosmeticName(item, locale)} />
-                    <span><small>{t(item.rarity)}</small><strong>{localizedCosmeticName(item, locale)}</strong></span>
+                    <span className="style-preview-stage">
+                      <CosmeticPreview item={item} label={localizedCosmeticName(item, locale)} />
+                      <small>{t("효과 미리보기")}</small>
+                    </span>
+                    <span className="style-library-card-copy">
+                      <small>{t(item.rarity)}</small>
+                      <strong>{localizedCosmeticName(item, locale)}</strong>
+                      <p>{localizedCosmeticDescription(item, locale)}</p>
+                      <em>{t(styleEffectMoment(activeStyle.category))}</em>
+                    </span>
                     {equipped && <b>{t("사용 중")}</b>}
                   </button>
                 );

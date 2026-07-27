@@ -1930,6 +1930,22 @@ html[data-tango-board-theme="tango"] .game-board-frame { background-image: linea
 .style-current-preview > .atelier-cosmetic-preview { width: clamp(8rem, 14vw, 12rem); }
 .style-current-preview > .cosmetic-category-icon { width: 7rem; height: 7rem; padding: 1rem; border: 1px solid var(--border-color); border-radius: 1.5rem; background: var(--surface-soft); }
 .style-current-preview > strong { max-width: 11rem; font-size: 1rem; }
+.style-current-details { display: grid; align-content: center; gap: .42rem; min-width: 0; max-width: 17rem; }
+.style-current-details > strong { font-size: 1.05rem; }
+.style-current-details > p { margin: 0; color: var(--text-secondary); font-size: .78rem; line-height: 1.55; }
+.style-current-details > small,
+.style-library-card-copy > em {
+  justify-self: start;
+  padding: .3rem .48rem;
+  border: 1px solid color-mix(in srgb, var(--accent) 32%, var(--border-color));
+  border-radius: 999px;
+  color: color-mix(in srgb, var(--accent) 76%, var(--text-primary));
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface-raised));
+  font-size: .64rem;
+  font-style: normal;
+  font-weight: 800;
+  line-height: 1.2;
+}
 .restore-style-action { min-width: 8.5rem; min-height: 3rem; transition: transform .18s ease, border-color .18s ease, background .18s ease; }
 .restore-style-action:not(:disabled):hover { transform: translateY(-2px); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--surface-raised)); }
 .style-library-heading { display: flex; align-items: end; justify-content: space-between; gap: 1rem; }
@@ -1956,9 +1972,37 @@ html[data-tango-board-theme="tango"] .game-board-frame { background-image: linea
 }
 .style-library-grid > button:hover:not(:disabled) { transform: translateY(-3px); border-color: color-mix(in srgb, currentColor 55%, var(--border-color)); box-shadow: 0 .8rem 1.8rem rgba(0,0,0,.16); }
 .style-library-grid > button.selected { border-color: var(--accent); box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--accent) 28%, transparent); }
-.style-library-grid .atelier-cosmetic-preview { width: 100%; min-height: 9rem; }
-.style-library-grid > button > span { display: grid; gap: .15rem; text-align: left; }
-.style-library-grid > button > span small { color: var(--text-muted); font-size: .68rem; font-weight: 850; text-transform: uppercase; }
+.style-library-grid .style-preview-stage { position: relative; display: block; min-width: 0; }
+.style-library-grid .style-preview-stage > .atelier-cosmetic-preview { width: 100%; min-height: 9rem; }
+.style-library-grid .style-preview-stage > small {
+  position: absolute;
+  left: .55rem;
+  bottom: .55rem;
+  z-index: 6;
+  padding: .25rem .42rem;
+  border: 1px solid rgba(255,255,255,.16);
+  border-radius: 999px;
+  color: #fff;
+  background: rgba(10,10,10,.68);
+  backdrop-filter: blur(7px);
+  font-size: .58rem;
+  font-weight: 850;
+  letter-spacing: .03em;
+}
+.style-library-card-copy { display: grid; gap: .28rem; min-width: 0; text-align: left; }
+.style-library-card-copy > small { color: var(--text-muted); font-size: .68rem; font-weight: 850; text-transform: uppercase; }
+.style-library-card-copy > strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.style-library-card-copy > p {
+  display: -webkit-box;
+  min-height: 2.55em;
+  margin: .08rem 0 .1rem;
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: .69rem;
+  line-height: 1.35;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
 .style-library-grid > button > b { position: absolute; top: .8rem; right: .8rem; padding: .25rem .48rem; border-radius: 999px; color: #fff; background: var(--accent); font-size: .67rem; }
 .style-library-empty { display: grid; justify-items: center; gap: .5rem; padding: 3rem 1rem; border: 1px dashed var(--border-color); border-radius: 1.1rem; color: var(--text-secondary); text-align: center; }
 .style-library-empty .cosmetic-category-icon { width: 4rem; height: 4rem; opacity: .72; }
@@ -2478,13 +2522,17 @@ html[data-tango-score-effect="cosmos-fold"]
   .style-current-preview { justify-content: start; }
   .style-current-preview > .atelier-cosmetic-preview { width: 7.5rem; }
   .style-current-preview > .cosmetic-category-icon { width: 5rem; height: 5rem; }
+  .style-current-details { max-width: min(14rem, 48vw); }
+  .style-current-details > p { font-size: .72rem; }
   .restore-style-action { min-width: 7rem; }
   .style-library-heading { display: grid; }
   .style-search-field { min-width: 0; width: 100%; }
   .style-rarity-filter { display: flex; overflow-x: auto; }
   .style-library-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .55rem; }
   .style-library-grid > button { grid-template-rows: minmax(7rem, 1fr) auto; padding: .5rem; }
-  .style-library-grid .atelier-cosmetic-preview { min-height: 7rem; }
+  .style-library-grid .style-preview-stage > .atelier-cosmetic-preview { min-height: 7rem; }
+  .style-library-card-copy > p { font-size: .64rem; }
+  .style-library-card-copy > em { padding-inline: .38rem; font-size: .57rem; }
   .weekly-rarity-section { grid-template-columns: 1fr; gap: .4rem; padding: .75rem; }
   .weekly-rarity-section > header { align-items: center; }
   .palette-mixer-section { grid-template-columns: 1fr; padding: .75rem; border-radius: 1.2rem; }
