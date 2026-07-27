@@ -55,6 +55,7 @@ export function GameBoard({
   const scorePreset = activeCosmetics === undefined
     ? undefined
     : activeCosmetics?.scoreEffect?.preset ?? "default";
+  const scoringSequence = Array.from(scoringCells);
   const scoreAnchor = scoringCells.values().next().value as string | undefined;
 
   useEffect(() => {
@@ -116,6 +117,7 @@ export function GameBoard({
             const index = rowIndex * size + colIndex;
             const key = `${rowIndex}:${colIndex}`;
             const scoring = scoringCells.has(key);
+            const scoreSequenceIndex = scoring ? scoringSequence.indexOf(key) : 0;
             const placed = lastPlaced?.row === rowIndex && lastPlaced.col === colIndex;
             const opponentLast = opponentLastPlaced?.row === rowIndex && opponentLastPlaced.col === colIndex;
             const invalid = invalidCell?.row === rowIndex && invalidCell.col === colIndex;
@@ -134,6 +136,9 @@ export function GameBoard({
                 data-cell-col={colIndex}
                 tabIndex={index === focusedIndex ? 0 : -1}
                 className={`board-cell ${cell ?? "empty"} ${scoring ? "scoring" : ""} ${placed ? "placed" : ""} ${opponentLast ? "opponent-last" : ""} ${invalid ? "invalid" : ""}`}
+                style={{
+                  "--score-sequence-index": scoreSequenceIndex,
+                } as CSSProperties}
                 aria-label={label}
                 aria-disabled={!canPlay || cell !== null}
                 onFocus={() => onFocusedIndexChange(index)}

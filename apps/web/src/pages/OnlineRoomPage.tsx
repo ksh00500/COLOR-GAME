@@ -16,6 +16,7 @@ import { ResultPanel } from "../components/ResultPanel";
 import { SettingsPanel } from "../components/SettingsPanel";
 import { fetchEconomy, fetchMe, getAuthToken, getCachedAccount } from "../api";
 import { playOpponentTurnCue } from "../audio";
+import { getMoveEffectTimeline } from "../effectTimeline";
 import { shareUrl } from "../share";
 import { nativeBackEvent, publicAppUrl } from "../nativeApp";
 import { notifyInvalidMove, notifyTilePlaced } from "../nativeFeedback";
@@ -358,8 +359,13 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
       game.status === "playing" &&
       game.currentPlayerId === playerId &&
       game.lastMove.playerId !== playerId;
+    const isFullBoardClear = game.lastMove.earnedScore === 0;
+    const effectTimeline = getMoveEffectTimeline(
+      settings.presentationSpeed,
+      isFullBoardClear,
+    );
     const removalDelay = game.lastMove.removedCells.length > 0
-      ? game.lastMove.earnedScore === 0 ? 420 : 620
+      ? effectTimeline.boardCommitDelayMs
       : 150;
 
     setLastPlaced({ row: game.lastMove.row, col: game.lastMove.col });
@@ -372,15 +378,30 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
           game.lastMove.color,
         ));
       }
-      setIsBoardClearing(game.lastMove.earnedScore === 0);
-      setScoringCells(
-        new Set(game.lastMove.removedCells.map((cell) => `${cell.row}:${cell.col}`)),
+      const nextScoringCells = new Set(
+        game.lastMove.removedCells.map((cell) => `${cell.row}:${cell.col}`),
       );
+      setIsBoardClearing(isFullBoardClear);
+      if (isFullBoardClear) {
+        setScoringCells(nextScoringCells);
+      } else {
+        const scoringPlayerId = game.lastMove.playerId;
+        const earnedScore = game.lastMove.earnedScore;
+        setScoringCells(new Set());
+        const scorePhaseTimer = window.setTimeout(() => {
+          setScoringCells(nextScoringCells);
+          setScoreNotice({
+            playerId: scoringPlayerId,
+            score: earnedScore,
+          });
+        }, effectTimeline.scorePhaseDelayMs);
+        effectTimers.current.push(scorePhaseTimer);
+      }
       const timer = window.setTimeout(() => {
         setVisualBoard(null);
         setScoringCells(new Set());
         setIsBoardClearing(false);
-      }, game.lastMove.earnedScore === 0 ? 420 : 620);
+      }, effectTimeline.boardCommitDelayMs);
       effectTimers.current.push(timer);
     }
     if (shouldCueOpponentTurn) {
@@ -388,11 +409,13 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
       effectTimers.current.push(timer);
     }
     if (game.lastMove.earnedScore > 0) {
-      setScoreNotice({ playerId: game.lastMove.playerId, score: game.lastMove.earnedScore });
-      const timer = window.setTimeout(() => setScoreNotice(null), 900);
+      const timer = window.setTimeout(
+        () => setScoreNotice(null),
+        effectTimeline.scoreNoticeDurationMs,
+      );
       effectTimers.current.push(timer);
     }
-  }, [game, playerId, triggerOpponentTurnComplete]);
+  }, [game, playerId, settings.presentationSpeed, triggerOpponentTurnComplete]);
 
   useEffect(() => {
     const handleShortcut = (event: KeyboardEvent) => {
@@ -501,21 +524,40 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
         const lastMove = response.room?.game?.lastMove;
         if (lastMove !== undefined && lastMove !== null && lastMove.removedCells.length > 0) {
           animatedMoveKey.current = `${lastMove.turnNumber}:${lastMove.playerId}:${lastMove.row}:${lastMove.col}`;
-          setLastPlaced(position);
-          setScoringCells(
-            new Set(lastMove.removedCells.map((cell) => `${cell.row}:${cell.col}`)),
+          const isFullBoardClear = lastMove.earnedScore === 0;
+          const effectTimeline = getMoveEffectTimeline(
+            settings.presentationSpeed,
+            isFullBoardClear,
           );
-          setIsBoardClearing(lastMove.earnedScore === 0);
-          if (lastMove.earnedScore > 0) {
-            setScoreNotice({ playerId, score: lastMove.earnedScore });
+          const nextScoringCells = new Set(
+            lastMove.removedCells.map((cell) => `${cell.row}:${cell.col}`),
+          );
+          setLastPlaced(position);
+          setIsBoardClearing(isFullBoardClear);
+          if (isFullBoardClear) {
+            setScoringCells(nextScoringCells);
+          } else {
+            setScoringCells(new Set());
+            const scorePhaseTimer = window.setTimeout(() => {
+              setScoringCells(nextScoringCells);
+              setScoreNotice({ playerId, score: lastMove.earnedScore });
+            }, effectTimeline.scorePhaseDelayMs);
+            effectTimers.current.push(scorePhaseTimer);
           }
           const timer = window.setTimeout(() => {
             setVisualBoard(null);
             setScoringCells(new Set());
             setIsBoardClearing(false);
             if (response.room !== undefined) applyRoom(response.room);
-          }, lastMove.earnedScore === 0 ? 420 : 620);
+          }, effectTimeline.boardCommitDelayMs);
           effectTimers.current.push(timer);
+          if (lastMove.earnedScore > 0) {
+            const noticeTimer = window.setTimeout(
+              () => setScoreNotice(null),
+              effectTimeline.scoreNoticeDurationMs,
+            );
+            effectTimers.current.push(noticeTimer);
+          }
           return;
         }
         setVisualBoard(null);

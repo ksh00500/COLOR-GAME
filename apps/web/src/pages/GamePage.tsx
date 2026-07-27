@@ -19,6 +19,7 @@ import { PlayerCard } from "../components/PlayerCard";
 import { ResultPanel } from "../components/ResultPanel";
 import { SettingsPanel } from "../components/SettingsPanel";
 import { playOpponentTurnCue } from "../audio";
+import { getMoveEffectTimeline } from "../effectTimeline";
 import { resolveColorShortcutIndex, useSettings } from "../settings";
 import { useI18n } from "../i18n";
 
@@ -217,18 +218,26 @@ export function GamePage() {
       }
 
       const isFullBoardClear = result.move.earnedScore === 0;
-      const animationDuration = isFullBoardClear
-        ? settings.presentationSpeed === "fast" ? 340 : 560
-        : settings.presentationSpeed === "fast" ? 460 : 760;
+      const effectTimeline = getMoveEffectTimeline(
+        settings.presentationSpeed,
+        isFullBoardClear,
+      );
+      const nextScoringCells = new Set(
+        removedCells.map((cell) => `${cell.row}:${cell.col}`),
+      );
 
       setIsAnimating(true);
       setIsBoardClearing(isFullBoardClear);
       setVisualBoard(boardWithPlacement(game.board, position, color));
-      setScoringCells(
-        new Set(removedCells.map((cell) => `${cell.row}:${cell.col}`)),
-      );
-      if (result.move.earnedScore > 0) {
-        setScoreNotice({ playerId, score: result.move.earnedScore });
+      if (isFullBoardClear) {
+        setScoringCells(nextScoringCells);
+      } else {
+        setScoringCells(new Set());
+        const scorePhaseTimer = window.setTimeout(() => {
+          setScoringCells(nextScoringCells);
+          setScoreNotice({ playerId, score: result.move.earnedScore });
+        }, effectTimeline.scorePhaseDelayMs);
+        effectTimers.current.push(scorePhaseTimer);
       }
 
       const commitTimer = window.setTimeout(() => {
@@ -238,10 +247,13 @@ export function GamePage() {
         setIsBoardClearing(false);
         setIsAnimating(false);
         if (shouldCueOpponentTurn) triggerOpponentTurnComplete();
-      }, animationDuration);
+      }, effectTimeline.boardCommitDelayMs);
       const timers = [commitTimer];
       if (result.move.earnedScore > 0) {
-        const noticeTimer = window.setTimeout(() => setScoreNotice(null), animationDuration + 700);
+        const noticeTimer = window.setTimeout(
+          () => setScoreNotice(null),
+          effectTimeline.scoreNoticeDurationMs,
+        );
         timers.push(noticeTimer);
       }
       effectTimers.current.push(...timers);
