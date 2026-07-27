@@ -9,6 +9,7 @@ import {
   type ColorShortcuts,
   type ThemePreference,
 } from "../settings";
+import { isNativeApp } from "../nativeApp";
 import { openTutorial } from "./TutorialPanel";
 
 interface SettingsPanelProps {
@@ -37,6 +38,7 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
   const { t } = useI18n();
   const [recordingShortcut, setRecordingShortcut] = useState<number | null>(null);
   const [shortcutError, setShortcutError] = useState<string | null>(null);
+  const showKeyboardSettings = !isNativeApp();
 
   const setColorShortcut = (index: number, event: ReactKeyboardEvent<HTMLButtonElement>) => {
     event.preventDefault();
@@ -176,52 +178,54 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
           </label>
         </div>
 
-        <div className="setting-group shortcut-setting-group">
-          <div className="setting-label shortcut-setting-heading">
-            <span>
-              <strong>{t("색 선택 키")}</strong>
-              <small>{t("세 색상에 사용할 단축키를 직접 지정합니다.")}</small>
-            </span>
-            <button
-              type="button"
-              className="secondary-action shortcut-reset"
-              onClick={() => {
-                updateSettings({ colorShortcuts: [...defaultColorShortcuts] });
-                setRecordingShortcut(null);
-                setShortcutError(null);
-              }}
-            >
-              {t("기본값 복원")}
-            </button>
+        {showKeyboardSettings && (
+          <div className="setting-group shortcut-setting-group">
+            <div className="setting-label shortcut-setting-heading">
+              <span>
+                <strong>{t("색 선택 키")}</strong>
+                <small>{t("세 색상에 사용할 단축키를 직접 지정합니다.")}</small>
+              </span>
+              <button
+                type="button"
+                className="secondary-action shortcut-reset"
+                onClick={() => {
+                  updateSettings({ colorShortcuts: [...defaultColorShortcuts] });
+                  setRecordingShortcut(null);
+                  setShortcutError(null);
+                }}
+              >
+                {t("기본값 복원")}
+              </button>
+            </div>
+            <div className="shortcut-key-grid">
+              {settings.colorShortcuts.map((code, index) => (
+                <div className="shortcut-key-row" key={index}>
+                  <span className={`shortcut-color-dot color${String.fromCharCode(65 + index)}`} aria-hidden="true" />
+                  <strong>{t(`${index + 1}번 색`)}</strong>
+                  <button
+                    type="button"
+                    className={recordingShortcut === index ? "recording" : ""}
+                    onClick={() => {
+                      setRecordingShortcut(index);
+                      setShortcutError(null);
+                    }}
+                    onKeyDown={(event) => {
+                      if (recordingShortcut === index) setColorShortcut(index, event);
+                    }}
+                    aria-label={t("{slot} 단축키 변경", { slot: t(`${index + 1}번 색`) })}
+                  >
+                    {recordingShortcut === index ? t("키 입력 대기") : formatShortcutCode(code)}
+                  </button>
+                </div>
+              ))}
+            </div>
+            <small className={`shortcut-setting-help${shortcutError === null ? "" : " error"}`} role={shortcutError === null ? undefined : "alert"}>
+              {shortcutError === null
+                ? t("변경할 칸을 누른 다음 원하는 키를 입력하세요.")
+                : t(shortcutError)}
+            </small>
           </div>
-          <div className="shortcut-key-grid">
-            {settings.colorShortcuts.map((code, index) => (
-              <div className="shortcut-key-row" key={index}>
-                <span className={`shortcut-color-dot color${String.fromCharCode(65 + index)}`} aria-hidden="true" />
-                <strong>{t(`${index + 1}번 색`)}</strong>
-                <button
-                  type="button"
-                  className={recordingShortcut === index ? "recording" : ""}
-                  onClick={() => {
-                    setRecordingShortcut(index);
-                    setShortcutError(null);
-                  }}
-                  onKeyDown={(event) => {
-                    if (recordingShortcut === index) setColorShortcut(index, event);
-                  }}
-                  aria-label={t("{slot} 단축키 변경", { slot: t(`${index + 1}번 색`) })}
-                >
-                  {recordingShortcut === index ? t("키 입력 대기") : formatShortcutCode(code)}
-                </button>
-              </div>
-            ))}
-          </div>
-          <small className={`shortcut-setting-help${shortcutError === null ? "" : " error"}`} role={shortcutError === null ? undefined : "alert"}>
-            {shortcutError === null
-              ? t("변경할 칸을 누른 다음 원하는 키를 입력하세요.")
-              : t(shortcutError)}
-          </small>
-        </div>
+        )}
 
         <div className="setting-group">
           <div className="setting-label">

@@ -756,6 +756,13 @@ export function StorePage() {
                   </div>
 
                   <div className="palette-mixer-stage" aria-label={t("선택한 안료를 섞는 팔레트 믹서")}>
+                    <div className="mixer-selected-badge">
+                      <CosmeticCategoryIcon category={category} className="mixer-selected-icon" />
+                      <span>
+                        <small>{t("선택한 종류")}</small>
+                        <strong>{t(categoryLabels[category])}</strong>
+                      </span>
+                    </div>
                     <div className="mixer-pigment pigment-one" aria-hidden="true" />
                     <div className="mixer-pigment pigment-two" aria-hidden="true" />
                     <div className="mixer-pigment pigment-three" aria-hidden="true" />
@@ -763,7 +770,6 @@ export function StorePage() {
                       <span /><span /><span />
                       <i />
                     </div>
-                    <CosmeticCategoryIcon category={category} className="mixer-selected-icon" />
                   </div>
 
                   <aside className="palette-mixer-control">

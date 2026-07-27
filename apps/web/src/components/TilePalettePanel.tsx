@@ -347,9 +347,7 @@ export function TilePalettePanel({
                 setStyleRarity("all");
               }}
             >
-              {equipped === undefined
-                ? <CosmeticCategoryIcon category={slot.category} />
-                : <CosmeticPreview item={equipped} label={localizedCosmeticName(equipped, locale)} />}
+              <CosmeticCategoryIcon category={slot.category} />
               <span>
                 <strong>{t(slot.label)}</strong>
                 <small>{equipped === undefined ? t(slot.defaultName) : localizedCosmeticName(equipped, locale)}</small>
