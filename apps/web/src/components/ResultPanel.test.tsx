@@ -72,5 +72,8 @@ describe("neutral match result", () => {
     expect(html).toContain("1:05");
     expect(html).not.toContain("data-victory-preset");
     expect(html).not.toContain("result-victory-emblem");
+    if (status === "win") {
+      expect(html).not.toContain("마지막 연결이 목표 점수를 완성했습니다.");
+    }
   });
 });

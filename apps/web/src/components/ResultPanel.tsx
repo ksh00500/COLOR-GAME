@@ -41,7 +41,7 @@ export function ResultPanel({
       : isDraw
         ? "보드가 가득 찼습니다."
         : primaryWon
-          ? "마지막 연결이 목표 점수를 완성했습니다."
+          ? null
           : "{name} 플레이어가 목표 점수에 먼저 도달했습니다.";
   const status = primaryWon ? "win" : isDraw ? "draw" : "loss";
 
@@ -61,7 +61,7 @@ export function ResultPanel({
           </span>
           <h2 id="result-title">{t(title)}</h2>
           <strong>{primary.nickname}</strong>
-          <p>{t(reason, { name: opponent.nickname })}</p>
+          {reason !== null && <p>{t(reason, { name: opponent.nickname })}</p>}
         </header>
 
         <div className="tango-result-summary">
