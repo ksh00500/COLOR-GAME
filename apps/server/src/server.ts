@@ -320,6 +320,7 @@ const economyErrorStatus = (error: unknown): { status: number; code: string } =>
     || code === "TILE_COLORS_TOO_SIMILAR"
     || code === "WISHLIST_LIMIT_REACHED"
     || code === "COSMETIC_NOT_CRAFTABLE"
+    || code === "COSMETIC_RETIRED"
   ) {
     return { status: 409, code };
   }

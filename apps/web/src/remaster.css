@@ -4044,6 +4044,300 @@ html[data-tango-score-effect]:not([data-tango-score-effect="default"]) .game-boa
     linear-gradient(150deg,color-mix(in srgb,var(--cosmetic-preview-color-a) 16%,#2b2824),#101112 78%);
 }
 
+/* Neutral match result ----------------------------------------------------
+   Victory cosmetics are retired while their replacement system is designed.
+   This card deliberately has no cosmetic hooks: win, draw and loss share one
+   stable Tango layout without viewport scrolling or layout-shifting effects. */
+.tango-result-backdrop {
+  position:fixed;
+  inset:0;
+  z-index:1200;
+  display:grid;
+  place-items:center;
+  box-sizing:border-box;
+  padding:clamp(.65rem,2.4vw,1.5rem);
+  overflow:hidden;
+  background:rgba(10,9,8,.8);
+  backdrop-filter:blur(.7rem) saturate(.72);
+}
+
+.result-panel.tango-result-card {
+  --tango-result-accent:#b65068;
+  --tango-result-accent-soft:#6f2f41;
+  position:relative;
+  display:grid;
+  box-sizing:border-box;
+  width:min(31rem,calc(100vw - 1.3rem));
+  height:auto;
+  min-height:0;
+  max-width:31rem;
+  max-height:calc(100dvh - 1.3rem);
+  grid-template-columns:1fr;
+  gap:.72rem;
+  padding:clamp(.8rem,2.6vw,1.15rem);
+  overflow:hidden;
+  border:1px solid rgba(215,181,137,.24);
+  border-radius:1.25rem;
+  color:#f6ead8;
+  background:
+    radial-gradient(circle at 50% -10%,color-mix(in srgb,var(--tango-result-accent) 20%,transparent),transparent 42%),
+    repeating-linear-gradient(4deg,rgba(229,187,130,.018) 0 1px,transparent 1px 11px),
+    linear-gradient(155deg,#28231f,#121211 72%);
+  box-shadow:0 1.5rem 4.5rem rgba(0,0,0,.56),inset 0 1px rgba(255,248,235,.07);
+  animation:tango-neutral-result-in .28s cubic-bezier(.2,.78,.2,1) both;
+}
+
+.result-panel.tango-result-card.draw {
+  --tango-result-accent:#888e93;
+  --tango-result-accent-soft:#4c5156;
+}
+
+.result-panel.tango-result-card.loss {
+  --tango-result-accent:#7d8792;
+  --tango-result-accent-soft:#404850;
+}
+
+.tango-result-verdict {
+  display:grid;
+  justify-items:center;
+  gap:.14rem;
+  padding:.1rem .75rem .55rem;
+  text-align:center;
+}
+
+.tango-result-verdict .eyebrow {
+  margin:0 0 .12rem;
+  color:#c9ad87;
+  font-size:.58rem;
+  letter-spacing:.22em;
+}
+
+.tango-result-status {
+  display:grid;
+  width:3.65rem;
+  aspect-ratio:1;
+  place-items:center;
+  margin:.05rem 0 .2rem;
+  border:1px solid color-mix(in srgb,var(--tango-result-accent) 68%,#d8b47e);
+  border-radius:50%;
+  color:#f8ead6;
+  background:
+    radial-gradient(circle,color-mix(in srgb,var(--tango-result-accent) 30%,transparent),transparent 68%),
+    rgba(11,10,9,.5);
+  box-shadow:inset 0 0 1.2rem color-mix(in srgb,var(--tango-result-accent) 17%,transparent);
+  font:800 1.25rem/1 var(--font-display);
+}
+
+.tango-result-verdict h2 {
+  margin:0;
+  color:#fff4e2;
+  font:800 clamp(2.3rem,9vw,3.15rem)/.95 var(--font-display);
+  letter-spacing:-.045em;
+  text-shadow:0 .15rem .55rem rgba(0,0,0,.46);
+}
+
+.tango-result-verdict > strong {
+  max-width:100%;
+  overflow:hidden;
+  color:color-mix(in srgb,var(--tango-result-accent) 54%,#f3d69f);
+  font-size:.82rem;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.tango-result-verdict > p:last-child {
+  max-width:26rem;
+  margin:.28rem 0 0;
+  overflow:hidden;
+  color:#b9ad9e;
+  font-size:.67rem;
+  line-height:1.35;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.tango-result-summary {
+  display:grid;
+  gap:.52rem;
+  padding:.72rem;
+  border:1px solid rgba(222,190,149,.14);
+  border-radius:.9rem;
+  background:rgba(10,9,8,.42);
+  box-shadow:inset 0 1px rgba(255,248,233,.035);
+}
+
+.tango-result-summary > header {
+  display:flex;
+  align-items:end;
+  justify-content:space-between;
+  gap:1rem;
+  padding:0 .1rem;
+}
+
+.tango-result-summary > header small {
+  color:#b65068;
+  font-size:.55rem;
+  font-weight:800;
+  letter-spacing:.16em;
+}
+
+.tango-result-summary > header strong {
+  color:#e9dbc7;
+  font-size:.75rem;
+}
+
+.tango-result-scoreboard {
+  display:grid;
+  min-width:0;
+  grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);
+  align-items:center;
+  gap:.55rem;
+  padding:.5rem .7rem;
+  border:1px solid rgba(222,190,149,.12);
+  border-radius:.72rem;
+  background:rgba(5,5,5,.28);
+}
+
+.tango-result-scoreboard > span {
+  display:grid;
+  min-width:0;
+  justify-items:center;
+  gap:.12rem;
+}
+
+.tango-result-scoreboard small {
+  max-width:100%;
+  overflow:hidden;
+  color:#c0b4a5;
+  font-size:.62rem;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.tango-result-scoreboard strong {
+  color:#f5e8d5;
+  font:700 1.65rem/1 var(--font-display);
+}
+
+.tango-result-scoreboard .primary-player strong {
+  color:color-mix(in srgb,var(--tango-result-accent) 55%,#f0c27e);
+}
+
+.tango-result-scoreboard > i {
+  color:#86796a;
+  font-style:normal;
+}
+
+.tango-result-meta {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:.45rem;
+  margin:0;
+}
+
+.tango-result-meta > div {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:.6rem;
+  padding:.38rem .5rem;
+  border-bottom:1px solid rgba(222,190,149,.1);
+}
+
+.tango-result-meta dt {
+  color:#a99c8d;
+  font-size:.6rem;
+}
+
+.tango-result-meta dd {
+  margin:0;
+  color:#eee0cc;
+  font-size:.68rem;
+  font-weight:800;
+}
+
+.tango-result-summary .rematch-waiting {
+  margin:0;
+  padding:.4rem .5rem;
+  overflow:hidden;
+  border:1px solid rgba(222,190,149,.14);
+  border-radius:.55rem;
+  color:#c9b9a4;
+  background:rgba(116,75,48,.14);
+  font-size:.61rem;
+  text-align:center;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.tango-result-summary .result-actions {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:.45rem;
+  margin:0;
+}
+
+.tango-result-summary .result-actions.single {
+  grid-template-columns:1fr;
+}
+
+.tango-result-summary .result-actions button {
+  min-height:2.55rem;
+  border-radius:.68rem;
+  font-size:.74rem;
+}
+
+.tango-result-summary .result-actions .secondary-action {
+  border-color:rgba(222,190,149,.22);
+  color:#e9dcc8;
+  background:rgba(77,56,43,.28);
+}
+
+.tango-result-summary .result-actions .primary-action {
+  color:#fff6e8;
+  background:linear-gradient(135deg,#b54b65,#743044);
+  box-shadow:0 .35rem .9rem rgba(83,24,43,.2);
+}
+
+@keyframes tango-neutral-result-in {
+  from { opacity:0;transform:translateY(.5rem) scale(.97); }
+  to { opacity:1;transform:none; }
+}
+
+@media (max-width:420px) {
+  .tango-result-backdrop { padding:.45rem; }
+  .result-panel.tango-result-card {
+    width:calc(100vw - .9rem);
+    max-height:calc(100dvh - .9rem);
+    gap:.55rem;
+    padding:.65rem;
+    border-radius:1rem;
+  }
+  .tango-result-verdict { padding:0 .4rem .35rem; }
+  .tango-result-status { width:3.15rem;margin-bottom:.12rem; }
+  .tango-result-verdict h2 { font-size:2.35rem; }
+  .tango-result-verdict > p:last-child { margin-top:.2rem;font-size:.59rem; }
+  .tango-result-summary { gap:.42rem;padding:.55rem; }
+  .tango-result-scoreboard { padding:.4rem .5rem; }
+  .tango-result-scoreboard strong { font-size:1.45rem; }
+  .tango-result-meta > div { padding:.32rem .38rem; }
+  .tango-result-summary .result-actions button { min-height:2.4rem; }
+}
+
+@media (max-height:570px) and (min-width:560px) {
+  .result-panel.tango-result-card {
+    width:min(46rem,calc(100vw - 1.2rem));
+    grid-template-columns:minmax(13rem,.8fr) minmax(20rem,1.2fr);
+    align-items:center;
+  }
+  .tango-result-verdict { padding:.25rem .65rem; }
+  .tango-result-summary { align-self:stretch;align-content:center; }
+}
+
+@media (prefers-reduced-motion:reduce) {
+  .result-panel.tango-result-card { animation:none; }
+}
+
 .score-preview-kind {
   position:absolute;
   inset:8% 8% 21%;

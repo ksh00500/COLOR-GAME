@@ -180,7 +180,7 @@ describe("economy policy", () => {
     expect(oklabDistance("#000000", "#ffffff")).toBeGreaterThan(0.9);
   });
 
-  it("adds five deterministic weekly items for every new cosmetic category", () => {
+  it("keeps retired victory effects out of weekly rotations", () => {
     const categories = ["tile_color", "board_theme", "placement_effect", "score_effect", "victory_effect"] as const;
     const catalog = categories.flatMap((category) => ([
       ["common", 14], ["rare", 10], ["epic", 8], ["legendary", 4],
@@ -189,13 +189,14 @@ describe("economy policy", () => {
     ));
     const selected = selectWeeklyCatalogByCategory(catalog, "2026-07-20");
     expect(selected.filter((id) => id.startsWith("tile_color-"))).toHaveLength(13);
-    for (const category of categories.slice(1)) {
+    for (const category of categories.slice(1, 4)) {
       expect(selected.filter((id) => id.startsWith(`${category}-`))).toHaveLength(5);
     }
+    expect(selected.some((id) => id.startsWith("victory_effect-"))).toBe(false);
     expect(selected).toEqual(selectWeeklyCatalogByCategory([...catalog].reverse(), "2026-07-20"));
 
     const following = selectWeeklyCatalogByCategory(catalog, "2026-07-27");
-    for (const category of categories.slice(1)) {
+    for (const category of categories.slice(1, 4)) {
       const firstHasLegendary = selected.some((id) => id.startsWith(`${category}-legendary-`));
       const nextHasLegendary = following.some((id) => id.startsWith(`${category}-legendary-`));
       expect(firstHasLegendary).not.toBe(nextHasLegendary);
@@ -300,5 +301,17 @@ describe("economy policy", () => {
     expect(migration).toContain("check (slot_index between 1 and 3)");
     expect(migration).toContain("from account_loadouts");
     expect(migration).toContain("on conflict (account_id, slot_index) do nothing");
+  });
+
+  it("retires victory effects without deleting account ownership", () => {
+    const migration = readFileSync(
+      fileURLToPath(new URL("../db/migrations/017_retire_victory_effects.sql", import.meta.url)),
+      "utf8",
+    );
+    expect(migration).toContain("delete from weekly_store_items");
+    expect(migration).toContain("set victory_effect_id = null");
+    expect(migration).toContain("where category = 'victory_effect'");
+    expect(migration).toContain("active = false");
+    expect(migration).not.toContain("delete from account_cosmetics");
   });
 });

@@ -36,7 +36,6 @@ export const applyLoadout = (
     ["boardTheme", "BoardTheme"],
     ["placementEffect", "PlacementEffect"],
     ["scoreEffect", "ScoreEffect"],
-    ["victoryEffect", "VictoryEffect"],
   ] as const;
   for (const [slot, datasetName] of styleSlots) {
     const item = economy.inventory.find((entry) => entry.id === economy.styleLoadout?.[slot]);
@@ -56,9 +55,10 @@ export const clearLoadout = (
     root.style.removeProperty(`--equipped-tile-${slot}-background`);
     root.style.removeProperty(`--equipped-tile-${slot}-accent`);
   }
-  for (const datasetName of ["BoardTheme", "PlacementEffect", "ScoreEffect", "VictoryEffect"]) {
+  for (const datasetName of ["BoardTheme", "PlacementEffect", "ScoreEffect"]) {
     root.dataset[`tango${datasetName}`] = "default";
   }
+  delete root.dataset.tangoVictoryEffect;
   for (const slot of ["boardTheme", "placementEffect", "scoreEffect", "victoryEffect"]) {
     for (const suffix of ["a", "b", "c", "duration"]) {
       root.style.removeProperty(`--equipped-${slot}-${suffix}`);

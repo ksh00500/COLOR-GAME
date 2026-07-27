@@ -34,7 +34,7 @@ const compactRarityLabels: Record<CosmeticRarity, string> = {
 };
 type StoreTab = "weekly" | "atelier" | "collection" | "mixer" | "upcoming";
 type CollectionRarity = CosmeticRarity | "all";
-const craftCategories: CraftCategory[] = ["tile_color", "board_theme", "placement_effect", "score_effect", "victory_effect"];
+const craftCategories: CraftCategory[] = ["tile_color", "board_theme", "placement_effect", "score_effect"];
 const categoryLabels: Record<CraftCategory, string> = {
   tile_color: "타일",
   board_theme: "게임판",
@@ -252,7 +252,7 @@ export function StorePage() {
           <div>
             <p className="eyebrow">TANGO STORE</p>
             <h1 id="store-title">{t("Tango 꾸미기 상점")}</h1>
-            <p>{t("타일·게임판·배치·득점·승리 스타일을 나만의 조합으로 완성하세요.")}</p>
+            <p>{t("타일·게임판·배치·득점 스타일을 나만의 조합으로 완성하세요.")}</p>
           </div>
           <div className="chip-wallet" aria-label={t("컬러 칩 잔액")}>
             <span aria-hidden="true">◆</span>

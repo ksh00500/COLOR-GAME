@@ -63,7 +63,7 @@ describe("cosmetic loadout bridge", () => {
     expect(root.dataset.tangoBoardTheme).toBe("default");
     expect(root.dataset.tangoPlacementEffect).toBe("default");
     expect(root.dataset.tangoScoreEffect).toBe("default");
-    expect(root.dataset.tangoVictoryEffect).toBe("default");
+    expect(root.dataset.tangoVictoryEffect).toBeUndefined();
     expect(root.properties.size).toBe(0);
   });
 

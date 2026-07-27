@@ -858,6 +858,7 @@ const messages: Record<string, Message> = {
   "경기 종료": { en: "Match complete", ja: "対戦終了", es: "Partida finalizada", "pt-BR": "Partida encerrada" },
   "다음 승부를 준비하세요": { en: "Prepare for the next match", ja: "次の勝負に備えましょう", es: "Prepárate para la próxima partida", "pt-BR": "Prepare-se para a próxima partida" },
   "최종 점수": { en: "Final score", ja: "最終スコア", es: "Puntuación final", "pt-BR": "Placar final" },
+  "타일·게임판·배치·득점 스타일을 나만의 조합으로 완성하세요.": { en: "Create your own combination of tiles, boards, placement and scoring styles.", ja: "タイル・ゲーム盤・配置・得点スタイルを自分だけの組み合わせで仕上げましょう。", es: "Crea tu combinación de fichas, tableros, colocación y puntuación.", "pt-BR": "Crie sua combinação de peças, tabuleiros, colocação e pontuação." },
   "꾸미기 이름으로 검색": { en: "Search cosmetics by name", ja: "スタイル名で検索", es: "Buscar cosméticos por nombre", "pt-BR": "Buscar cosméticos por nome" },
   "팔레트 믹서": { en: "Palette Mixer", ja: "パレットミキサー", es: "Mezclador de paleta", "pt-BR": "Misturador de paleta" },
   "원하는 꾸미기 종류를 고르고 안료를 섞어 파편 또는 완성 꾸미기 하나를 발견하세요.": { en: "Choose a cosmetic category and mix pigments to discover fragments or one complete cosmetic.", ja: "種類を選び、顔料を混ぜて、かけらまたは完成スタイルを1つ見つけましょう。", es: "Elige una categoría y mezcla pigmentos para descubrir fragmentos o un cosmético completo.", "pt-BR": "Escolha uma categoria e misture pigmentos para descobrir fragmentos ou um cosmético completo." },

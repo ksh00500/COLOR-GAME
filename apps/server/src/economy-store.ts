@@ -256,7 +256,7 @@ export interface EconomyStore {
 const rarities: CosmeticRarity[] = ["common", "rare", "epic", "legendary"];
 export type CraftCategory = "tile_color" | "board_theme" | "placement_effect" | "score_effect" | "victory_effect";
 export type StyleLoadoutSlot = "boardTheme" | "placementEffect" | "scoreEffect" | "victoryEffect";
-const craftCategories: CraftCategory[] = ["tile_color", "board_theme", "placement_effect", "score_effect", "victory_effect"];
+const craftCategories: CraftCategory[] = ["tile_color", "board_theme", "placement_effect", "score_effect"];
 export const weeklyQuestGoals = {
   attendance: 5,
   matches: 20,
@@ -780,7 +780,6 @@ export class PostgresEconomyStore implements EconomyStore {
     if (row?.board_theme_id) loadout.boardTheme = row.board_theme_id;
     if (row?.placement_effect_id) loadout.placementEffect = row.placement_effect_id;
     if (row?.score_effect_id) loadout.scoreEffect = row.score_effect_id;
-    if (row?.victory_effect_id) loadout.victoryEffect = row.victory_effect_id;
     return loadout;
   }
 
@@ -1459,6 +1458,7 @@ export class PostgresEconomyStore implements EconomyStore {
     category: CraftCategory = "tile_color",
     attendanceStreak = 0,
   ): Promise<BoxOutcome> {
+    if (category === "victory_effect") throw new Error("COSMETIC_RETIRED");
     const client = await this.pool.connect();
     let result!: Omit<BoxOutcome, "overview">;
     try {
@@ -1533,6 +1533,7 @@ export class PostgresEconomyStore implements EconomyStore {
     category: CraftCategory = "tile_color",
     attendanceStreak = 0,
   ): Promise<BoxOutcome> {
+    if (category === "victory_effect") throw new Error("COSMETIC_RETIRED");
     const client = await this.pool.connect();
     let cosmetic!: CatalogRow;
     try {
@@ -1572,6 +1573,7 @@ export class PostgresEconomyStore implements EconomyStore {
     cosmeticId?: string,
     attendanceStreak = 0,
   ): Promise<BoxOutcome> {
+    if (category === "victory_effect") throw new Error("COSMETIC_RETIRED");
     const client = await this.pool.connect();
     const cost = mode === "targeted" ? 8 : 4;
     let cosmetic!: CatalogRow;
@@ -1856,6 +1858,9 @@ export class PostgresEconomyStore implements EconomyStore {
     cosmeticId: string | null,
     attendanceStreak = 0,
   ): Promise<EconomyOverview> {
+    if (slot === "victoryEffect" && cosmeticId !== null) {
+      throw new Error("COSMETIC_RETIRED");
+    }
     const slots: Record<StyleLoadoutSlot, { column: string; equipSlot: CosmeticEquipSlot }> = {
       boardTheme: { column: "board_theme_id", equipSlot: "board_theme" },
       placementEffect: { column: "placement_effect_id", equipSlot: "placement_effect" },

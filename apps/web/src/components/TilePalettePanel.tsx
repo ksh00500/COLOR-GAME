@@ -23,7 +23,7 @@ import { TileSkinPreview } from "./TileSkinPreview";
 
 const rarities: CosmeticRarity[] = ["common", "rare", "epic", "legendary"];
 type TileRarityFilter = "all" | CosmeticRarity;
-type CustomizationCategory = "tile_color" | "board_theme" | "placement_effect" | "score_effect" | "victory_effect";
+type CustomizationCategory = "tile_color" | "board_theme" | "placement_effect" | "score_effect";
 
 const tileSlots: Array<{
   key: TileLoadoutSlot;
@@ -37,14 +37,13 @@ const tileSlots: Array<{
 
 const styleSlots: Array<{
   key: StyleLoadoutSlot;
-  category: "board_theme" | "placement_effect" | "score_effect" | "victory_effect";
+  category: "board_theme" | "placement_effect" | "score_effect";
   label: string;
   defaultName: string;
 }> = [
   { key: "boardTheme", category: "board_theme", label: "게임판", defaultName: "기본 원목 게임판" },
   { key: "placementEffect", category: "placement_effect", label: "배치 효과", defaultName: "기본 배치 효과" },
   { key: "scoreEffect", category: "score_effect", label: "득점 효과", defaultName: "기본 득점 효과" },
-  { key: "victoryEffect", category: "victory_effect", label: "승리 연출", defaultName: "기본 승리 연출" },
 ];
 
 export const filterOwnedTileItems = (
