@@ -23,6 +23,11 @@ import {
   type ManagedUser,
 } from "../api";
 import { TileSkinPreview } from "../components/TileSkinPreview";
+import {
+  adminErrorMessage,
+  validateAdminCoupon,
+  validateChipAdjustment,
+} from "../adminValidation";
 
 type AdminTab = "coupons" | "users" | "audit";
 type CatalogOption = AdminCatalogItem;
@@ -222,6 +227,8 @@ export function AdminPage() {
     () => users.find((user) => user.id === selectedUserId) ?? null,
     [selectedUserId, users],
   );
+  const hasValidActionReason = actionReason.trim().length >= 2
+    && actionReason.trim().length <= 200;
 
   const loadAll = async () => {
     const [couponData, catalogData, userData, auditData] = await Promise.all([
@@ -243,7 +250,13 @@ export function AdminPage() {
         setAdmin(value);
         return loadAll();
       })
-      .catch(() => setAdmin(null));
+      .catch((error) => {
+        if (error instanceof ApiError && error.code === "UNAUTHORIZED") {
+          setAdmin(null);
+          return;
+        }
+        setMessage(adminErrorMessage(error, "관리자 데이터를 불러오지 못했습니다."));
+      });
   }, []);
 
   const submitLogin = async () => {
@@ -255,7 +268,7 @@ export function AdminPage() {
       setLogin({ email: "", password: "" });
       await loadAll();
     } catch (error) {
-      setMessage(error instanceof ApiError ? error.code : "관리자 로그인에 실패했습니다.");
+      setMessage(adminErrorMessage(error, "관리자 로그인에 실패했습니다."));
     } finally {
       setBusy(false);
     }
@@ -277,6 +290,11 @@ export function AdminPage() {
   };
 
   const submitCoupon = async () => {
+    const validationError = validateAdminCoupon(draft);
+    if (validationError !== null) {
+      setMessage(validationError);
+      return;
+    }
     setBusy(true);
     setMessage(null);
     try {
@@ -287,16 +305,75 @@ export function AdminPage() {
       setAudit(await fetchAdminAudit());
       setMessage("쿠폰을 저장했습니다.");
     } catch (error) {
-      setMessage(error instanceof ApiError ? error.code : "쿠폰을 저장하지 못했습니다.");
+      setMessage(adminErrorMessage(error, "쿠폰을 저장하지 못했습니다."));
     } finally {
       setBusy(false);
     }
   };
 
-  const refreshUsers = async () => {
-    const next = await fetchAdminUsers(query);
-    setUsers(next);
-    if (selectedUserId && !next.some((user) => user.id === selectedUserId)) setSelectedUserId(null);
+  const refreshUsers = async (showError = true) => {
+    try {
+      const next = await fetchAdminUsers(query);
+      setUsers(next);
+      if (selectedUserId && !next.some((user) => user.id === selectedUserId)) {
+        setSelectedUserId(null);
+      }
+    } catch (error) {
+      if (showError) {
+        setMessage(adminErrorMessage(error, "유저 목록을 불러오지 못했습니다."));
+      }
+      throw error;
+    }
+  };
+
+  const adjustSelectedUserChips = async () => {
+    if (selectedUser === null) return;
+    const validationError = validateChipAdjustment(chipDelta, actionReason);
+    if (validationError !== null) {
+      setMessage(validationError);
+      return;
+    }
+    setBusy(true);
+    setMessage(null);
+    try {
+      const user = await adjustAdminUserChips(
+        selectedUser.id,
+        chipDelta,
+        actionReason.trim(),
+      );
+      setUsers(users.map((item) => item.id === user.id ? user : item));
+      setChipDelta(0);
+      setAudit(await fetchAdminAudit());
+      setMessage("칩 잔액을 변경했습니다.");
+    } catch (error) {
+      setMessage(adminErrorMessage(error, "칩 잔액을 변경하지 못했습니다."));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const updateSelectedUserSuspension = async () => {
+    if (selectedUser === null) return;
+    if (actionReason.trim().length < 2) {
+      setMessage("작업 사유는 2~200자로 입력해 주세요.");
+      return;
+    }
+    setBusy(true);
+    setMessage(null);
+    try {
+      await setAdminUserSuspension(
+        selectedUser.id,
+        !selectedUser.suspendedAt,
+        actionReason.trim(),
+      );
+      await refreshUsers(false);
+      setAudit(await fetchAdminAudit());
+      setMessage(selectedUser.suspendedAt ? "계정 정지를 해제했습니다." : "계정을 정지했습니다.");
+    } catch (error) {
+      setMessage(adminErrorMessage(error, "계정 상태를 변경하지 못했습니다."));
+    } finally {
+      setBusy(false);
+    }
   };
 
   const filteredGrantCatalog = catalog.filter((item) => matchesCatalogSearch(item, grantSearch));
@@ -304,28 +381,36 @@ export function AdminPage() {
   const grantSelectedCosmetics = async (
     selection: { cosmeticIds?: string[]; rarity?: CosmeticRarity },
   ) => {
-    if (selectedUser === null || actionReason.trim() === "") return;
+    if (selectedUser === null) return;
+    if (!hasValidActionReason) {
+      setMessage("작업 사유는 2~200자로 입력해 주세요.");
+      return;
+    }
     setBusy(true);
     setMessage(null);
     try {
-      const granted = await grantAdminUserCosmetics(selectedUser.id, selection, actionReason);
+      const granted = await grantAdminUserCosmetics(selectedUser.id, selection, actionReason.trim());
       setMessage(`${granted}개의 스킨을 새로 지급했습니다.`);
       setGrantCosmeticIds([]);
       await refreshUsers();
       setAudit(await fetchAdminAudit());
     } catch (error) {
-      setMessage(error instanceof ApiError ? error.code : "스킨을 지급하지 못했습니다.");
+      setMessage(adminErrorMessage(error, "스킨을 지급하지 못했습니다."));
     } finally {
       setBusy(false);
     }
   };
 
   const updateAccessTier = async (accessTier: "player" | "tester") => {
-    if (selectedUser === null || actionReason.trim() === "") return;
+    if (selectedUser === null) return;
+    if (!hasValidActionReason) {
+      setMessage("작업 사유는 2~200자로 입력해 주세요.");
+      return;
+    }
     setBusy(true);
     setMessage(null);
     try {
-      const user = await setAdminUserAccessTier(selectedUser.id, accessTier, actionReason);
+      const user = await setAdminUserAccessTier(selectedUser.id, accessTier, actionReason.trim());
       setUsers(users.map((item) => item.id === user.id ? user : item));
       setAudit(await fetchAdminAudit());
       setMessage(
@@ -334,7 +419,7 @@ export function AdminPage() {
           : "테스터 권한을 해제했습니다.",
       );
     } catch (error) {
-      setMessage(error instanceof ApiError ? error.code : "계정 등급을 변경하지 못했습니다.");
+      setMessage(adminErrorMessage(error, "계정 등급을 변경하지 못했습니다."));
     } finally {
       setBusy(false);
     }
@@ -358,7 +443,7 @@ export function AdminPage() {
       setAudit(nextAudit);
       setMessage(`${coupon.code} 쿠폰을 삭제했습니다.`);
     } catch (error) {
-      setMessage(error instanceof ApiError ? error.code : "쿠폰을 삭제하지 못했습니다.");
+      setMessage(adminErrorMessage(error, "쿠폰을 삭제하지 못했습니다."));
     } finally {
       setBusy(false);
     }
@@ -406,7 +491,17 @@ export function AdminPage() {
           <section className="admin-panel">
             <h2>{editingId ? "쿠폰 수정" : "새 쿠폰"}</h2>
             <div className="admin-form-grid">
-              <label>쿠폰 코드<input value={draft.code} onChange={(event) => setDraft({ ...draft, code: event.target.value.toUpperCase() })} /></label>
+              <label>
+                쿠폰 코드
+                <input
+                  minLength={3}
+                  maxLength={40}
+                  value={draft.code}
+                  onChange={(event) => setDraft({ ...draft, code: event.target.value.toUpperCase() })}
+                  placeholder="예: 출시기념_2026"
+                />
+                <small>문자·숫자·밑줄·하이픈을 사용해 3~40자로 입력하세요.</small>
+              </label>
               <label>표시 이름<input value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} /></label>
               <label className="wide">설명<textarea value={draft.description} onChange={(event) => setDraft({ ...draft, description: event.target.value })} /></label>
               <label>시작 시각<input type="datetime-local" value={dateTimeLocal(draft.startsAt)} onChange={(event) => setDraft({ ...draft, startsAt: event.target.value ? new Date(event.target.value).toISOString() : null })} /></label>
@@ -477,7 +572,10 @@ export function AdminPage() {
       {tab === "users" && (
         <div className="admin-two-column admin-users-layout">
           <section className="admin-panel">
-            <form className="admin-search" onSubmit={(event) => { event.preventDefault(); void refreshUsers(); }}>
+            <form className="admin-search" onSubmit={(event) => {
+              event.preventDefault();
+              void refreshUsers().catch(() => undefined);
+            }}>
               <input placeholder="이메일 또는 닉네임" value={query} onChange={(event) => setQuery(event.target.value)} />
               <button type="submit">검색</button>
             </form>
@@ -515,7 +613,16 @@ export function AdminPage() {
                   <div><dt>상자 이용권</dt><dd>{selectedUser.boxTickets}</dd></div>
                   <div><dt>보유 스킨</dt><dd>{selectedUser.cosmeticCount}</dd></div>
                 </dl>
-                <label>작업 사유<input value={actionReason} onChange={(event) => setActionReason(event.target.value)} placeholder="감사 로그에 기록됩니다" /></label>
+                <label>
+                  작업 사유
+                  <input
+                    maxLength={200}
+                    value={actionReason}
+                    onChange={(event) => setActionReason(event.target.value)}
+                    placeholder="2자 이상 입력 · 감사 로그에 기록됩니다"
+                  />
+                  <small>모든 계정 변경은 2자 이상의 사유와 함께 기록됩니다.</small>
+                </label>
                 <div className="admin-user-action">
                   <div>
                     <strong>계정 등급</strong>
@@ -526,7 +633,7 @@ export function AdminPage() {
                   ) : (
                     <button
                       type="button"
-                      disabled={busy || !actionReason}
+                      disabled={busy || !hasValidActionReason}
                       onClick={() => void updateAccessTier(
                         selectedUser.accessTier === "tester" ? "player" : "tester",
                       )}
@@ -536,12 +643,22 @@ export function AdminPage() {
                   )}
                 </div>
                 <div className="admin-user-action">
-                  <input type="number" value={chipDelta} onChange={(event) => setChipDelta(Number(event.target.value))} />
-                  <button type="button" disabled={!actionReason || chipDelta === 0} onClick={() => void adjustAdminUserChips(selectedUser.id, chipDelta, actionReason).then((user) => {
-                    setUsers(users.map((item) => item.id === user.id ? user : item));
-                    setChipDelta(0);
-                    setMessage("칩 잔액을 변경했습니다.");
-                  })}>칩 증감</button>
+                  <input
+                    type="number"
+                    min={-1_000_000}
+                    max={1_000_000}
+                    step={1}
+                    value={chipDelta}
+                    onChange={(event) => setChipDelta(Number(event.target.value))}
+                    aria-label="칩 증감량"
+                  />
+                  <button
+                    type="button"
+                    disabled={busy || chipDelta === 0 || !hasValidActionReason}
+                    onClick={() => void adjustSelectedUserChips()}
+                  >
+                    칩 증감
+                  </button>
                 </div>
                 <section className="admin-grant-cosmetics">
                   <div className="admin-section-title">
@@ -559,7 +676,7 @@ export function AdminPage() {
                       <button
                         type="button"
                         className={`rarity-border-${rarity}`}
-                        disabled={busy || !actionReason}
+                        disabled={busy || !hasValidActionReason}
                         key={rarity}
                         onClick={() => void grantSelectedCosmetics({ rarity })}
                       >
@@ -591,16 +708,20 @@ export function AdminPage() {
                   <button
                     type="button"
                     className="primary-action"
-                    disabled={busy || !actionReason || grantCosmeticIds.length === 0}
+                    disabled={busy || !hasValidActionReason || grantCosmeticIds.length === 0}
                     onClick={() => void grantSelectedCosmetics({ cosmeticIds: grantCosmeticIds })}
                   >
                     선택한 스킨 지급
                   </button>
                 </section>
-                <button className={selectedUser.suspendedAt ? "primary-action" : "danger-action"} type="button" disabled={!actionReason} onClick={() => void setAdminUserSuspension(selectedUser.id, !selectedUser.suspendedAt, actionReason).then(async () => {
-                  await refreshUsers();
-                  setAudit(await fetchAdminAudit());
-                })}>{selectedUser.suspendedAt ? "정지 해제" : "계정 정지"}</button>
+                <button
+                  className={selectedUser.suspendedAt ? "primary-action" : "danger-action"}
+                  type="button"
+                  disabled={busy || !hasValidActionReason}
+                  onClick={() => void updateSelectedUserSuspension()}
+                >
+                  {selectedUser.suspendedAt ? "정지 해제" : "계정 정지"}
+                </button>
               </>
             )}
           </section>

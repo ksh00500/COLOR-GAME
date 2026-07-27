@@ -41,6 +41,7 @@ import {
 } from "./economy-store.js";
 import {
   NullAdminStore,
+  couponCodePattern,
   createAdminToken,
   verifyAdminToken,
   type AdminStore,
@@ -271,7 +272,7 @@ const couponRewardSchema = z.discriminatedUnion("type", [
 ]);
 
 const couponInputSchema = z.object({
-  code: z.string().trim().min(3).max(40).regex(/^[A-Za-z0-9_-]+$/),
+  code: z.string().trim().min(3).max(40).regex(couponCodePattern),
   name: z.string().trim().min(1).max(80),
   description: z.string().trim().max(500).optional().default(""),
   rewards: z.array(couponRewardSchema).min(1).max(20),
@@ -1267,7 +1268,15 @@ export const createServer = (options: ServerOptions = {}) => {
     if (admin === null) return reply.code(401).send({ code: "UNAUTHORIZED" });
     const params = couponIdParamsSchema.safeParse(request.params);
     const body = couponInputSchema.safeParse(request.body ?? {});
-    if (!params.success || !body.success) return reply.code(400).send({ code: "INVALID_REQUEST" });
+    if (!params.success || !body.success) {
+      return reply.code(400).send({
+        code: "INVALID_REQUEST",
+        details: {
+          params: params.success ? null : params.error.flatten(),
+          body: body.success ? null : body.error.flatten(),
+        },
+      });
+    }
     try {
       const coupon = await adminStore.updateCoupon(admin.id, params.data.couponId, body.data);
       return coupon === null
@@ -1308,7 +1317,15 @@ export const createServer = (options: ServerOptions = {}) => {
       delta: z.number().int().min(-1_000_000).max(1_000_000).refine((value) => value !== 0),
       reason: z.string().trim().min(2).max(200),
     }).safeParse(request.body ?? {});
-    if (!params.success || !body.success) return reply.code(400).send({ code: "INVALID_REQUEST" });
+    if (!params.success || !body.success) {
+      return reply.code(400).send({
+        code: "INVALID_REQUEST",
+        details: {
+          params: params.success ? null : params.error.flatten(),
+          body: body.success ? null : body.error.flatten(),
+        },
+      });
+    }
     try {
       const user = await adminStore.adjustUserChips(
         admin.id,
@@ -1330,7 +1347,15 @@ export const createServer = (options: ServerOptions = {}) => {
       accessTier: z.enum(["player", "tester"]),
       reason: z.string().trim().min(2).max(200),
     }).safeParse(request.body ?? {});
-    if (!params.success || !body.success) return reply.code(400).send({ code: "INVALID_REQUEST" });
+    if (!params.success || !body.success) {
+      return reply.code(400).send({
+        code: "INVALID_REQUEST",
+        details: {
+          params: params.success ? null : params.error.flatten(),
+          body: body.success ? null : body.error.flatten(),
+        },
+      });
+    }
     try {
       const user = await adminStore.setUserAccessTier(
         admin.id,

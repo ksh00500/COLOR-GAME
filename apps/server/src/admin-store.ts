@@ -201,6 +201,7 @@ interface ManagedUserRow {
 
 const normalizeEmail = (value: string) => value.trim().toLowerCase();
 const normalizeCode = (value: string) => value.trim().toUpperCase();
+export const couponCodePattern = /^[\p{L}\p{N}_-]+$/u;
 
 export const selectRandomCosmeticCandidates = (
   cosmeticIds: string[],

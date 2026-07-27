@@ -2,12 +2,20 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import {
+  couponCodePattern,
   createAdminToken,
   selectRandomCosmeticCandidates,
   verifyAdminToken,
 } from "./admin-store.js";
 
 describe("admin and coupon policy", () => {
+  it("accepts readable Unicode coupon codes but rejects spaces and punctuation", () => {
+    expect(couponCodePattern.test("출시기념_2026")).toBe(true);
+    expect(couponCodePattern.test("TANGO-WELCOME")).toBe(true);
+    expect(couponCodePattern.test("출시 기념")).toBe(false);
+    expect(couponCodePattern.test("TANGO!")).toBe(false);
+  });
+
   it("keeps admin tokens separate and verifies their signature", () => {
     const token = createAdminToken("admin-1", "session-1", "a-secure-test-secret", 60);
     expect(verifyAdminToken(token, "a-secure-test-secret")).toEqual({
