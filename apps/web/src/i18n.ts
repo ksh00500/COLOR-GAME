@@ -5,6 +5,8 @@ export type Locale = Exclude<AppLanguage, "auto">;
 type Message = Record<Exclude<Locale, "ko">, string>;
 
 const messages: Record<string, Message> = {
+  "관리자 계정": { en: "Admin account", ja: "管理者アカウント", es: "Cuenta de administrador", "pt-BR": "Conta de administrador" },
+  "테스터 계정": { en: "Tester account", ja: "テスターアカウント", es: "Cuenta de pruebas", "pt-BR": "Conta de teste" },
   "또는": { en: "or", ja: "または", es: "o", "pt-BR": "ou" },
   "Tango에서 사용할 닉네임을 정해주세요.": { en: "Choose your Tango nickname.", ja: "Tangoで使うニックネームを決めてください。", es: "Elige tu apodo de Tango.", "pt-BR": "Escolha seu apelido no Tango." },
   "Google 계정으로 시작": { en: "Continue with Google", ja: "Googleアカウントで始める", es: "Continuar con Google", "pt-BR": "Continuar com Google" },

@@ -13,6 +13,7 @@ import {
   grantAdminUserCosmetics,
   hasAdminToken,
   saveAdminCoupon,
+  setAdminUserAccessTier,
   setAdminUserSuspension,
   type AdminAuditEntry,
   type AdminCatalogItem,
@@ -319,6 +320,26 @@ export function AdminPage() {
     }
   };
 
+  const updateAccessTier = async (accessTier: "player" | "tester") => {
+    if (selectedUser === null || actionReason.trim() === "") return;
+    setBusy(true);
+    setMessage(null);
+    try {
+      const user = await setAdminUserAccessTier(selectedUser.id, accessTier, actionReason);
+      setUsers(users.map((item) => item.id === user.id ? user : item));
+      setAudit(await fetchAdminAudit());
+      setMessage(
+        accessTier === "tester"
+          ? "테스터 권한을 부여했습니다. 모든 활성 꾸미기와 프리미엄 기능을 사용할 수 있습니다."
+          : "테스터 권한을 해제했습니다.",
+      );
+    } catch (error) {
+      setMessage(error instanceof ApiError ? error.code : "계정 등급을 변경하지 못했습니다.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const removeCoupon = async (coupon: CouponRecord) => {
     if (!window.confirm(`${coupon.code} 쿠폰을 삭제할까요?`)) return;
     setBusy(true);
@@ -463,7 +484,10 @@ export function AdminPage() {
             <div className="admin-user-list">
               {users.map((user) => (
                 <button className={user.id === selectedUserId ? "active" : ""} key={user.id} onClick={() => setSelectedUserId(user.id)}>
-                  <span><strong>{user.displayName}</strong><small>{user.email}</small></span>
+                  <span>
+                    <strong>{user.displayName}</strong>
+                    <small>{user.email} · {user.accessTier === "admin" ? "관리자" : user.accessTier === "tester" ? "테스터" : "일반"}</small>
+                  </span>
                   <b>{user.colorChips} ◆</b>
                 </button>
               ))}
@@ -474,7 +498,15 @@ export function AdminPage() {
               <>
                 <div className="admin-user-summary">
                   <div><h2>{selectedUser.displayName}</h2><p>{selectedUser.email}</p></div>
-                  <span className={selectedUser.suspendedAt ? "status-off" : "status-on"}>{selectedUser.suspendedAt ? "정지" : "정상"}</span>
+                  <span className={selectedUser.suspendedAt ? "status-off" : "status-on"}>
+                    {selectedUser.suspendedAt
+                      ? "정지"
+                      : selectedUser.accessTier === "admin"
+                        ? "관리자"
+                        : selectedUser.accessTier === "tester"
+                          ? "테스터"
+                          : "일반"}
+                  </span>
                 </div>
                 <dl className="admin-user-stats">
                   <div><dt>레이팅</dt><dd>{selectedUser.rating}</dd></div>
@@ -484,6 +516,25 @@ export function AdminPage() {
                   <div><dt>보유 스킨</dt><dd>{selectedUser.cosmeticCount}</dd></div>
                 </dl>
                 <label>작업 사유<input value={actionReason} onChange={(event) => setActionReason(event.target.value)} placeholder="감사 로그에 기록됩니다" /></label>
+                <div className="admin-user-action">
+                  <div>
+                    <strong>계정 등급</strong>
+                    <small>테스터는 모든 활성 꾸미기와 프리미엄 기능을 가상 소유합니다.</small>
+                  </div>
+                  {selectedUser.accessTier === "admin" ? (
+                    <button type="button" disabled>관리자 고정</button>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={busy || !actionReason}
+                      onClick={() => void updateAccessTier(
+                        selectedUser.accessTier === "tester" ? "player" : "tester",
+                      )}
+                    >
+                      {selectedUser.accessTier === "tester" ? "일반 계정으로 변경" : "테스터로 지정"}
+                    </button>
+                  )}
+                </div>
                 <div className="admin-user-action">
                   <input type="number" value={chipDelta} onChange={(event) => setChipDelta(Number(event.target.value))} />
                   <button type="button" disabled={!actionReason || chipDelta === 0} onClick={() => void adjustAdminUserChips(selectedUser.id, chipDelta, actionReason).then((user) => {

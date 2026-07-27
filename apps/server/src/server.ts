@@ -419,6 +419,7 @@ const publicAccount = (account: AccountSummary) => ({
   email: account.email,
   displayName: account.displayName,
   avatarId: account.avatarId,
+  accessTier: account.accessTier,
   rating: account.rating,
   gamesPlayed: account.gamesPlayed,
   rankedWins: account.rankedWins,
@@ -1318,6 +1319,31 @@ export const createServer = (options: ServerOptions = {}) => {
       return user === null ? reply.code(404).send({ code: "PROFILE_NOT_FOUND" }) : { user };
     } catch {
       return reply.code(409).send({ code: "ADMIN_CHIP_ADJUSTMENT_FAILED" });
+    }
+  });
+
+  app.put("/admin/users/:accountId/access-tier", async (request, reply) => {
+    const admin = await authenticateAdmin(bearerToken(request.headers.authorization));
+    if (admin === null) return reply.code(401).send({ code: "UNAUTHORIZED" });
+    const params = accountIdParamsSchema.safeParse(request.params);
+    const body = z.object({
+      accessTier: z.enum(["player", "tester"]),
+      reason: z.string().trim().min(2).max(200),
+    }).safeParse(request.body ?? {});
+    if (!params.success || !body.success) return reply.code(400).send({ code: "INVALID_REQUEST" });
+    try {
+      const user = await adminStore.setUserAccessTier(
+        admin.id,
+        params.data.accountId,
+        body.data.accessTier,
+        body.data.reason,
+      );
+      return user === null ? reply.code(404).send({ code: "PROFILE_NOT_FOUND" }) : { user };
+    } catch (error) {
+      if (error instanceof Error && error.message === "ADMIN_ACCESS_TIER_IMMUTABLE") {
+        return reply.code(409).send({ code: "ADMIN_ACCESS_TIER_IMMUTABLE" });
+      }
+      throw error;
     }
   });
 

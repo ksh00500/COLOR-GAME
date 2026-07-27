@@ -388,6 +388,11 @@ export function AccountPage({ deletionEntry = false }: { deletionEntry?: boolean
               <div className="account-title-row">
                 <h2>{account.displayName}</h2>
                 <RankBadge rating={account.rating} leaderboardRank={leaderboardRank} />
+                {account.accessTier !== "player" && (
+                  <span className={`account-access-tier account-access-tier-${account.accessTier}`}>
+                    {t(account.accessTier === "admin" ? "관리자 계정" : "테스터 계정")}
+                  </span>
+                )}
               </div>
               <div className="profile-stats">
                 <span><small>{t("레이팅")}</small><strong>{formatNumber(account.rating)}</strong></span>

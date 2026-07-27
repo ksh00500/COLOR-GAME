@@ -8,6 +8,7 @@ import {
   boxPrice,
   canRewardOnlineMatch,
   hexToOklab,
+  hasFullCatalogAccess,
   isRewardEligibleRoom,
   oklabDistance,
   selectWeeklyCatalog,
@@ -313,5 +314,22 @@ describe("economy policy", () => {
     expect(migration).toContain("where category = 'victory_effect'");
     expect(migration).toContain("active = false");
     expect(migration).not.toContain("delete from account_cosmetics");
+  });
+});
+
+describe("privileged cosmetic access", () => {
+  it("grants the full catalog only to tester and admin account tiers", () => {
+    expect(hasFullCatalogAccess("player")).toBe(false);
+    expect(hasFullCatalogAccess("tester")).toBe(true);
+    expect(hasFullCatalogAccess("admin")).toBe(true);
+  });
+
+  it("constrains persisted account access tiers", () => {
+    const migrationPath = fileURLToPath(
+      new URL("../db/migrations/018_account_access_tiers.sql", import.meta.url),
+    );
+    const migration = readFileSync(migrationPath, "utf8");
+    expect(migration).toContain("default 'player'");
+    expect(migration).toContain("'player', 'tester', 'admin'");
   });
 });

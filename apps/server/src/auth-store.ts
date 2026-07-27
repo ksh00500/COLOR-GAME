@@ -7,11 +7,14 @@ import { nextAttendanceStreak } from "./attendance.js";
 const scrypt = promisify(scryptCallback);
 const kFactor = 32;
 
+export type AccountAccessTier = "player" | "tester" | "admin";
+
 export interface AccountSummary {
   id: string;
   email: string;
   displayName: string;
   avatarId: string;
+  accessTier: AccountAccessTier;
   rating: number;
   gamesPlayed: number;
   rankedWins: number;
@@ -195,6 +198,7 @@ interface AccountRow {
   email: string;
   display_name: string;
   avatar_id: string;
+  access_tier: AccountAccessTier;
   password_hash: string | null;
   rating: number;
   games_played: number;
@@ -236,6 +240,7 @@ const toAccountSummary = (row: AccountRow): AccountSummary => ({
   email: row.email,
   displayName: row.display_name,
   avatarId: row.avatar_id,
+  accessTier: row.access_tier,
   rating: row.rating,
   gamesPlayed: row.games_played,
   rankedWins: row.ranked_wins,
@@ -313,6 +318,39 @@ export class PostgresAccountStore implements AccountStore {
 
   async close(): Promise<void> {
     await this.pool.end();
+  }
+
+  async upsertPrivilegedAccount(input: {
+    email: string;
+    password: string;
+    displayName: string;
+    avatarId: string;
+    accessTier: Extract<AccountAccessTier, "admin" | "tester">;
+  }): Promise<AccountSummary> {
+    const passwordHash = await hashPassword(input.password);
+    const result = await this.pool.query<AccountRow>(
+      `insert into accounts (
+         id, email, display_name, avatar_id, password_hash, access_tier
+       ) values ($1, $2, $3, $4, $5, $6)
+       on conflict (email) do update set
+         password_hash = excluded.password_hash,
+         access_tier = excluded.access_tier,
+         suspended_at = null,
+         suspension_reason = null,
+         updated_at = now()
+       returning *`,
+      [
+        randomUUID(),
+        normalizeEmail(input.email),
+        input.displayName.trim(),
+        input.avatarId,
+        passwordHash,
+        input.accessTier,
+      ],
+    );
+    const row = result.rows[0];
+    if (row === undefined) throw new Error("PRIVILEGED_ACCOUNT_BOOTSTRAP_FAILED");
+    return toAccountSummary(row);
   }
 
   async register(input: {

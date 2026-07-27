@@ -9,6 +9,7 @@ import {
 import { promisify } from "node:util";
 import { Pool, type PoolClient, type PoolConfig } from "pg";
 import type { CosmeticRarity } from "./economy-store.js";
+import type { AccountAccessTier } from "./auth-store.js";
 
 const scrypt = promisify(scryptCallback);
 
@@ -69,6 +70,7 @@ export interface ManagedUser {
   id: string;
   email: string;
   displayName: string;
+  accessTier: AccountAccessTier;
   rating: number;
   gamesPlayed: number;
   rankedWins: number;
@@ -117,6 +119,12 @@ export interface AdminStore {
   redeemCoupon(accountId: string, code: string): Promise<CouponRedemptionResult>;
   listUsers(query: string, limit: number): Promise<ManagedUser[]>;
   adjustUserChips(adminId: string, accountId: string, delta: number, reason: string): Promise<ManagedUser | null>;
+  setUserAccessTier(
+    adminId: string,
+    accountId: string,
+    accessTier: Extract<AccountAccessTier, "player" | "tester">,
+    reason: string,
+  ): Promise<ManagedUser | null>;
   grantUserCosmetic(adminId: string, accountId: string, cosmeticId: string, reason: string): Promise<boolean>;
   grantUserCosmetics(
     adminId: string,
@@ -143,6 +151,7 @@ export class NullAdminStore implements AdminStore {
   async redeemCoupon(): Promise<CouponRedemptionResult> { throw new Error("COUPON_STORE_DISABLED"); }
   async listUsers(): Promise<ManagedUser[]> { return []; }
   async adjustUserChips(): Promise<ManagedUser | null> { return null; }
+  async setUserAccessTier(): Promise<ManagedUser | null> { return null; }
   async grantUserCosmetic(): Promise<boolean> { return false; }
   async grantUserCosmetics(): Promise<number> { return 0; }
   async setUserSuspension(): Promise<boolean> { return false; }
@@ -176,6 +185,7 @@ interface ManagedUserRow {
   id: string;
   email: string;
   display_name: string;
+  access_tier: AccountAccessTier;
   rating: number;
   games_played: number;
   ranked_wins: number;
@@ -251,6 +261,7 @@ const toManagedUser = (row: ManagedUserRow): ManagedUser => ({
   id: row.id,
   email: row.email,
   displayName: row.display_name,
+  accessTier: row.access_tier,
   rating: row.rating,
   gamesPlayed: row.games_played,
   rankedWins: row.ranked_wins,
@@ -649,11 +660,15 @@ export class PostgresAdminStore implements AdminStore {
 
   private async readUser(client: PoolClient, accountId: string): Promise<ManagedUser | null> {
     const result = await client.query<ManagedUserRow>(
-      `select a.id, a.email, a.display_name, a.rating, a.games_played,
+      `select a.id, a.email, a.display_name, a.access_tier, a.rating, a.games_played,
               a.ranked_wins, a.ranked_losses, a.ranked_draws,
               coalesce(w.color_chips, 0) as color_chips,
               coalesce(t.quantity, 0) as box_tickets,
-              (select count(*)::text from account_cosmetics ac where ac.account_id = a.id) as cosmetic_count,
+              (case
+                when a.access_tier in ('tester', 'admin')
+                  then (select count(*)::text from cosmetic_catalog c where c.active)
+                else (select count(*)::text from account_cosmetics ac where ac.account_id = a.id)
+              end) as cosmetic_count,
               a.suspended_at, a.suspension_reason, a.created_at
        from accounts a
        left join economy_wallets w on w.account_id = a.id
@@ -666,11 +681,15 @@ export class PostgresAdminStore implements AdminStore {
 
   async listUsers(query: string, limit: number): Promise<ManagedUser[]> {
     const result = await this.pool.query<ManagedUserRow>(
-      `select a.id, a.email, a.display_name, a.rating, a.games_played,
+      `select a.id, a.email, a.display_name, a.access_tier, a.rating, a.games_played,
               a.ranked_wins, a.ranked_losses, a.ranked_draws,
               coalesce(w.color_chips, 0) as color_chips,
               coalesce(t.quantity, 0) as box_tickets,
-              (select count(*)::text from account_cosmetics ac where ac.account_id = a.id) as cosmetic_count,
+              (case
+                when a.access_tier in ('tester', 'admin')
+                  then (select count(*)::text from cosmetic_catalog c where c.active)
+                else (select count(*)::text from account_cosmetics ac where ac.account_id = a.id)
+              end) as cosmetic_count,
               a.suspended_at, a.suspension_reason, a.created_at
        from accounts a
        left join economy_wallets w on w.account_id = a.id
@@ -712,6 +731,103 @@ export class PostgresAdminStore implements AdminStore {
         [accountId, delta, sourceKey, balance, JSON.stringify({ reason, adminId })],
       );
       await this.audit(client, adminId, "user.chips.adjust", "account", accountId, { delta, reason });
+      const user = await this.readUser(client, accountId);
+      await client.query("commit");
+      return user;
+    } catch (error) {
+      await client.query("rollback");
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  async setUserAccessTier(
+    adminId: string,
+    accountId: string,
+    accessTier: "player" | "tester",
+    reason: string,
+  ): Promise<ManagedUser | null> {
+    const client = await this.pool.connect();
+    try {
+      await client.query("begin");
+      const updated = await client.query<{ id: string }>(
+        `update accounts
+         set access_tier = $2, updated_at = now()
+         where id = $1 and access_tier <> 'admin'
+         returning id`,
+        [accountId, accessTier],
+      );
+      if ((updated.rowCount ?? 0) === 0) {
+        const existing = await client.query<{ access_tier: AccountAccessTier }>(
+          "select access_tier from accounts where id = $1",
+          [accountId],
+        );
+        if (existing.rows[0]?.access_tier === "admin") {
+          throw new Error("ADMIN_ACCESS_TIER_IMMUTABLE");
+        }
+        await client.query("rollback");
+        return null;
+      }
+      if (accessTier === "player") {
+        await client.query(
+          `update account_loadouts as loadout
+           set
+             tile_color_a_id = case when tile_color_a_id is null or exists (
+               select 1 from account_cosmetics where account_id = loadout.account_id and cosmetic_id = tile_color_a_id
+             ) then tile_color_a_id else null end,
+             tile_color_b_id = case when tile_color_b_id is null or exists (
+               select 1 from account_cosmetics where account_id = loadout.account_id and cosmetic_id = tile_color_b_id
+             ) then tile_color_b_id else null end,
+             tile_color_c_id = case when tile_color_c_id is null or exists (
+               select 1 from account_cosmetics where account_id = loadout.account_id and cosmetic_id = tile_color_c_id
+             ) then tile_color_c_id else null end,
+             board_theme_id = case when board_theme_id is null or exists (
+               select 1 from account_cosmetics where account_id = loadout.account_id and cosmetic_id = board_theme_id
+             ) then board_theme_id else null end,
+             placement_effect_id = case when placement_effect_id is null or exists (
+               select 1 from account_cosmetics where account_id = loadout.account_id and cosmetic_id = placement_effect_id
+             ) then placement_effect_id else null end,
+             score_effect_id = case when score_effect_id is null or exists (
+               select 1 from account_cosmetics where account_id = loadout.account_id and cosmetic_id = score_effect_id
+             ) then score_effect_id else null end,
+             victory_effect_id = case when victory_effect_id is null or exists (
+               select 1 from account_cosmetics where account_id = loadout.account_id and cosmetic_id = victory_effect_id
+             ) then victory_effect_id else null end,
+             profile_frame_id = case when profile_frame_id is null or exists (
+               select 1 from account_cosmetics where account_id = loadout.account_id and cosmetic_id = profile_frame_id
+             ) then profile_frame_id else null end,
+             profile_badge_id = case when profile_badge_id is null or exists (
+               select 1 from account_cosmetics where account_id = loadout.account_id and cosmetic_id = profile_badge_id
+             ) then profile_badge_id else null end,
+             profile_title_id = case when profile_title_id is null or exists (
+               select 1 from account_cosmetics where account_id = loadout.account_id and cosmetic_id = profile_title_id
+             ) then profile_title_id else null end,
+             updated_at = now()
+           where account_id = $1`,
+          [accountId],
+        );
+        await client.query(
+          `update account_tile_palettes as palette
+           set
+             tile_color_a_id = case when tile_color_a_id is null or exists (
+               select 1 from account_cosmetics where account_id = palette.account_id and cosmetic_id = tile_color_a_id
+             ) then tile_color_a_id else null end,
+             tile_color_b_id = case when tile_color_b_id is null or exists (
+               select 1 from account_cosmetics where account_id = palette.account_id and cosmetic_id = tile_color_b_id
+             ) then tile_color_b_id else null end,
+             tile_color_c_id = case when tile_color_c_id is null or exists (
+               select 1 from account_cosmetics where account_id = palette.account_id and cosmetic_id = tile_color_c_id
+             ) then tile_color_c_id else null end,
+             updated_at = now()
+           where account_id = $1`,
+          [accountId],
+        );
+      }
+      await this.audit(client, adminId, "user.access_tier.set", "account", accountId, {
+        accessTier,
+        reason,
+      });
       const user = await this.readUser(client, accountId);
       await client.query("commit");
       return user;

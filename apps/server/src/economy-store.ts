@@ -3,6 +3,9 @@ import { Pool, type PoolClient, type PoolConfig } from "pg";
 import type { MatchCosmetics, RoomSnapshot } from "@color-game/shared-types";
 
 export type CosmeticRarity = "common" | "rare" | "epic" | "legendary";
+export type EconomyAccessTier = "player" | "tester" | "admin";
+export const hasFullCatalogAccess = (accessTier: EconomyAccessTier): boolean =>
+  accessTier === "tester" || accessTier === "admin";
 export type CosmeticCategory =
   | "tile_color"
   | "board_theme"
@@ -623,6 +626,17 @@ export class PostgresEconomyStore implements EconomyStore {
     await this.pool.end();
   }
 
+  private async accountHasFullCatalogAccess(
+    client: PoolClient,
+    accountId: string,
+  ): Promise<boolean> {
+    const result = await client.query<{ access_tier: EconomyAccessTier }>(
+      "select access_tier from accounts where id = $1",
+      [accountId],
+    );
+    return hasFullCatalogAccess(result.rows[0]?.access_tier ?? "player");
+  }
+
   private async ensureAccount(client: PoolClient, accountId: string): Promise<void> {
     await client.query(
       `insert into economy_wallets (account_id) values ($1) on conflict (account_id) do nothing`,
@@ -749,14 +763,28 @@ export class PostgresEconomyStore implements EconomyStore {
       `select c.id, c.category, c.equip_slot, c.rarity, c.name_ko, c.name_en, c.localized_names,
               c.description_ko, c.chip_price, c.visual_kind, c.visual_config,
               c.representative_color, c.availability, c.collection_key, c.duration_ms,
-              ac_owned.first_equipped_at,
+              case
+                when exists (
+                  select 1 from accounts access_account
+                  where access_account.id = $1
+                    and access_account.access_tier in ('tester', 'admin')
+                ) then now()
+                else ac_owned.first_equipped_at
+              end as first_equipped_at,
               exists (
                 select 1 from account_cosmetic_wishlist aw
                 where aw.account_id = $1 and aw.cosmetic_id = c.id
               ) as wishlisted,
-              exists (
+              (
+                exists (
                 select 1 from account_cosmetics ac
                 where ac.account_id = $1 and ac.cosmetic_id = c.id
+                )
+                or exists (
+                  select 1 from accounts access_account
+                  where access_account.id = $1
+                    and access_account.access_tier in ('tester', 'admin')
+                )
               ) as owned
        from cosmetic_catalog c
        left join account_cosmetics ac_owned
@@ -841,6 +869,7 @@ export class PostgresEconomyStore implements EconomyStore {
       weeklyWins,
       products,
       tilePalettes,
+      accessTierResult,
     ] = await Promise.all([
       client.query<WalletRow>(`select * from economy_wallets where account_id = $1`, [accountId]),
       client.query<{ quantity: number }>(
@@ -876,8 +905,18 @@ export class PostgresEconomyStore implements EconomyStore {
       this.readCatalog(
         client,
         accountId,
-        `join account_cosmetics ac on ac.cosmetic_id = c.id and ac.account_id = $1
-         where c.active order by c.rarity, c.name_ko`,
+        `where c.active and (
+           exists (
+             select 1 from account_cosmetics ac
+             where ac.account_id = $1 and ac.cosmetic_id = c.id
+           )
+           or exists (
+             select 1 from accounts access_account
+             where access_account.id = $1
+               and access_account.access_tier in ('tester', 'admin')
+           )
+         )
+         order by c.rarity, c.name_ko`,
         [],
       ),
       client.query<LedgerRow>(
@@ -933,6 +972,10 @@ export class PostgresEconomyStore implements EconomyStore {
         `select id, reference_price_krw, bonus_chips from monetization_products where active`,
       ),
       this.readTilePalettes(client, accountId),
+      client.query<{ access_tier: EconomyAccessTier }>(
+        "select access_tier from accounts where id = $1",
+        [accountId],
+      ),
     ]);
 
     const fragments = Object.fromEntries(rarities.map((rarity) => [rarity, 0])) as Record<CosmeticRarity, number>;
@@ -991,6 +1034,14 @@ export class PostgresEconomyStore implements EconomyStore {
       : "upcoming";
     const founderProduct = products.rows.find((product) => product.id === "founder_pack");
     const premiumProduct = products.rows.find((product) => product.id === "premium_pack");
+    const fullCatalogAccess = hasFullCatalogAccess(
+      accessTierResult.rows[0]?.access_tier ?? "player",
+    );
+    const entitlements = new Set(entitlementResult.rows.map((row) => row.entitlement));
+    if (fullCatalogAccess) {
+      entitlements.add("premium");
+      entitlements.add("founder");
+    }
     const catalogWithLoadout = (rows: CatalogRow[]) => rows.map((row) => toCatalogItem(row, loadout));
 
     return {
@@ -1152,7 +1203,7 @@ export class PostgresEconomyStore implements EconomyStore {
         balanceAfter: row.balance_after,
         createdAt: row.created_at.toISOString(),
       })),
-      entitlements: entitlementResult.rows.map((row) => row.entitlement),
+      entitlements: [...entitlements],
       monetization: {
         rewardAds: {
           status: monetizationEnabled && (config?.reward_ads_enabled ?? false) ? "available" : "upcoming",
@@ -1398,6 +1449,9 @@ export class PostgresEconomyStore implements EconomyStore {
       );
       const price = item.rows[0]?.chip_price;
       if (price === undefined) throw new Error("COSMETIC_NOT_IN_WEEKLY_STORE");
+      if (await this.accountHasFullCatalogAccess(client, accountId)) {
+        throw new Error("COSMETIC_ALREADY_OWNED");
+      }
       const owned = await client.query(
         `select 1 from account_cosmetics where account_id = $1 and cosmetic_id = $2`,
         [accountId, cosmeticId],
@@ -1430,6 +1484,7 @@ export class PostgresEconomyStore implements EconomyStore {
     source: string,
     category?: CraftCategory,
   ): Promise<CatalogRow | null> {
+    if (await this.accountHasFullCatalogAccess(client, accountId)) return null;
     const candidates = await this.readCatalog(
       client,
       accountId,
@@ -1592,6 +1647,9 @@ export class PostgresEconomyStore implements EconomyStore {
         cosmetic = granted;
       } else {
         if (!cosmeticId) throw new Error("COSMETIC_REQUIRED");
+        if (await this.accountHasFullCatalogAccess(client, accountId)) {
+          throw new Error("COSMETIC_NOT_CRAFTABLE");
+        }
         const rows = await this.readCatalog(
           client,
           accountId,
@@ -1647,9 +1705,27 @@ export class PostgresEconomyStore implements EconomyStore {
       : (await client.query<{ id: string; representative_color: string | null }>(
           `select c.id, c.representative_color
            from cosmetic_catalog c
-           join account_cosmetics ac on ac.cosmetic_id = c.id
-           where ac.account_id = $1 and c.id = any($2::text[]) and c.active
-             and c.equip_slot = 'tile_color' and c.availability in ('active', 'pack_only')`,
+           where c.id = any($2::text[]) and c.active
+             and c.equip_slot = 'tile_color'
+             and (
+               exists (
+                 select 1 from account_cosmetics ac
+                 where ac.account_id = $1 and ac.cosmetic_id = c.id
+               )
+               or exists (
+                 select 1 from accounts access_account
+                 where access_account.id = $1
+                   and access_account.access_tier in ('tester', 'admin')
+               )
+             )
+             and (
+               c.availability in ('active', 'pack_only')
+               or exists (
+                 select 1 from accounts access_account
+                 where access_account.id = $1
+                   and access_account.access_tier in ('tester', 'admin')
+               )
+             )`,
           [accountId, uniqueIds],
         )).rows;
     if (
@@ -1875,9 +1951,26 @@ export class PostgresEconomyStore implements EconomyStore {
       if (cosmeticId !== null) {
         const owned = await client.query(
           `select 1 from cosmetic_catalog c
-           join account_cosmetics ac on ac.cosmetic_id = c.id
-           where ac.account_id = $1 and c.id = $2 and c.equip_slot = $3
-             and c.active and c.availability in ('active', 'pack_only')`,
+           where c.id = $2 and c.equip_slot = $3 and c.active
+             and (
+               exists (
+                 select 1 from account_cosmetics ac
+                 where ac.account_id = $1 and ac.cosmetic_id = c.id
+               )
+               or exists (
+                 select 1 from accounts access_account
+                 where access_account.id = $1
+                   and access_account.access_tier in ('tester', 'admin')
+               )
+             )
+             and (
+               c.availability in ('active', 'pack_only')
+               or exists (
+                 select 1 from accounts access_account
+                 where access_account.id = $1
+                   and access_account.access_tier in ('tester', 'admin')
+               )
+             )`,
           [accountId, cosmeticId, target.equipSlot],
         );
         if ((owned.rowCount ?? 0) === 0) throw new Error("COSMETIC_NOT_OWNED");
@@ -1952,8 +2045,15 @@ export class PostgresEconomyStore implements EconomyStore {
   async hasEntitlement(accountId: string, entitlement: "founder" | "premium"): Promise<boolean> {
     const values = entitlement === "premium" ? ["premium", "founder"] : ["founder"];
     const result = await this.pool.query(
-      `select 1 from account_entitlements
-       where account_id = $1 and entitlement = any($2::text[]) and status = 'active' limit 1`,
+      `select 1
+       where exists (
+         select 1 from account_entitlements
+         where account_id = $1 and entitlement = any($2::text[]) and status = 'active'
+       ) or exists (
+         select 1 from accounts
+         where id = $1 and access_tier in ('tester', 'admin')
+       )
+       limit 1`,
       [accountId, values],
     );
     return (result.rowCount ?? 0) > 0;

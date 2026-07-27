@@ -5,6 +5,7 @@ export interface Account {
   email: string;
   displayName: string;
   avatarId: string;
+  accessTier: "player" | "tester" | "admin";
   rating: number;
   gamesPlayed: number;
   rankedWins: number;
@@ -309,6 +310,7 @@ export interface ManagedUser {
   id: string;
   email: string;
   displayName: string;
+  accessTier: "player" | "tester" | "admin";
   rating: number;
   gamesPlayed: number;
   rankedWins: number;
@@ -806,6 +808,19 @@ export const adjustAdminUserChips = async (
     method: "POST",
     body: JSON.stringify({ delta, reason }),
   })).user;
+
+export const setAdminUserAccessTier = async (
+  accountId: string,
+  accessTier: "player" | "tester",
+  reason: string,
+): Promise<ManagedUser> =>
+  (await adminRequest<{ user: ManagedUser }>(
+    `/admin/users/${encodeURIComponent(accountId)}/access-tier`,
+    {
+      method: "PUT",
+      body: JSON.stringify({ accessTier, reason }),
+    },
+  )).user;
 
 export const grantAdminUserCosmetic = async (
   accountId: string,

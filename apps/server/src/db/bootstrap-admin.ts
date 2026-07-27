@@ -1,4 +1,5 @@
 import { createAdminStoreFromEnv } from "../admin-store.js";
+import { PostgresAccountStore } from "../auth-store.js";
 
 const email = process.env.ADMIN_EMAIL?.trim();
 const password = process.env.ADMIN_PASSWORD;
@@ -20,6 +21,21 @@ if (!store.enabled) {
 
 try {
   const admin = await store.upsertBootstrapAdmin(email, password);
+  const accountStore = new PostgresAccountStore({
+    connectionString: process.env.DATABASE_URL!,
+    ssl: process.env.DATABASE_SSL === "true",
+  });
+  try {
+    await accountStore.upsertPrivilegedAccount({
+      email,
+      password,
+      displayName: "Tango Admin",
+      avatarId: "orbit",
+      accessTier: "admin",
+    });
+  } finally {
+    await accountStore.close();
+  }
   console.log(`Admin account ready: ${admin.email}`);
 } finally {
   await store.close();

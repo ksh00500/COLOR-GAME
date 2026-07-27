@@ -7556,6 +7556,34 @@ kbd {
   margin-top: 0.7rem;
 }
 
+.admin-user-action > div {
+  display: grid;
+  flex: 1;
+  gap: 0.2rem;
+}
+
+.admin-user-action > div small {
+  color: var(--muted);
+}
+
+.account-access-tier {
+  padding: 0.35rem 0.65rem;
+  border: 1px solid color-mix(in srgb, var(--accent) 65%, var(--line));
+  border-radius: 999px;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface-soft));
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.account-access-tier-admin {
+  color: #e9bd62;
+  border-color: color-mix(in srgb, #e9bd62 65%, var(--line));
+  background: color-mix(in srgb, #e9bd62 10%, var(--surface-soft));
+}
+
 .danger-action {
   margin-top: 1rem;
   color: white;
