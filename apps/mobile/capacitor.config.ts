@@ -10,13 +10,13 @@ const config: CapacitorConfig = {
   },
   android: {
     allowMixedContent: false,
-    backgroundColor: "#171815",
+    backgroundColor: "#F4EFE6",
   },
   plugins: {
     SplashScreen: {
       launchAutoHide: true,
       launchShowDuration: 1200,
-      backgroundColor: "#171815",
+      backgroundColor: "#F4EFE6",
       showSpinner: false,
     },
     StatusBar: {
