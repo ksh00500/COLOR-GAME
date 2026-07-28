@@ -767,7 +767,6 @@ export function StorePage() {
                     <div className="mixer-pigment pigment-two" aria-hidden="true" />
                     <div className="mixer-pigment pigment-three" aria-hidden="true" />
                     <div className="mixer-bowl" aria-hidden="true">
-                      <span /><span /><span />
                       <i />
                     </div>
                   </div>
