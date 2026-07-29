@@ -2034,6 +2034,11 @@ export const createServer = (options: ServerOptions = {}) => {
       if (reward.adUnit !== adMobRewardedAdUnitId && reward.adUnit !== expectedUnitSuffix) {
         return reply.code(400).send({ code: "ADMOB_AD_UNIT_MISMATCH" });
       }
+      // AdMob verifies callback URLs with a signed probe that has no
+      // app-issued custom_data. Validate it without crediting a wallet.
+      if (reward.customData === null || reward.customData === "") {
+        return reply.code(200).send({ ok: true, validation: true });
+      }
       await economyStore.verifyRewardAdSession({
         sessionId: reward.customData,
         userId: reward.userId,

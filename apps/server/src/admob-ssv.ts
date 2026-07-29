@@ -16,7 +16,7 @@ interface AdMobVerifierKeyResponse {
 export interface AdMobSsvPayload {
   adNetwork: string;
   adUnit: string;
-  customData: string;
+  customData: string | null;
   keyId: number;
   rewardAmount: number;
   rewardItem: string;
@@ -85,7 +85,7 @@ export const parseAdMobSsvUrl = (
     payload: {
       adNetwork: readRequired(params, "ad_network"),
       adUnit: readRequired(params, "ad_unit"),
-      customData: readRequired(params, "custom_data"),
+      customData: params.get("custom_data"),
       keyId,
       rewardAmount,
       rewardItem: readRequired(params, "reward_item"),

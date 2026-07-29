@@ -44,4 +44,25 @@ describe("AdMob SSV parser", () => {
       + "&reward_item=chips&timestamp=4&transaction_id=5&signature=abc&key_id=7&extra=1",
     )).toThrow("ADMOB_SSV_PARAMETER_ORDER_INVALID");
   });
+
+  it("accepts a signed console probe without custom data", () => {
+    const { privateKey, publicKey } = generateKeyPairSync("ec", {
+      namedCurve: "prime256v1",
+    });
+    const signedQuery = [
+      "ad_network=5450213213286189855",
+      "ad_unit=1234567890",
+      "reward_amount=12",
+      "reward_item=color_chips",
+      "timestamp=1785292800000",
+      "transaction_id=test-transaction",
+    ].join("&");
+    const signature = sign("sha256", Buffer.from(signedQuery), privateKey);
+    const parsed = parseAdMobSsvUrl(
+      `/ads/admob/ssv?${signedQuery}&signature=${toBase64Url(signature)}&key_id=7`,
+    );
+
+    expect(parsed.payload.customData).toBeNull();
+    expect(verify("sha256", parsed.signedContent, publicKey, parsed.signature)).toBe(true);
+  });
 });
