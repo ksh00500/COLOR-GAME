@@ -168,6 +168,28 @@ export interface RewardIdentities {
   [playerId: string]: string;
 }
 
+export interface RewardAdSession {
+  id: string;
+  customData: string;
+  userId: string;
+  expiresAt: string;
+}
+
+export interface RewardAdSessionStatus {
+  status: "created" | "verified" | "expired";
+  economy: EconomyOverview;
+}
+
+export interface VerifiedRewardAd {
+  sessionId: string;
+  userId: string | null;
+  transactionId: string;
+  adUnit: string;
+  rewardAmount: number;
+  rewardItem: string;
+  timestamp: number;
+}
+
 export interface EconomyStore {
   readonly enabled: boolean;
   close(): Promise<void>;
@@ -252,6 +274,13 @@ export interface EconomyStore {
     slotIndex: number,
     attendanceStreak?: number,
   ): Promise<EconomyOverview>;
+  createRewardAdSession(accountId: string): Promise<RewardAdSession>;
+  getRewardAdSessionStatus(
+    accountId: string,
+    sessionId: string,
+    attendanceStreak?: number,
+  ): Promise<RewardAdSessionStatus>;
+  verifyRewardAdSession(reward: VerifiedRewardAd): Promise<void>;
   hasEntitlement(accountId: string, entitlement: "founder" | "premium"): Promise<boolean>;
   recordFinishedRoom(room: RoomSnapshot, rewardIdentities?: RewardIdentities): Promise<void>;
 }
@@ -608,6 +637,9 @@ export class NullEconomyStore implements EconomyStore {
   async equipTileLoadout(): Promise<EconomyOverview> { throw new Error("DATABASE_DISABLED"); }
   async saveTilePalette(): Promise<EconomyOverview> { throw new Error("DATABASE_DISABLED"); }
   async deleteTilePalette(): Promise<EconomyOverview> { throw new Error("DATABASE_DISABLED"); }
+  async createRewardAdSession(): Promise<RewardAdSession> { throw new Error("DATABASE_DISABLED"); }
+  async getRewardAdSessionStatus(): Promise<RewardAdSessionStatus> { throw new Error("DATABASE_DISABLED"); }
+  async verifyRewardAdSession(): Promise<void> { throw new Error("DATABASE_DISABLED"); }
   async hasEntitlement(): Promise<boolean> { return false; }
   async recordFinishedRoom(): Promise<void> {}
 }
@@ -2057,6 +2089,151 @@ export class PostgresEconomyStore implements EconomyStore {
       [accountId, values],
     );
     return (result.rowCount ?? 0) > 0;
+  }
+
+  async createRewardAdSession(accountId: string): Promise<RewardAdSession> {
+    const client = await this.pool.connect();
+    const id = randomUUID();
+    const expiresAt = new Date(Date.now() + 60 * 60_000);
+    try {
+      await client.query("begin");
+      await this.ensureAccount(client, accountId);
+      await this.lockWallet(client, accountId);
+      const dayKey = seoulDayKey();
+      await client.query(
+        `update ad_reward_sessions set status = 'expired'
+         where account_id = $1 and status = 'created' and expires_at <= now()`,
+        [accountId],
+      );
+      const usage = await client.query<{ count: string }>(
+        `select count(*)::text as count from ad_reward_sessions
+         where account_id = $1 and day_key = $2 and status in ('created', 'verified')`,
+        [accountId, dayKey],
+      );
+      if (Number.parseInt(usage.rows[0]?.count ?? "0", 10) >= 3) {
+        throw new Error("REWARD_AD_DAILY_LIMIT");
+      }
+      await client.query(
+        `insert into ad_reward_sessions (
+           id, account_id, day_key, status, reward_chips, expires_at
+         ) values ($1, $2, $3, 'created', 12, $4)`,
+        [id, accountId, dayKey, expiresAt],
+      );
+      await client.query("commit");
+      return {
+        id,
+        customData: id,
+        userId: accountId,
+        expiresAt: expiresAt.toISOString(),
+      };
+    } catch (error) {
+      await client.query("rollback");
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  async getRewardAdSessionStatus(
+    accountId: string,
+    sessionId: string,
+    attendanceStreak = 0,
+  ): Promise<RewardAdSessionStatus> {
+    await this.pool.query(
+      `update ad_reward_sessions set status = 'expired'
+       where id = $1 and account_id = $2 and status = 'created' and expires_at <= now()`,
+      [sessionId, accountId],
+    );
+    const result = await this.pool.query<{ status: RewardAdSessionStatus["status"] }>(
+      `select status from ad_reward_sessions where id = $1 and account_id = $2`,
+      [sessionId, accountId],
+    );
+    const row = result.rows[0];
+    if (row === undefined) throw new Error("REWARD_AD_SESSION_NOT_FOUND");
+    return {
+      status: row.status,
+      economy: await this.getOverview(accountId, attendanceStreak),
+    };
+  }
+
+  async verifyRewardAdSession(reward: VerifiedRewardAd): Promise<void> {
+    const client = await this.pool.connect();
+    try {
+      await client.query("begin");
+      const duplicateTransaction = await client.query<{ id: string }>(
+        `select id from ad_reward_sessions where admob_transaction_id = $1`,
+        [reward.transactionId],
+      );
+      if ((duplicateTransaction.rowCount ?? 0) > 0) {
+        await client.query("commit");
+        return;
+      }
+      const session = await client.query<{
+        account_id: string;
+        day_key: string;
+        status: RewardAdSessionStatus["status"];
+        reward_chips: number;
+        expires_at: Date;
+      }>(
+        `select account_id, day_key, status, reward_chips, expires_at
+         from ad_reward_sessions where id = $1 for update`,
+        [reward.sessionId],
+      );
+      const row = session.rows[0];
+      if (row === undefined) throw new Error("REWARD_AD_SESSION_NOT_FOUND");
+      if (reward.userId !== null && reward.userId !== row.account_id) {
+        throw new Error("REWARD_AD_USER_MISMATCH");
+      }
+      if (row.status === "verified") {
+        await client.query("commit");
+        return;
+      }
+      if (row.status !== "created" || row.expires_at.getTime() <= Date.now()) {
+        await client.query(
+          `update ad_reward_sessions set status = 'expired' where id = $1`,
+          [reward.sessionId],
+        );
+        throw new Error("REWARD_AD_SESSION_EXPIRED");
+      }
+      await this.ensureAccount(client, row.account_id);
+      await this.lockWallet(client, row.account_id);
+      const usage = await client.query<{ count: string }>(
+        `select count(*)::text as count from ad_reward_sessions
+         where account_id = $1 and day_key = $2 and status = 'verified'`,
+        [row.account_id, row.day_key],
+      );
+      if (Number.parseInt(usage.rows[0]?.count ?? "0", 10) >= 3) {
+        throw new Error("REWARD_AD_DAILY_LIMIT");
+      }
+      await this.credit(
+        client,
+        row.account_id,
+        row.reward_chips,
+        "reward_ad",
+        `admob:${reward.transactionId}`,
+        {
+          adUnit: reward.adUnit,
+          rewardAmount: reward.rewardAmount,
+          rewardItem: reward.rewardItem,
+          timestamp: reward.timestamp,
+          sessionId: reward.sessionId,
+        },
+      );
+      await client.query(
+        `update ad_reward_sessions set
+           status = 'verified',
+           admob_transaction_id = $2,
+           verified_at = now()
+         where id = $1`,
+        [reward.sessionId, reward.transactionId],
+      );
+      await client.query("commit");
+    } catch (error) {
+      await client.query("rollback");
+      throw error;
+    } finally {
+      client.release();
+    }
   }
 
   private async rewardOnlineMatch(

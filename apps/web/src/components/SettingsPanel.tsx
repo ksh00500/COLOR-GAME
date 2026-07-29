@@ -10,6 +10,7 @@ import {
   type ThemePreference,
 } from "../settings";
 import { isNativeApp } from "../nativeApp";
+import { showNativeAdPrivacyOptions } from "../rewardAds";
 import { openTutorial } from "./TutorialPanel";
 
 interface SettingsPanelProps {
@@ -38,6 +39,7 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
   const { t } = useI18n();
   const [recordingShortcut, setRecordingShortcut] = useState<number | null>(null);
   const [shortcutError, setShortcutError] = useState<string | null>(null);
+  const [adPrivacyMessage, setAdPrivacyMessage] = useState<string | null>(null);
   const showKeyboardSettings = !isNativeApp();
 
   const setColorShortcut = (index: number, event: ReactKeyboardEvent<HTMLButtonElement>) => {
@@ -266,6 +268,27 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
             {t("튜토리얼 다시 보기")}
           </button>
         </div>
+
+        {isNativeApp() && (
+          <div className="setting-group">
+            <div className="setting-label">
+              <strong>{t("광고 개인정보 설정")}</strong>
+              <span>{t("맞춤형 광고와 개인정보 동의 선택을 다시 확인합니다.")}</span>
+            </div>
+            <button
+              className="secondary-action settings-tutorial-action"
+              type="button"
+              onClick={() => {
+                setAdPrivacyMessage(null);
+                void showNativeAdPrivacyOptions()
+                  .catch(() => setAdPrivacyMessage(t("현재 변경할 광고 개인정보 설정이 없습니다.")));
+              }}
+            >
+              {t("광고 개인정보 선택 관리")}
+            </button>
+            {adPrivacyMessage !== null && <small role="status">{adPrivacyMessage}</small>}
+          </div>
+        )}
       </section>
     </div>
   );

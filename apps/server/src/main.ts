@@ -57,6 +57,9 @@ const serverOptions: ServerOptions = {
   economyStore,
   adminStore,
   googleTokenVerifier,
+  ...(process.env.ADMOB_REWARDED_AD_UNIT_ID !== undefined
+    ? { adMobRewardedAdUnitId: process.env.ADMOB_REWARDED_AD_UNIT_ID }
+    : {}),
   authSecret,
   requireDatabaseHealth,
   corsOrigin,

@@ -2,9 +2,13 @@ import { useState } from "react";
 import {
   ApiError,
   claimEconomyQuest,
+  createRewardAdSession,
+  fetchRewardAdSession,
   type EconomyOverview,
 } from "../api";
 import { useI18n } from "../i18n";
+import { isNativeApp } from "../nativeApp";
+import { showNativeRewardedAd } from "../rewardAds";
 
 export const questLabels = {
   welcome: "신규 계정 보상",
@@ -57,6 +61,39 @@ export function EconomyQuestGrid({
     }
   };
 
+  const watchRewardAd = async () => {
+    setBusy("reward_ad");
+    setMessage(null);
+    try {
+      const created = await createRewardAdSession();
+      const result = await showNativeRewardedAd({
+        adUnitId: created.adUnitId,
+        customData: created.session.customData,
+        userId: created.session.userId,
+      });
+      if (!result.earnedReward) {
+        setMessage("광고 시청을 완료하면 보상을 받을 수 있습니다.");
+        return;
+      }
+      setMessage("광고 보상을 확인하고 있습니다.");
+      for (let attempt = 0; attempt < 20; attempt += 1) {
+        await new Promise((resolve) => window.setTimeout(resolve, 1_500));
+        const status = await fetchRewardAdSession(created.session.id);
+        if (status.status === "verified") {
+          onEconomyChange(status.economy);
+          setMessage("컬러 칩 12개를 받았습니다.");
+          return;
+        }
+        if (status.status === "expired") break;
+      }
+      setMessage("보상 확인이 지연되고 있습니다. 확인이 끝나면 자동으로 지급됩니다.");
+    } catch (error) {
+      setMessage(error instanceof ApiError ? error.code : "광고를 불러오지 못했습니다.");
+    } finally {
+      setBusy(null);
+    }
+  };
+
   return (
     <>
       {!compact && (
@@ -93,7 +130,17 @@ export function EconomyQuestGrid({
                   {t(quest.claimed ? "완료" : quest.claimable ? "받기" : "진행 중")}
                 </button>
               ) : quest.key === "reward_ad" ? (
-                <b>🔒 {t("출시 예정")}</b>
+                economy.monetization.rewardAds.status === "available" && isNativeApp() ? (
+                  <button
+                    type="button"
+                    disabled={busy !== null || quest.progress >= quest.goal}
+                    onClick={() => void watchRewardAd()}
+                  >
+                    {t(busy === "reward_ad" ? "광고 불러오는 중" : "광고 보고 받기")}
+                  </button>
+                ) : (
+                  <b>🔒 {t("출시 예정")}</b>
+                )
               ) : (
                 <b>{t(quest.claimed ? "완료" : "자동 지급")}</b>
               )}

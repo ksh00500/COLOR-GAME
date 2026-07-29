@@ -140,14 +140,37 @@ Play Store에 업로드할 때마다 `versionCode`를 반드시 증가시킨다.
 
 ## 수익화 준비 상태
 
-무료 컬러 칩 경제와 타일 색 상점은 서버 기능으로 동작한다. 창립자 팩, 프리미엄 팩,
-보상형 광고는 화면에 출시 예정으로만 표시하며 Play 상품 ID와 AdMob ID가 준비되기 전에는
-서버가 `FEATURE_LOCKED`로 거부한다.
+무료 컬러 칩 경제와 타일 색 상점은 서버 기능으로 동작한다. 창립자 팩과 프리미엄 팩은
+Play 상품 ID가 준비되기 전까지 서버가 `FEATURE_LOCKED`로 거부한다.
 
-AdMob 계정이 준비되면 `deploy/android/app-ads.txt.example`의 게시자 ID를 실제 값으로
-교체하고 `https://tangogame.kro.kr/app-ads.txt`에서 제공한다. 개발 중에는 Google 공식
-테스트 광고 단위만 사용한다. 보상 지급은 앱 콜백이 아니라 EC2의 SSV 검증과 고유
-`transaction_id`를 기준으로 처리한다.
+보상형 광고는 Android 전용 네이티브 브리지로 구현한다. 개발용 `debug` 빌드는 항상
+Google 공식 테스트 광고 단위를 사용하며, `release` 빌드는 서버가 광고 세션과 함께
+반환한 운영 광고 단위를 사용한다. AndroidManifest의 AdMob 앱 ID는 운영 AAB를 만들기
+전에 반드시 Tango의 실제 앱 ID로 교체한다.
+
+AdMob 운영 설정:
+
+1. Tango Android 앱에 보상형 광고 단위를 만들고 보상을 `color_chips`, 수량을 `12`로 둔다.
+2. Tango 앱 ID는 `ca-app-pub-8457266089811417~1188969871`, 보상형 광고 단위 ID는
+   `ca-app-pub-8457266089811417/2084806073`을 사용한다.
+3. 광고 단위의 서버 측 확인(SSV) URL을
+   `https://www.tangocolor.com/ads/admob/ssv`로 설정한다.
+4. EC2 `/etc/color-game/server.env`에
+   `ADMOB_REWARDED_AD_UNIT_ID=ca-app-pub-8457266089811417/2084806073`을 추가한다.
+5. `monetization_config.monetization_enabled`와 `reward_ads_enabled`는 테스트와
+   운영 검증이 끝난 뒤에만 활성화한다.
+6. AdMob 개인정보 보호 및 메시지에서 EEA/영국/스위스용 동의 메시지를 게시한다.
+
+`https://www.tangocolor.com/app-ads.txt`는 다음 한 줄을 그대로 반환해야 한다.
+
+```text
+google.com, pub-8457266089811417, DIRECT, f08c47fec0942fa0
+```
+
+보상 지급은 앱의 완료 콜백만 신뢰하지 않는다. 앱이 발급받은 일회용 세션 ID를
+AdMob `custom_data`로 전송하고, EC2가 Google ECDSA 서명과 광고 단위, 계정, 세션 만료,
+일일 3회 제한 및 고유 `transaction_id`를 검증한 뒤 DB 트랜잭션으로 12칩을 지급한다.
+앱은 SSV 완료 상태를 조회해 지급 결과를 표시한다.
 
 Play Billing 연결 시 창립자·프리미엄 팩은 비소모성 일회성 상품으로 등록한다. 정식 출시
 시각과 창립자 판매 종료 시각은 서버 설정에 입력하며, 창립자 판매 기간은 정확히 30일이다.

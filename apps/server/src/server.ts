@@ -51,6 +51,10 @@ import {
   type GoogleTokenVerifier,
 } from "./google-auth.js";
 import {
+  GoogleAdMobSsvVerifier,
+  type AdMobSsvVerifier,
+} from "./admob-ssv.js";
+import {
   gameMoveSchema,
   gameRematchSchema,
   gameResignSchema,
@@ -70,6 +74,8 @@ export interface ServerOptions {
   economyStore?: EconomyStore;
   adminStore?: AdminStore;
   googleTokenVerifier?: GoogleTokenVerifier;
+  adMobSsvVerifier?: AdMobSsvVerifier;
+  adMobRewardedAdUnitId?: string;
   authSecret?: string;
   tokenTtlSeconds?: number;
   requireDatabaseHealth?: boolean;
@@ -211,6 +217,10 @@ const tilePaletteParamsSchema = z.object({
   slotIndex: z.coerce.number().int().min(1).max(3),
 });
 
+const rewardAdSessionParamsSchema = z.object({
+  sessionId: z.string().uuid(),
+});
+
 const tilePaletteSaveSchema = tileBatchEquipSchema.extend({
   name: z.string().trim().min(1).max(24).nullable().optional().default(null),
 });
@@ -322,6 +332,7 @@ const economyErrorStatus = (error: unknown): { status: number; code: string } =>
     || code === "WISHLIST_LIMIT_REACHED"
     || code === "COSMETIC_NOT_CRAFTABLE"
     || code === "COSMETIC_RETIRED"
+    || code === "REWARD_AD_DAILY_LIMIT"
   ) {
     return { status: 409, code };
   }
@@ -331,6 +342,9 @@ const economyErrorStatus = (error: unknown): { status: number; code: string } =>
     || code === "ATTENDANCE_REQUIRED"
     || code === "COSMETIC_NOT_FOUND"
     || code === "COSMETIC_REQUIRED"
+    || code === "REWARD_AD_SESSION_NOT_FOUND"
+    || code === "REWARD_AD_SESSION_EXPIRED"
+    || code === "REWARD_AD_USER_MISMATCH"
   ) {
     return { status: 400, code };
   }
@@ -466,6 +480,8 @@ export const createServer = (options: ServerOptions = {}) => {
   const economyStore = options.economyStore ?? new NullEconomyStore();
   const adminStore = options.adminStore ?? new NullAdminStore();
   const googleTokenVerifier = options.googleTokenVerifier ?? new NullGoogleTokenVerifier();
+  const adMobSsvVerifier = options.adMobSsvVerifier ?? new GoogleAdMobSsvVerifier();
+  const adMobRewardedAdUnitId = options.adMobRewardedAdUnitId?.trim() ?? "";
   const metrics = new ServerMetrics();
   const authSecret = options.authSecret ?? "dev-only-color-game-secret-for-local-development";
   const tokenTtlSeconds = options.tokenTtlSeconds ?? 60 * 60 * 24 * 30;
@@ -1968,10 +1984,70 @@ export const createServer = (options: ServerOptions = {}) => {
         message: "Reward ads will unlock at official launch.",
       });
     }
-    return reply.code(503).send({
-      code: "ADMOB_NOT_CONFIGURED",
-      message: "AdMob production credentials are not configured.",
-    });
+    if (adMobRewardedAdUnitId === "") {
+      return reply.code(503).send({
+        code: "ADMOB_NOT_CONFIGURED",
+        message: "AdMob production credentials are not configured.",
+      });
+    }
+    try {
+      return {
+        session: await economyStore.createRewardAdSession(account.id),
+        adUnitId: adMobRewardedAdUnitId,
+      };
+    } catch (error) {
+      const mapped = economyErrorStatus(error);
+      return reply.code(mapped.status).send({ code: mapped.code });
+    }
+  });
+
+  app.get("/ads/reward/session/:sessionId", async (request, reply) => {
+    const account = await authenticateToken(bearerToken(request.headers.authorization));
+    if (account === null || !economyStore.enabled) {
+      return reply.code(401).send({ code: "UNAUTHORIZED", message: "Sign in is required." });
+    }
+    const params = rewardAdSessionParamsSchema.safeParse(request.params);
+    if (!params.success) return reply.code(400).send({ code: "INVALID_REQUEST" });
+    try {
+      return {
+        session: await economyStore.getRewardAdSessionStatus(
+          account.id,
+          params.data.sessionId,
+          account.attendanceStreak,
+        ),
+      };
+    } catch (error) {
+      const mapped = economyErrorStatus(error);
+      return reply.code(mapped.status).send({ code: mapped.code });
+    }
+  });
+
+  app.get("/ads/admob/ssv", async (request, reply) => {
+    if (!economyStore.enabled || adMobRewardedAdUnitId === "") {
+      return reply.code(503).send({ code: "ADMOB_NOT_CONFIGURED" });
+    }
+    try {
+      const reward = await adMobSsvVerifier.verify(request.raw.url ?? request.url);
+      const expectedUnitSuffix = adMobRewardedAdUnitId.includes("/")
+        ? adMobRewardedAdUnitId.slice(adMobRewardedAdUnitId.lastIndexOf("/") + 1)
+        : adMobRewardedAdUnitId;
+      if (reward.adUnit !== adMobRewardedAdUnitId && reward.adUnit !== expectedUnitSuffix) {
+        return reply.code(400).send({ code: "ADMOB_AD_UNIT_MISMATCH" });
+      }
+      await economyStore.verifyRewardAdSession({
+        sessionId: reward.customData,
+        userId: reward.userId,
+        transactionId: reward.transactionId,
+        adUnit: reward.adUnit,
+        rewardAmount: reward.rewardAmount,
+        rewardItem: reward.rewardItem,
+        timestamp: reward.timestamp,
+      });
+      return reply.code(200).send({ ok: true });
+    } catch (error) {
+      request.log.warn({ error }, "Rejected AdMob SSV callback");
+      return reply.code(400).send({ code: "ADMOB_SSV_INVALID" });
+    }
   });
 
   app.get("/replays/:gameId", async (request, reply) => {

@@ -591,6 +591,31 @@ export const claimEconomyQuest = async (
   return result;
 };
 
+export interface RewardAdSession {
+  id: string;
+  customData: string;
+  userId: string;
+  expiresAt: string;
+}
+
+export const createRewardAdSession = async (): Promise<{
+  session: RewardAdSession;
+  adUnitId: string;
+}> => request("/ads/reward/session", {
+  method: "POST",
+  body: JSON.stringify({ timeZone: browserTimeZone() }),
+});
+
+export const fetchRewardAdSession = async (
+  sessionId: string,
+): Promise<{ status: "created" | "verified" | "expired"; economy: EconomyOverview }> => {
+  const result = await request<{
+    session: { status: "created" | "verified" | "expired"; economy: EconomyOverview };
+  }>(`/ads/reward/session/${encodeURIComponent(sessionId)}`);
+  if (result.session.status === "verified") economyCache = result.session.economy;
+  return result.session;
+};
+
 export const purchaseCosmetic = async (cosmeticId: string): Promise<EconomyOverview> => {
   const data = await request<{ economy: EconomyOverview }>(
     `/economy/store/${encodeURIComponent(cosmeticId)}/purchase`,

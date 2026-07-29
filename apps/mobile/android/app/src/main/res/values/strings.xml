@@ -4,4 +4,6 @@
     <string name="title_activity_main">Tango</string>
     <string name="package_name">com.ksh.tangogame</string>
     <string name="custom_url_scheme">com.ksh.tangogame</string>
+    <string name="admob_app_id">ca-app-pub-8457266089811417~1188969871</string>
+    <string name="admob_test_rewarded_ad_unit_id">ca-app-pub-3940256099942544/5224354917</string>
 </resources>

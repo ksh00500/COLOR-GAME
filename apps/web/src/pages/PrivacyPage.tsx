@@ -37,6 +37,10 @@ export function PrivacyPage() {
           <p>{t("전송 구간은 HTTPS로 보호하며 비밀번호는 원문으로 저장하지 않습니다. Google 로그인을 선택하면 Google이 인증을 처리하며, 서버와 데이터베이스 운영을 위해 Amazon Web Services 인프라를 사용합니다.")}</p>
         </section>
         <section>
+          <h2>{t("광고와 보상")}</h2>
+          <p>{t("Android 앱에서 이용자가 직접 선택한 보상형 광고를 제공하기 위해 Google AdMob을 사용합니다. Google은 광고 제공, 빈도 제한, 부정 이용 방지와 측정을 위해 광고 식별자, 기기 정보, IP 주소와 광고 상호작용 정보를 처리할 수 있습니다. 광고 시청 완료 보상은 Google의 서버 검증 결과와 고유 거래 번호를 확인한 뒤 지급합니다.")}</p>
+        </section>
+        <section>
           <h2>{t("문의")}</h2>
           <a href={`mailto:${supportEmail}`}>{supportEmail}</a>
         </section>
