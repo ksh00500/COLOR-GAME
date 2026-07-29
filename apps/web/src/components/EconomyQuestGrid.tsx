@@ -11,7 +11,6 @@ import { isNativeApp } from "../nativeApp";
 import { showNativeRewardedAd } from "../rewardAds";
 
 export const questLabels = {
-  welcome: "신규 계정 보상",
   attendance: "오늘의 출석",
   online_matches: "온라인 대전 보상",
   first_online_win: "오늘의 첫 승리",
@@ -24,7 +23,6 @@ export const questLabels = {
 } as const;
 
 const claimRoutes = {
-  welcome: "welcome",
   attendance: "attendance",
   first_online_win: "first-online-win",
   daily_complete: "daily-complete",
@@ -112,7 +110,10 @@ export function EconomyQuestGrid({
           .map((quest) => {
           const canClaim = quest.key in claimRoutes;
           return (
-            <article key={`${quest.key}:${quest.cycleKey}`}>
+            <article
+              key={`${quest.key}:${quest.cycleKey}`}
+              className={quest.key === "reward_ad" ? "quest-card-reward-ad" : undefined}
+            >
               <span>
                 <strong>{t(questLabels[quest.key])}</strong>
                 <small>

@@ -77,6 +77,36 @@ describe("economy policy", () => {
     expect(storeSource).not.toContain("'attendance_streak', $2, 20, 7, 7");
   });
 
+  it("starts new accounts with 500 chips without a welcome quest", () => {
+    const migration = readFileSync(
+      fileURLToPath(new URL("../db/migrations/019_new_account_starting_chips.sql", import.meta.url)),
+      "utf8",
+    );
+    expect(migration).toContain("after insert on accounts");
+    expect(migration).toContain("'account:initial:500'");
+    expect(migration).toContain("500");
+    expect(migration).toContain("delete from economy_quest_unlocks");
+
+    const storeSource = readFileSync(
+      fileURLToPath(new URL("./economy-store.ts", import.meta.url)),
+      "utf8",
+    );
+    expect(storeSource).not.toContain("const welcome = quests.find");
+    expect(storeSource).not.toContain('key: "welcome",');
+    expect(storeSource).not.toContain("values ($1, 'welcome', 'once', 100, 1, 1)");
+  });
+
+  it("makes attendance reward claims safe to retry", () => {
+    const storeSource = readFileSync(
+      fileURLToPath(new URL("./economy-store.ts", import.meta.url)),
+      "utf8",
+    );
+    expect(storeSource).toContain("attendanceQuest.rows[0]?.status === \"unlocked\"");
+    expect(storeSource).not.toContain(
+      'if ((created.rowCount ?? 0) === 0) throw new Error("QUEST_ALREADY_CLAIMED")',
+    );
+  });
+
   it("uses the v1.2.1 palette box price", () => {
     expect(boxPrice).toBe(100);
   });

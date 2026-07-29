@@ -82,7 +82,7 @@ const statsForAccount = (
 };
 
 export function AccountPage({ deletionEntry = false }: { deletionEntry?: boolean }) {
-  const { t, formatNumber, formatDate, formatKstDate } = useI18n();
+  const { t, formatNumber, formatDate } = useI18n();
   const [mode, setMode] = useState<AuthMode>("login");
   const [account, setAccount] = useState<Account | null>(
     () => getAuthToken() === null ? null : getCachedAccount(),
@@ -421,7 +421,7 @@ export function AccountPage({ deletionEntry = false }: { deletionEntry?: boolean
                 </span>
                 <span>
                   <small>{t("최근 출석")}</small>
-                  <strong>{account.lastAttendanceDate === null ? "-" : formatKstDate(account.lastAttendanceDate)}</strong>
+                  <strong>{account.lastAttendanceDate === null ? "-" : account.lastAttendanceDate.slice(0, 10)}</strong>
                 </span>
               </div>
               <nav className="account-tabs" aria-label={t("마이페이지 메뉴")}>

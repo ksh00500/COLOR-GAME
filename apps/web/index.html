@@ -8,8 +8,36 @@
       content="탕고(Tango) — 색 타일을 놓아 연결하는 전략 보드게임"
     />
     <meta name="theme-color" content="#f2eadc" />
+    <meta name="color-scheme" content="light dark" />
     <link rel="icon" href="/tango-mark.svg" type="image/svg+xml" />
     <title>Tango 탕고 | 색을 잇는 전략 게임</title>
+    <style>
+      html, body, #root { min-height: 100%; margin: 0; background: #f4efe6; }
+      html[data-theme="dark"], html[data-theme="dark"] body, html[data-theme="dark"] #root {
+        background: #121312;
+      }
+      @media (prefers-color-scheme: dark) {
+        html:not([data-theme]), html:not([data-theme]) body, html:not([data-theme]) #root {
+          background: #121312;
+        }
+      }
+    </style>
+    <script>
+      (() => {
+        try {
+          const stored = JSON.parse(localStorage.getItem("color-line-settings-v1") || "{}");
+          const theme = stored.theme === "light" || stored.theme === "dark"
+            ? stored.theme
+            : matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+          document.documentElement.dataset.theme = theme;
+          document.querySelector('meta[name="theme-color"]')
+            ?.setAttribute("content", theme === "dark" ? "#121312" : "#f2eadc");
+        } catch {
+          document.documentElement.dataset.theme =
+            matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

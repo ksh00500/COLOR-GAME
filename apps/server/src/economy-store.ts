@@ -690,13 +690,6 @@ export class PostgresEconomyStore implements EconomyStore {
         [accountId, rarity],
       );
     }
-    await client.query(
-      `insert into economy_quest_unlocks (
-         account_id, quest_key, cycle_key, reward_chips, progress, goal
-       ) values ($1, 'welcome', 'once', 100, 1, 1)
-       on conflict (account_id, quest_key, cycle_key) do nothing`,
-      [accountId],
-    );
   }
 
   private async lockWallet(client: PoolClient, accountId: string): Promise<void> {
@@ -1023,7 +1016,6 @@ export class PostgresEconomyStore implements EconomyStore {
     const currentAttendance = quests.find(
       (quest) => quest.quest_key === "attendance" && quest.cycle_key === dayKey,
     );
-    const welcome = quests.find((quest) => quest.quest_key === "welcome");
     const firstWin = quests.find(
       (quest) => quest.quest_key === "first_online_win" && quest.cycle_key === dayKey,
     );
@@ -1107,17 +1099,6 @@ export class PostgresEconomyStore implements EconomyStore {
       tilePalettes,
       upcomingCategories: ["profile"],
       quests: [
-        {
-          key: "welcome",
-          period: "once",
-          cycleKey: "once",
-          rewardChips: 100,
-          rewardBoxTickets: 0,
-          claimed: welcome?.status === "claimed",
-          claimable: welcome?.status === "unlocked",
-          progress: 1,
-          goal: 1,
-        },
         {
           key: "attendance",
           period: "daily",
@@ -1340,15 +1321,23 @@ export class PostgresEconomyStore implements EconomyStore {
       await client.query("begin");
       await this.ensureAccount(client, accountId);
       await this.lockWallet(client, accountId);
-      const created = await client.query(
+      await client.query(
         `insert into economy_quest_unlocks (
            account_id, quest_key, cycle_key, reward_chips, progress, goal
          ) values ($1, 'attendance', $2, 5, 1, 1)
          on conflict (account_id, quest_key, cycle_key) do nothing`,
         [accountId, attendedOn],
       );
-      if ((created.rowCount ?? 0) === 0) throw new Error("QUEST_ALREADY_CLAIMED");
-      await this.claimQuestRow(client, accountId, "attendance", attendedOn);
+      const attendanceQuest = await client.query<{ status: "unlocked" | "claimed" }>(
+        `select status
+         from economy_quest_unlocks
+         where account_id = $1 and quest_key = 'attendance' and cycle_key = $2
+         for update`,
+        [accountId, attendedOn],
+      );
+      if (attendanceQuest.rows[0]?.status === "unlocked") {
+        await this.claimQuestRow(client, accountId, "attendance", attendedOn);
+      }
       await client.query("commit");
     } catch (error) {
       await client.query("rollback");

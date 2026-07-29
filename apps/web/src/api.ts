@@ -166,7 +166,6 @@ export interface EconomyOverview {
   upcomingCategories: Array<Exclude<CosmeticCategory, "tile_color">>;
   quests: Array<{
     key:
-      | "welcome"
       | "attendance"
       | "online_matches"
       | "first_online_win"
@@ -567,7 +566,6 @@ export const fetchEconomy = async (
 
 export const claimEconomyQuest = async (
   quest:
-    | "welcome"
     | "attendance"
     | "first-online-win"
     | "daily-complete"

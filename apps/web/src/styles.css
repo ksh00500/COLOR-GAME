@@ -5799,6 +5799,10 @@ kbd {
   background: var(--app-panel-muted);
 }
 
+.quest-grid .quest-card-reward-ad {
+  grid-column: span 2;
+}
+
 .quest-grid article > span,
 .inventory-grid article > span:nth-child(2) {
   display: grid;
@@ -6642,10 +6646,10 @@ kbd {
 }
 
 .quest-grid.compact strong {
-  overflow: hidden;
   font-size: 0.7rem;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 
 .quest-grid.compact small {
@@ -6660,7 +6664,8 @@ kbd {
 
 .quest-grid.compact b {
   font-size: 0.6rem;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  text-align: end;
 }
 
 .home-quest-login {
