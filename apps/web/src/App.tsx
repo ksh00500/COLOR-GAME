@@ -16,6 +16,7 @@ import { NativeAppBridge } from "./components/NativeAppBridge";
 import { CosmeticLoadoutBridge } from "./components/CosmeticLoadoutBridge";
 import { AttendanceCheckInModal } from "./components/AttendanceCheckInModal";
 import { AdminPage } from "./pages/AdminPage";
+import { NativeBannerAdController } from "./components/NativeBannerAdController";
 
 export function App() {
   const adminRoute = useLocation().pathname.startsWith("/admin");
@@ -23,6 +24,7 @@ export function App() {
     <>
       {!adminRoute && <NativeAppBridge />}
       {!adminRoute && <CosmeticLoadoutBridge />}
+      {!adminRoute && <NativeBannerAdController />}
       <Routes>
         <Route path="/admin" element={<AdminPage />} />
         <Route path="/" element={<LobbyPage />} />

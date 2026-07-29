@@ -1,4 +1,6 @@
 import type { GameState } from "@color-game/shared-types";
+import { useEffect } from "react";
+import { setNativeFixedBannerPlacement } from "../bannerAds";
 import { useI18n } from "../i18n";
 
 interface ResultPanelProps {
@@ -27,6 +29,13 @@ export function ResultPanel({
   lobbyLabel = "메인으로",
 }: ResultPanelProps) {
   const { t } = useI18n();
+  const finished = game.status === "finished";
+
+  useEffect(() => {
+    setNativeFixedBannerPlacement("result", finished);
+    return () => setNativeFixedBannerPlacement("result", false);
+  }, [finished]);
+
   if (game.status !== "finished") return null;
 
   const primary = game.players.find((player) => player.id === perspectivePlayerId) ?? game.players[0];

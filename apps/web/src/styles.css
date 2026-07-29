@@ -32,6 +32,7 @@
   --safe-area-right: env(safe-area-inset-right, 0px);
   --safe-area-bottom: env(safe-area-inset-bottom, 0px);
   --safe-area-left: env(safe-area-inset-left, 0px);
+  --native-banner-height: 0px;
   --app-page: #f2eadf;
   --app-page-deep: #dfd0bd;
   --app-ink: #2f2a24;
@@ -639,6 +640,10 @@ p {
 
 .account-title-row h2 {
   margin: 0;
+}
+
+html.native-fixed-banner-visible {
+  --native-banner-height: 50px;
 }
 
 .account-logout-shortcut {

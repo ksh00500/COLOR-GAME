@@ -4926,3 +4926,17 @@ html[data-tango-score-effect]:not([data-tango-score-effect="default"]) .game-boa
   .score-preview-motif *::before,
   .score-preview-motif *::after { animation-play-state:paused !important; }
 }
+
+html.native-fixed-banner-visible .tango-result-backdrop {
+  bottom: calc(var(--native-banner-height) + var(--safe-area-bottom));
+}
+
+@media (max-width:640px) {
+  html.native-fixed-banner-visible .app-frame {
+    padding-bottom:calc(116px + var(--safe-area-bottom) + var(--native-banner-height));
+  }
+
+  html.native-fixed-banner-visible .app-sidebar .sidebar-menu {
+    bottom:calc(var(--native-banner-height) + var(--safe-area-bottom));
+  }
+}
