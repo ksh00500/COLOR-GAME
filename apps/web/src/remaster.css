@@ -4933,10 +4933,11 @@ html.native-fixed-banner-visible .tango-result-backdrop {
 
 @media (max-width:640px) {
   html.native-fixed-banner-visible .app-frame {
-    padding-bottom:calc(116px + var(--safe-area-bottom) + var(--native-banner-height));
+    padding-bottom:calc(66px + var(--safe-area-bottom) + var(--native-banner-height));
   }
 
   html.native-fixed-banner-visible .app-sidebar .sidebar-menu {
     bottom:calc(var(--native-banner-height) + var(--safe-area-bottom));
+    padding-bottom:.2rem;
   }
 }

@@ -15,7 +15,12 @@ function isNativeAndroid() {
   return Capacitor.isNativePlatform() && Capacitor.getPlatform() === "android";
 }
 
-function setLayoutVisible(visible: boolean) {
+function setLayoutVisible(visible: boolean, heightDp = 0) {
+  if (visible && heightDp > 0) {
+    document.documentElement.style.setProperty("--native-banner-height", `${heightDp}px`);
+  } else {
+    document.documentElement.style.removeProperty("--native-banner-height");
+  }
   document.documentElement.classList.toggle("native-fixed-banner-visible", visible);
 }
 
@@ -33,7 +38,7 @@ async function updateBanner() {
     const result = await BannerAds.showFixed({
       adUnitId: import.meta.env.VITE_ADMOB_BANNER_AD_UNIT_ID ?? "",
     });
-    if (sequence === updateSequence) setLayoutVisible(result.visible);
+    if (sequence === updateSequence) setLayoutVisible(result.visible, result.heightDp);
   } catch {
     if (sequence === updateSequence) setLayoutVisible(false);
   }
