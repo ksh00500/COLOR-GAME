@@ -1,18 +1,31 @@
 import { useEffect, useRef } from "react";
 import { App as CapacitorApp } from "@capacitor/app";
-import { Capacitor, type PluginListenerHandle } from "@capacitor/core";
+import { Capacitor, registerPlugin, type PluginListenerHandle } from "@capacitor/core";
 import { StatusBar, Style } from "@capacitor/status-bar";
 import { useLocation, useNavigate } from "react-router-dom";
 import { nativeBackEvent, resolveAppLinkRoute } from "../nativeApp";
+import { useSettings } from "../settings";
+
+interface NativeThemePlugin {
+  setTheme(options: { theme: "system" | "light" | "dark" }): Promise<{ theme: string }>;
+}
+
+const NativeTheme = registerPlugin<NativeThemePlugin>("NativeTheme");
 
 export function NativeAppBridge() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { settings } = useSettings();
   const pathnameRef = useRef(location.pathname);
 
   useEffect(() => {
     pathnameRef.current = location.pathname;
   }, [location.pathname]);
+
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() !== "android") return;
+    void NativeTheme.setTheme({ theme: settings.theme }).catch(() => undefined);
+  }, [settings.theme]);
 
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return undefined;

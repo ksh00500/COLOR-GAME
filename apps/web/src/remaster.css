@@ -1445,6 +1445,7 @@ textarea {
 
 .store-page .store-tabs button:hover { color: var(--text-primary); background: var(--surface-raised); }
 .store-page .store-tabs button.active { color: #fff; background: var(--accent); box-shadow: none; }
+.store-page .store-tabs button.active::after { display: none; content: none; }
 
 .weekly-store-section {
   gap: 1.05rem;
@@ -4931,9 +4932,30 @@ html.native-fixed-banner-visible .tango-result-backdrop {
   bottom: calc(var(--native-banner-height) + var(--safe-area-bottom));
 }
 
+html.native-fixed-banner-visible .result-panel.result-scene {
+  height:calc(100dvh - var(--native-banner-height) - var(--safe-area-bottom));
+  max-height:calc(100dvh - var(--native-banner-height) - var(--safe-area-bottom));
+}
+
+html.native-fixed-banner-visible .app-frame {
+  padding-bottom:calc(1.5rem + var(--safe-area-bottom) + var(--native-banner-height));
+}
+
+html.native-fixed-banner-visible .game-page.app-frame {
+  padding-bottom:calc(var(--safe-area-bottom) + var(--native-banner-height));
+}
+
+html.native-fixed-banner-visible .game-page .game-shell {
+  height:calc(100dvh - var(--safe-area-bottom) - var(--native-banner-height));
+}
+
 @media (max-width:640px) {
   html.native-fixed-banner-visible .app-frame {
     padding-bottom:calc(66px + var(--safe-area-bottom) + var(--native-banner-height));
+  }
+
+  html.native-fixed-banner-visible .game-page .game-shell {
+    height:calc(100dvh - 66px - var(--safe-area-bottom) - var(--native-banner-height));
   }
 
   html.native-fixed-banner-visible .app-sidebar .sidebar-menu {
