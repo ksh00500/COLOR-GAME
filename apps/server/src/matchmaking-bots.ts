@@ -47,5 +47,27 @@ export const chooseMatchmakingBot = (
 export const botFallbackDelayMs = (estimatedWaitSeconds: number, multiplier = 2): number =>
   Math.max(1_000, Math.round(estimatedWaitSeconds * multiplier * 1_000));
 
-export const randomBotMoveDelayMs = (random: () => number = Math.random): number =>
-  1_000 + Math.floor(Math.max(0, Math.min(0.999999999, random())) * 9_001);
+const botMoveDelayBuckets = [
+  { cumulativeProbability: 0.5, minMs: 1_000, maxMs: 3_000 },
+  { cumulativeProbability: 0.7, minMs: 3_001, maxMs: 5_000 },
+  { cumulativeProbability: 0.9, minMs: 5_001, maxMs: 7_000 },
+  { cumulativeProbability: 0.98, minMs: 7_001, maxMs: 9_000 },
+  { cumulativeProbability: 1, minMs: 9_001, maxMs: 10_000 },
+] as const;
+
+export const randomBotMoveDelayMs = (random: () => number = Math.random): number => {
+  const sample = Math.max(0, Math.min(0.999999999, random()));
+  let previousProbability = 0;
+
+  for (const bucket of botMoveDelayBuckets) {
+    if (sample < bucket.cumulativeProbability) {
+      const progress = (sample - previousProbability)
+        / (bucket.cumulativeProbability - previousProbability);
+      const bucketSize = bucket.maxMs - bucket.minMs + 1;
+      return bucket.minMs + Math.min(bucketSize - 1, Math.floor(progress * bucketSize));
+    }
+    previousProbability = bucket.cumulativeProbability;
+  }
+
+  return 10_000;
+};

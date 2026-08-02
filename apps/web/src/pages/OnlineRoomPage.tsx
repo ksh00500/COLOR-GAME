@@ -419,7 +419,7 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
 
   useEffect(() => {
     const handleShortcut = (event: KeyboardEvent) => {
-      if (!canPlay || playerId === null) return;
+      if (game?.status !== "playing" || playerId === null) return;
       const target = event.target as HTMLElement | null;
       if (target?.tagName === "INPUT") return;
       const shortcutIndex = resolveColorShortcutIndex(event.code, settings.colorShortcuts);
@@ -431,7 +431,7 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
     };
     window.addEventListener("keydown", handleShortcut);
     return () => window.removeEventListener("keydown", handleShortcut);
-  }, [canPlay, playerId, settings.colorShortcuts]);
+  }, [game?.status, playerId, settings.colorShortcuts]);
 
   const remainingSeconds = useMemo(() => {
     if (game?.turnTimer === null || game?.turnTimer === undefined) return null;
@@ -855,6 +855,7 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
               showShapes={showColorShapes}
               focusedIndex={focusedIndex}
               scoringCells={scoringCells}
+              scoreValue={scoreNotice?.score ?? null}
               lastPlaced={lastPlaced}
               opponentLastPlaced={opponentLastPlaced}
               invalidCell={invalidCell}
@@ -886,7 +887,7 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
 
             <ColorPicker
               selected={selectedColor}
-              disabled={!canPlay || playerId === null}
+              disabled={game.status !== "playing" || playerId === null}
               showShapes={showColorShapes}
               onSelect={(color) => {
                 if (playerId === null) return;

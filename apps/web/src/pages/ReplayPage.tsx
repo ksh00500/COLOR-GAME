@@ -180,6 +180,7 @@ export function ReplayPage() {
               showShapes={showShapes}
               focusedIndex={focusedIndex}
               scoringCells={frame.scoringCells}
+              scoreValue={frame.awaitingRemoval ? currentMove?.earnedScore ?? null : null}
               lastPlaced={frame.lastPlaced}
               invalidCell={null}
               activeCosmetics={frame.players.find((player) => player.id === currentMove?.playerId)?.cosmetics ?? null}

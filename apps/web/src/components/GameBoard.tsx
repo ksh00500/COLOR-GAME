@@ -10,6 +10,7 @@ interface GameBoardProps {
   showShapes: boolean;
   focusedIndex: number;
   scoringCells: Set<string>;
+  scoreValue?: number | null;
   lastPlaced: Position | null;
   opponentLastPlaced?: Position | null;
   invalidCell: Position | null;
@@ -38,6 +39,7 @@ export function GameBoard({
   showShapes,
   focusedIndex,
   scoringCells,
+  scoreValue = null,
   lastPlaced,
   opponentLastPlaced = null,
   invalidCell,
@@ -170,8 +172,8 @@ export function GameBoard({
                     )}
                   </span>
                 )}
-                {scoring && key === scoreAnchor && (
-                  <strong className="score-effect-callout" aria-hidden="true">+{scoringCells.size}</strong>
+                {scoring && key === scoreAnchor && scoreValue !== null && scoreValue > 0 && (
+                  <strong className="score-effect-callout" aria-hidden="true">+{scoreValue}</strong>
                 )}
                 {cell === null && canPlay && <span className={`tile-preview ${selectedColor}`}>{showShapes ? shapeForColor[selectedColor] : ""}</span>}
               </button>

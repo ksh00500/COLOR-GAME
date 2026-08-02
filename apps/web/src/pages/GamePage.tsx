@@ -281,7 +281,7 @@ export function GamePage() {
 
   useEffect(() => {
     const handleShortcut = (event: KeyboardEvent) => {
-      if (!canHumanPlay) return;
+      if (game.status !== "playing") return;
       const target = event.target as HTMLElement | null;
       if (target?.tagName === "INPUT") return;
       const shortcutIndex = resolveColorShortcutIndex(event.code, settings.colorShortcuts);
@@ -293,7 +293,7 @@ export function GamePage() {
     };
     window.addEventListener("keydown", handleShortcut);
     return () => window.removeEventListener("keydown", handleShortcut);
-  }, [canHumanPlay, settings.colorShortcuts]);
+  }, [game.status, settings.colorShortcuts]);
 
   const remainingSeconds = useMemo(() => {
     if (game.turnTimer === null) return null;
@@ -359,6 +359,7 @@ export function GamePage() {
               showShapes={showColorShapes}
               focusedIndex={focusedIndex}
               scoringCells={scoringCells}
+              scoreValue={scoreNotice?.score ?? null}
               lastPlaced={lastPlaced}
               opponentLastPlaced={opponentLastPlaced}
               invalidCell={invalidCell}
@@ -385,7 +386,7 @@ export function GamePage() {
 
             <ColorPicker
               selected={selectedColors[HUMAN_ID] ?? "colorA"}
-              disabled={!canHumanPlay}
+              disabled={game.status !== "playing"}
               showShapes={showColorShapes}
               onSelect={(color) => setSelectedColors((current) => ({ ...current, [HUMAN_ID]: color }))}
             />

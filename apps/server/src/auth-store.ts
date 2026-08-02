@@ -588,7 +588,6 @@ export class PostgresAccountStore implements AccountStore {
       `
         select *
         from accounts
-        where not is_matchmaking_bot
         order by rating desc, ranked_wins desc, games_played asc, created_at asc
         limit $1
       `,

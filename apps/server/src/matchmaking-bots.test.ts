@@ -28,9 +28,19 @@ describe("matchmaking bots", () => {
     expect(isMatchmakingBotAccountId("regular-account")).toBe(false);
   });
 
-  it("waits twice the estimate and delays moves between one and ten seconds", () => {
+  it("waits twice the estimate and uses a human-paced move delay distribution", () => {
     expect(botFallbackDelayMs(20)).toBe(40_000);
     expect(randomBotMoveDelayMs(() => 0)).toBe(1_000);
+    expect(randomBotMoveDelayMs(() => 0.25)).toBeGreaterThanOrEqual(1_000);
+    expect(randomBotMoveDelayMs(() => 0.25)).toBeLessThanOrEqual(3_000);
+    expect(randomBotMoveDelayMs(() => 0.499999)).toBeLessThanOrEqual(3_000);
+    expect(randomBotMoveDelayMs(() => 0.5)).toBeGreaterThan(3_000);
+    expect(randomBotMoveDelayMs(() => 0.699999)).toBeLessThanOrEqual(5_000);
+    expect(randomBotMoveDelayMs(() => 0.7)).toBeGreaterThan(5_000);
+    expect(randomBotMoveDelayMs(() => 0.899999)).toBeLessThanOrEqual(7_000);
+    expect(randomBotMoveDelayMs(() => 0.9)).toBeGreaterThan(7_000);
+    expect(randomBotMoveDelayMs(() => 0.979999)).toBeLessThanOrEqual(9_000);
+    expect(randomBotMoveDelayMs(() => 0.98)).toBeGreaterThan(9_000);
     expect(randomBotMoveDelayMs(() => 0.999999)).toBe(10_000);
   });
 });
