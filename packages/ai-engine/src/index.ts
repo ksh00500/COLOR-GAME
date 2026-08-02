@@ -1,6 +1,6 @@
 import { getValidMoves, placeTile } from "@color-game/game-core";
 import type { GameState, TileColorId, ValidMove } from "@color-game/shared-types";
-import hardAlphaModel from "./hard-alpha-model.json";
+import hardAlphaModel from "./hard-alpha-model.json" with { type: "json" };
 
 export type AiDifficulty = "easy" | "normal" | "hard";
 const isPromotedAiAvailable = hardAlphaModel.available === true;
