@@ -180,7 +180,9 @@ EC2 + RDS 운영 템플릿:
 - 실제 AWS 리소스 생성: EC2, RDS, 도메인, HTTPS 인증서
 - RDS 마이그레이션 실행: `pnpm --filter @color-game/server db:migrate`
 - 웹 빌드 환경 변수: `VITE_SOCKET_URL`, `VITE_API_URL`
-- 서버 운영 환경 변수: `DATABASE_URL`, `DATABASE_SSL`, `DATABASE_REQUIRED`, `HEALTHCHECK_REQUIRE_DB`, `AUTH_SECRET`, `GOOGLE_WEB_CLIENT_ID`, `CORS_ORIGIN`
+- 서버 운영 환경 변수: `DATABASE_URL`, `DATABASE_SSL`, `DATABASE_REQUIRED`, `HEALTHCHECK_REQUIRE_DB`, `AUTH_SECRET`, `GOOGLE_WEB_CLIENT_ID`, `CORS_ORIGIN`, `MATCHMAKING_BOTS_ENABLED`
+
+`MATCHMAKING_BOTS_ENABLED`는 기본적으로 활성화되며 `false`로 설정하면 일반·경쟁 매칭의 지연 봇 대체를 즉시 끌 수 있습니다.
 - 운영 보호 정책: `/metrics` 접근 제한, RDS 자동 백업/스냅샷, systemd 재시작 정책
 
 남은 제품 확장 후보는 실제 이메일 인증, Google/OAuth 로그인, 시즌/티어/배치 경기, 관전, 사설방 초대 링크 UX, 재접속 유예 후 이탈 패배 정책입니다.

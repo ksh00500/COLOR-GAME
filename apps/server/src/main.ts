@@ -63,14 +63,15 @@ const serverOptions: ServerOptions = {
   authSecret,
   requireDatabaseHealth,
   corsOrigin,
+  matchmakingBotsEnabled: process.env.MATCHMAKING_BOTS_ENABLED !== "false",
 };
 
-const { app } = createServer(serverOptions);
+const { app, resumeMatchmakingBotRoom } = createServer(serverOptions);
 
 try {
   const restoredRooms = await historyStore.loadActiveRooms();
   for (const room of restoredRooms) {
-    roomService.restoreRoom(room);
+    resumeMatchmakingBotRoom(roomService.restoreRoom(room));
   }
   if (restoredRooms.length > 0) {
     app.log.info({ count: restoredRooms.length }, "Restored active rooms from database");

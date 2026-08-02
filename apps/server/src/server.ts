@@ -6,6 +6,7 @@ import { Server, type Socket } from "socket.io";
 import { z } from "zod";
 import { getMatchmakingSegment, type MatchmakingSegment, type Move, type RoomSnapshot } from "@color-game/shared-types";
 import { DEFAULT_GAME_CONFIG } from "@color-game/game-core";
+import { chooseAiMove } from "@color-game/ai-engine";
 import {
   NullAccountStore,
   createAuthToken,
@@ -55,6 +56,14 @@ import {
   type AdMobSsvVerifier,
 } from "./admob-ssv.js";
 import {
+  botFallbackDelayMs,
+  chooseMatchmakingBot,
+  isMatchmakingBotAccountId,
+  MATCHMAKING_BOTS,
+  randomBotMoveDelayMs,
+  type MatchmakingBotDefinition,
+} from "./matchmaking-bots.js";
+import {
   gameMoveSchema,
   gameRematchSchema,
   gameResignSchema,
@@ -79,6 +88,10 @@ export interface ServerOptions {
   authSecret?: string;
   tokenTtlSeconds?: number;
   requireDatabaseHealth?: boolean;
+  matchmakingBotsEnabled?: boolean;
+  matchmakingBotFallbackMultiplier?: number;
+  matchmakingBotRandom?: () => number;
+  matchmakingBotMoveDelayMs?: () => number;
 }
 
 interface QueuedPlayer {
@@ -485,6 +498,9 @@ export const createServer = (options: ServerOptions = {}) => {
   const metrics = new ServerMetrics();
   const authSecret = options.authSecret ?? "dev-only-color-game-secret-for-local-development";
   const tokenTtlSeconds = options.tokenTtlSeconds ?? 60 * 60 * 24 * 30;
+  const matchmakingBotsEnabled = options.matchmakingBotsEnabled === true && accountStore.enabled;
+  const matchmakingBotFallbackMultiplier = options.matchmakingBotFallbackMultiplier ?? 2;
+  const matchmakingBotRandom = options.matchmakingBotRandom ?? Math.random;
   const matchmakingQueues: Record<MatchmakingMode, QueuedPlayer[]> = {
     casual: [],
     ranked: [],
@@ -493,6 +509,13 @@ export const createServer = (options: ServerOptions = {}) => {
     casual: [],
     ranked: [],
   };
+  const matchmakingBotFallbackTimers = new Map<string, ReturnType<typeof setTimeout>>();
+  const matchmakingBotMoveTimers = new Map<string, ReturnType<typeof setTimeout>>();
+  const activeMatchmakingBotAccountIds = new Set<string>();
+  const activeMatchmakingBotRooms = new Map<string, {
+    bot: MatchmakingBotDefinition;
+    playerId: string;
+  }>();
   const socketRateWindows = new Map<string, { count: number; resetAt: number }>();
   const httpRateWindows = new Map<string, { count: number; resetAt: number }>();
   const roomPersistence = new RoomPersistenceCoordinator(historyStore);
@@ -541,15 +564,38 @@ export const createServer = (options: ServerOptions = {}) => {
       });
   });
 
+  const releaseMatchmakingBotRoom = (room: RoomSnapshot): void => {
+    const moveTimer = matchmakingBotMoveTimers.get(room.code);
+    if (moveTimer !== undefined) clearTimeout(moveTimer);
+    matchmakingBotMoveTimers.delete(room.code);
+
+    const active = activeMatchmakingBotRooms.get(room.code);
+    if (active !== undefined) {
+      activeMatchmakingBotAccountIds.delete(active.bot.accountId);
+      activeMatchmakingBotRooms.delete(room.code);
+    }
+    for (const player of room.players) {
+      const accountId = player?.accountId;
+      if (isMatchmakingBotAccountId(accountId)) activeMatchmakingBotAccountIds.delete(accountId);
+    }
+  };
+
   const recordFinishedRoom = async (room: RoomSnapshot): Promise<void> => {
     if (room.game?.status !== "finished") return;
+    releaseMatchmakingBotRoom(room);
     metrics.gameFinished();
     if (!accountStore.enabled) return;
     await accountStore.recordFinishedRoom(room);
     if (economyStore.enabled) {
+      const rewardIdentities = roomService.getRewardIdentities(room.code);
+      for (const player of room.players) {
+        if (player !== null && isMatchmakingBotAccountId(player.accountId)) {
+          delete rewardIdentities[player.id];
+        }
+      }
       await economyStore.recordFinishedRoom(
         room,
-        roomService.getRewardIdentities(room.code),
+        rewardIdentities,
       );
     }
   };
@@ -578,12 +624,94 @@ export const createServer = (options: ServerOptions = {}) => {
     move: Move | null,
     context: string,
   ): void => {
+    releaseMatchmakingBotRoom(room);
     void roomPersistence.enqueue(room, move, recordFinishedRoom).catch((error: unknown) => {
       app.log.error(
         { err: error, roomCode: room.code, gameId: room.game?.id },
         context,
       );
     });
+  };
+
+  const botDefinitionForRoom = (room: RoomSnapshot): {
+    bot: MatchmakingBotDefinition;
+    playerId: string;
+  } | null => {
+    for (const player of room.players) {
+      if (player === null || !isMatchmakingBotAccountId(player.accountId)) continue;
+      const bot = MATCHMAKING_BOTS.find((candidate) => candidate.accountId === player.accountId);
+      if (bot !== undefined) return { bot, playerId: player.id };
+    }
+    return null;
+  };
+
+  const scheduleMatchmakingBotTurn = (room: RoomSnapshot): void => {
+    const currentTimer = matchmakingBotMoveTimers.get(room.code);
+    if (currentTimer !== undefined) clearTimeout(currentTimer);
+    matchmakingBotMoveTimers.delete(room.code);
+
+    if (!matchmakingBotsEnabled || room.status !== "playing" || room.game?.status !== "playing") {
+      return;
+    }
+    const active = activeMatchmakingBotRooms.get(room.code) ?? botDefinitionForRoom(room);
+    if (active === null || room.game.currentPlayerId !== active.playerId) return;
+
+    activeMatchmakingBotRooms.set(room.code, active);
+    activeMatchmakingBotAccountIds.add(active.bot.accountId);
+    const delay = options.matchmakingBotMoveDelayMs?.()
+      ?? randomBotMoveDelayMs(matchmakingBotRandom);
+    const timer = setTimeout(() => {
+      matchmakingBotMoveTimers.delete(room.code);
+      const latest = roomService.getRoom(room.code);
+      if (!latest.ok || latest.value.game?.status !== "playing") return;
+      const latestActive = activeMatchmakingBotRooms.get(room.code) ?? botDefinitionForRoom(latest.value);
+      if (latestActive === null || latest.value.game.currentPlayerId !== latestActive.playerId) return;
+
+      try {
+        const move = chooseAiMove(latest.value.game, latestActive.bot.difficulty, matchmakingBotRandom);
+        if (move === null) return;
+        const result = roomService.applyMove(
+          room.code,
+          latestActive.playerId,
+          move.row,
+          move.col,
+          move.color,
+        );
+        if (!result.ok) {
+          app.log.warn(
+            { roomCode: room.code, botAccountId: latestActive.bot.accountId, error: result.error },
+            "Matchmaking bot move was rejected",
+          );
+          return;
+        }
+        if (result.value.move !== null) metrics.moveAccepted();
+        if (result.value.room.game?.status === "finished") {
+          persistFinishedRoomLater(
+            result.value.room,
+            result.value.move,
+            "Failed to persist finished matchmaking bot move",
+          );
+        } else {
+          persistMoveApplicationLater(
+            result.value.room,
+            result.value.move,
+            "Failed to persist matchmaking bot move",
+          );
+        }
+        io.to(room.code).emit("game:state", result.value.room);
+        if (result.value.move !== null) {
+          io.to(room.code).emit("game:move:accepted", result.value.move);
+        }
+        scheduleMatchmakingBotTurn(result.value.room);
+      } catch (error) {
+        app.log.error(
+          { err: error, roomCode: room.code, botAccountId: latestActive.bot.accountId },
+          "Failed to calculate matchmaking bot move",
+        );
+      }
+    }, Math.max(1_000, Math.min(10_000, Math.round(delay))));
+    timer.unref?.();
+    matchmakingBotMoveTimers.set(room.code, timer);
   };
 
   let closing = false;
@@ -652,7 +780,14 @@ export const createServer = (options: ServerOptions = {}) => {
     return { ...player, accountId: null, guestId, socketId };
   };
 
+  const cancelMatchmakingBotFallback = (socketId: string): void => {
+    const timer = matchmakingBotFallbackTimers.get(socketId);
+    if (timer !== undefined) clearTimeout(timer);
+    matchmakingBotFallbackTimers.delete(socketId);
+  };
+
   const removeFromMatchmaking = (socketId: string): void => {
+    cancelMatchmakingBotFallback(socketId);
     for (const mode of ["casual", "ranked"] as const) {
       matchmakingQueues[mode] = matchmakingQueues[mode].filter(
         (queued) => queued.socketId !== socketId,
@@ -670,6 +805,7 @@ export const createServer = (options: ServerOptions = {}) => {
         (queued) => queued.identityKey !== identityKey || queued.socketId === exceptSocketId,
       );
       for (const queued of removed) {
+        cancelMatchmakingBotFallback(queued.socketId);
         io.sockets.sockets.get(queued.socketId)?.emit("matchmaking:replaced", {
           code: "MATCHMAKING_SESSION_REPLACED",
         });
@@ -803,12 +939,17 @@ export const createServer = (options: ServerOptions = {}) => {
       const candidate = queue.shift();
       if (candidate === undefined) return undefined;
       if (candidate.identityKey === identityKey) {
+        cancelMatchmakingBotFallback(candidate.socketId);
         io.sockets.sockets.get(candidate.socketId)?.emit("matchmaking:replaced", {
           code: "MATCHMAKING_SESSION_REPLACED",
         });
         continue;
       }
-      if (io.sockets.sockets.has(candidate.socketId)) return candidate;
+      if (io.sockets.sockets.has(candidate.socketId)) {
+        cancelMatchmakingBotFallback(candidate.socketId);
+        return candidate;
+      }
+      cancelMatchmakingBotFallback(candidate.socketId);
     }
     return undefined;
   };
@@ -818,6 +959,8 @@ export const createServer = (options: ServerOptions = {}) => {
     first: QueuedPlayer,
     second: QueuedPlayer,
   ): void => {
+    cancelMatchmakingBotFallback(first.socketId);
+    cancelMatchmakingBotFallback(second.socketId);
     const firstSocket = io.sockets.sockets.get(first.socketId);
     const secondSocket = io.sockets.sockets.get(second.socketId);
     if (firstSocket === undefined || secondSocket === undefined) {
@@ -877,6 +1020,91 @@ export const createServer = (options: ServerOptions = {}) => {
       reconnectToken: reconnectTokenFor(secondSocket, room.code, secondPlayer.id),
     });
     io.to(room.code).emit("game:state", room);
+  };
+
+  const emitMatchWithBot = (
+    mode: MatchmakingMode,
+    human: QueuedPlayer,
+    bot: MatchmakingBotDefinition,
+  ): boolean => {
+    const humanSocket = io.sockets.sockets.get(human.socketId);
+    if (humanSocket === undefined || activeMatchmakingBotAccountIds.has(bot.accountId)) {
+      return false;
+    }
+
+    const botProfile: PlayerProfile = {
+      accountId: bot.accountId,
+      nickname: bot.displayName,
+      avatarId: bot.avatarId,
+      isGuest: false,
+      socketId: null,
+    };
+    const botStarts = matchmakingBotRandom() < 0.5;
+    const room = botStarts
+      ? roomService.createMatchedRoom(botProfile, human.profile, mode)
+      : roomService.createMatchedRoom(human.profile, botProfile, mode);
+    const humanPlayer = botStarts ? room.players[1] : room.players[0];
+    const botPlayer = botStarts ? room.players[0] : room.players[1];
+    if (humanPlayer === null || botPlayer === null) {
+      return false;
+    }
+
+    activeMatchmakingBotAccountIds.add(bot.accountId);
+    activeMatchmakingBotRooms.set(room.code, { bot, playerId: botPlayer.id });
+    humanSocket.data.playerId = humanPlayer.id;
+    humanSocket.join(room.code);
+    metrics.matchStarted();
+    persistRoomLater(room, "Failed to persist matchmaking bot room");
+    humanSocket.emit("matchmaking:matched", {
+      ok: true,
+      room,
+      playerId: humanPlayer.id,
+      reconnectToken: reconnectTokenFor(humanSocket, room.code, humanPlayer.id),
+    });
+    io.to(room.code).emit("game:state", room);
+    scheduleMatchmakingBotTurn(room);
+    return true;
+  };
+
+  const scheduleMatchmakingBotFallback = (
+    mode: MatchmakingMode,
+    queued: QueuedPlayer,
+    estimatedWaitSeconds: number,
+    retryDelayMs?: number,
+  ): void => {
+    if (!matchmakingBotsEnabled) return;
+    cancelMatchmakingBotFallback(queued.socketId);
+    const delay = retryDelayMs
+      ?? botFallbackDelayMs(estimatedWaitSeconds, matchmakingBotFallbackMultiplier);
+    const timer = setTimeout(() => {
+      matchmakingBotFallbackTimers.delete(queued.socketId);
+      const queue = matchmakingQueues[mode];
+      const queueIndex = queue.findIndex((candidate) =>
+        candidate.socketId === queued.socketId && candidate.queuedAt === queued.queuedAt
+      );
+      if (queueIndex < 0 || !io.sockets.sockets.has(queued.socketId)) return;
+
+      const bot = chooseMatchmakingBot(
+        mode,
+        activeMatchmakingBotAccountIds,
+        matchmakingBotRandom,
+      );
+      if (bot === null) {
+        scheduleMatchmakingBotFallback(mode, queued, estimatedWaitSeconds, 5_000);
+        return;
+      }
+
+      queue.splice(queueIndex, 1);
+      metrics.setQueueDepth(mode, queue.length);
+      if (!emitMatchWithBot(mode, queued, bot)) {
+        if (!io.sockets.sockets.has(queued.socketId)) return;
+        queue.push(queued);
+        metrics.setQueueDepth(mode, queue.length);
+        scheduleMatchmakingBotFallback(mode, queued, estimatedWaitSeconds, 5_000);
+      }
+    }, Math.max(1_000, delay));
+    timer.unref?.();
+    matchmakingBotFallbackTimers.set(queued.socketId, timer);
   };
 
   io.use((socket, next) => {
@@ -2301,6 +2529,7 @@ export const createServer = (options: ServerOptions = {}) => {
       if (result.value.move !== null) {
         io.to(result.value.room.code).emit("game:move:accepted", result.value.move);
       }
+      scheduleMatchmakingBotTurn(result.value.room);
       callback?.({ ok: true, ...result.value });
     });
 
@@ -2479,6 +2708,11 @@ export const createServer = (options: ServerOptions = {}) => {
           if (opponent === undefined) {
             queue.push(queued);
             metrics.setQueueDepth(parsed.data.mode, queue.length);
+            scheduleMatchmakingBotFallback(
+              parsed.data.mode,
+              queued,
+              estimate.estimatedWaitSeconds,
+            );
             const response = { ok: true, status: "queued", mode: parsed.data.mode, ...estimate };
             callback?.(response);
             socket.emit("matchmaking:queued", { mode: parsed.data.mode, ...estimate });
@@ -2527,6 +2761,12 @@ export const createServer = (options: ServerOptions = {}) => {
   app.addHook("onClose", async () => {
     closing = true;
     clearInterval(turnTimer);
+    for (const timer of matchmakingBotFallbackTimers.values()) clearTimeout(timer);
+    matchmakingBotFallbackTimers.clear();
+    for (const timer of matchmakingBotMoveTimers.values()) clearTimeout(timer);
+    matchmakingBotMoveTimers.clear();
+    activeMatchmakingBotRooms.clear();
+    activeMatchmakingBotAccountIds.clear();
     disconnectGrace.clear();
     await io.close();
     await roomPersistence.drain();
@@ -2538,5 +2778,18 @@ export const createServer = (options: ServerOptions = {}) => {
     await matchmakingWaitStore.close();
   });
 
-  return { app, io, roomService };
+  const resumeMatchmakingBotRoom = (room: RoomSnapshot): RoomSnapshot => {
+    if (!matchmakingBotsEnabled || room.game?.status !== "playing") return room;
+    const active = botDefinitionForRoom(room);
+    if (active === null) return room;
+    if (activeMatchmakingBotAccountIds.has(active.bot.accountId)) return room;
+    const reconnected = roomService.reconnect(room.code, active.playerId, null);
+    if (!reconnected.ok) return room;
+    activeMatchmakingBotAccountIds.add(active.bot.accountId);
+    activeMatchmakingBotRooms.set(room.code, active);
+    scheduleMatchmakingBotTurn(reconnected.value);
+    return reconnected.value;
+  };
+
+  return { app, io, roomService, resumeMatchmakingBotRoom };
 };

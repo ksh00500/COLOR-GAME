@@ -384,7 +384,7 @@ export class PostgresAccountStore implements AccountStore {
 
   async authenticate(email: string, password: string): Promise<AccountSummary | null> {
     const result = await this.pool.query<AccountRow>(
-      "select * from accounts where email = $1 and suspended_at is null",
+      "select * from accounts where email = $1 and suspended_at is null and not is_matchmaking_bot",
       [normalizeEmail(email)],
     );
     const row = result.rows[0];
@@ -588,6 +588,7 @@ export class PostgresAccountStore implements AccountStore {
       `
         select *
         from accounts
+        where not is_matchmaking_bot
         order by rating desc, ranked_wins desc, games_played asc, created_at asc
         limit $1
       `,
