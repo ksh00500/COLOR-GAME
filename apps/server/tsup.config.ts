@@ -8,5 +8,5 @@ export default defineConfig({
   outDir: "dist",
   clean: true,
   sourcemap: true,
-  noExternal: ["@color-game/game-core", "@color-game/shared-types"],
+  noExternal: ["@color-game/ai-engine", "@color-game/game-core", "@color-game/shared-types"],
 });
