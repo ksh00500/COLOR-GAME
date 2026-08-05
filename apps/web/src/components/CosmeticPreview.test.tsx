@@ -34,6 +34,7 @@ describe("CosmeticPreview", () => {
       const html = renderToStaticMarkup(<CosmeticPreview item={cosmetic(category)} label="preview" />);
 
       expect(html).toContain(`atelier-cosmetic-preview-${category}`);
+      expect(html).toContain('data-fx-language="modern"');
       expect(html).toContain("rarity-common");
       expect(html).not.toMatch(/class="cosmetic-preview(?:\s|")/);
       expect(html).toContain('aria-label="preview"');

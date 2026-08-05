@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { AccountPage } from "./pages/AccountPage";
 import { GamePage } from "./pages/GamePage";
@@ -18,15 +19,35 @@ import { AttendanceCheckInModal } from "./components/AttendanceCheckInModal";
 import { AdminPage } from "./pages/AdminPage";
 import { NativeBannerAdController } from "./components/NativeBannerAdController";
 
+const FxLabPage = import.meta.env.DEV
+  ? lazy(async () => {
+      const module = await import("./pages/FxLabPage");
+      return { default: module.FxLabPage };
+    })
+  : null;
+
 export function App() {
-  const adminRoute = useLocation().pathname.startsWith("/admin");
+  const pathname = useLocation().pathname;
+  const adminRoute = pathname.startsWith("/admin");
+  const fxLabRoute = import.meta.env.DEV && pathname === "/fx-lab";
+  const standaloneRoute = adminRoute || fxLabRoute;
   return (
     <>
-      {!adminRoute && <NativeAppBridge />}
-      {!adminRoute && <CosmeticLoadoutBridge />}
-      {!adminRoute && <NativeBannerAdController />}
+      {!standaloneRoute && <NativeAppBridge />}
+      {!standaloneRoute && <CosmeticLoadoutBridge />}
+      {!standaloneRoute && <NativeBannerAdController />}
       <Routes>
         <Route path="/admin" element={<AdminPage />} />
+        {FxLabPage !== null && (
+          <Route
+            path="/fx-lab"
+            element={(
+              <Suspense fallback={<div className="fx-lab-loading">FX 엔진을 준비하고 있습니다.</div>}>
+                <FxLabPage />
+              </Suspense>
+            )}
+          />
+        )}
         <Route path="/" element={<LobbyPage />} />
         <Route path="/game" element={<GamePage />} />
         <Route path="/matchmaking" element={<MatchmakingPage />} />
@@ -42,9 +63,9 @@ export function App() {
         <Route path="/spectate/:code" element={<SpectatePage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-      {!adminRoute && <TutorialPanel />}
-      {!adminRoute && <PatchNotesPanel />}
-      {!adminRoute && <AttendanceCheckInModal />}
+      {!standaloneRoute && <TutorialPanel />}
+      {!standaloneRoute && <PatchNotesPanel />}
+      {!standaloneRoute && <AttendanceCheckInModal />}
     </>
   );
 }

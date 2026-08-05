@@ -20,6 +20,7 @@
     "@color-game/ai-engine": "workspace:*",
     "@color-game/game-core": "workspace:*",
     "@color-game/shared-types": "workspace:*",
+    "pixi.js": "^8.19.0",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "react-router-dom": "6.30.1",

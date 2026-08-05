@@ -40,6 +40,8 @@ describe("GameBoard score callout", () => {
     );
 
     expect(html).toContain("score-effect-callout");
+    expect(html).toContain('data-fx-engine="modern"');
+    expect(html).toContain("tango-board-fx");
     expect(html).toContain(">+1<");
     expect(html).not.toContain(">+3<");
   });

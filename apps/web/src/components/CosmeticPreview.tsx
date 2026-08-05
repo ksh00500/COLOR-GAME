@@ -158,6 +158,7 @@ export function CosmeticPreview({ item, className = "", label }: CosmeticPreview
   return (
     <span
       className={`atelier-cosmetic-preview atelier-cosmetic-preview-${item.category} preset-${item.preset ?? "default"} rarity-${item.rarity} ${className}`}
+      data-fx-language="modern"
       style={style}
       role="img"
       aria-label={label}

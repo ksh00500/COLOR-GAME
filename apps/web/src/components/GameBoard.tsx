@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import type { Board, MatchCosmetics, Position, TileColorId } from "@color-game/shared-types";
 import { useI18n } from "../i18n";
+import { TangoBoardFx } from "./TangoBoardFx";
 
 interface GameBoardProps {
   board: Board;
@@ -89,6 +90,7 @@ export function GameBoard({
       className={`game-board-frame ${canPlay ? "interactive" : "locked"} ${isClearing ? "clearing" : ""} ${inputMode}-active`}
       data-placement-preset={placementPreset}
       data-score-preset={scorePreset}
+      data-fx-engine="modern"
       style={{
         "--active-placement-a": activeCosmetics?.placementEffect?.colors[0],
         "--active-placement-b": activeCosmetics?.placementEffect?.colors[1] ?? activeCosmetics?.placementEffect?.colors[0],
@@ -181,6 +183,16 @@ export function GameBoard({
           }),
         )}
       </div>
+      <TangoBoardFx
+        boardRef={boardRef}
+        lastPlaced={lastPlaced}
+        scoringCells={scoringCells}
+        scoreValue={scoreValue}
+        placementPreset={placementPreset}
+        scorePreset={scorePreset}
+        placementColors={activeCosmetics?.placementEffect?.colors ?? []}
+        scoreColors={activeCosmetics?.scoreEffect?.colors ?? []}
+      />
       <span className="board-corner corner-a" aria-hidden="true" />
       <span className="board-corner corner-b" aria-hidden="true" />
       <span className="board-corner corner-c" aria-hidden="true" />
