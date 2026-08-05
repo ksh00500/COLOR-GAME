@@ -24,6 +24,6 @@ export const getMoveEffectTimeline = (
   }
 
   return presentationSpeed === "fast"
-    ? { scorePhaseDelayMs: 250, boardCommitDelayMs: 760, scoreNoticeDurationMs: 1_150 }
+    ? { scorePhaseDelayMs: 250, boardCommitDelayMs: 980, scoreNoticeDurationMs: 1_150 }
     : { scorePhaseDelayMs: 400, boardCommitDelayMs: 1_250, scoreNoticeDurationMs: 1_700 };
 };

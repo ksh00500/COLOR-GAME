@@ -11,7 +11,9 @@ describe("getMoveEffectTimeline", () => {
       standard.scorePhaseDelayMs + 650 + 160,
     );
     expect(fast.scorePhaseDelayMs).toBeGreaterThan(0);
-    expect(fast.boardCommitDelayMs).toBeGreaterThan(fast.scorePhaseDelayMs);
+    expect(fast.boardCommitDelayMs).toBeGreaterThanOrEqual(
+      fast.scorePhaseDelayMs + 650 + 80,
+    );
   });
 
   it("keeps full-board cleanup immediate and compact", () => {

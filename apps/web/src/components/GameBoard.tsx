@@ -187,7 +187,6 @@ export function GameBoard({
         boardRef={boardRef}
         lastPlaced={lastPlaced}
         scoringCells={scoringCells}
-        scoreValue={scoreValue}
         placementPreset={placementPreset}
         scorePreset={scorePreset}
         placementColors={activeCosmetics?.placementEffect?.colors ?? []}
