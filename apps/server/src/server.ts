@@ -57,9 +57,12 @@ import {
 } from "./admob-ssv.js";
 import {
   botFallbackDelayMs,
+  botMoveResolutionGraceMs,
   chooseMatchmakingBot,
+  isScheduledBotTurnCurrent,
   isMatchmakingBotAccountId,
   MATCHMAKING_BOTS,
+  occupiedCellCount,
   randomBotMoveDelayMs,
   type MatchmakingBotDefinition,
 } from "./matchmaking-bots.js";
@@ -658,12 +661,20 @@ export const createServer = (options: ServerOptions = {}) => {
 
     activeMatchmakingBotRooms.set(room.code, active);
     activeMatchmakingBotAccountIds.add(active.bot.accountId);
-    const delay = options.matchmakingBotMoveDelayMs?.()
-      ?? randomBotMoveDelayMs(matchmakingBotRandom);
+    const scheduledGameId = room.game.id;
+    const scheduledTurnNumber = room.game.turnNumber;
+    const thinkingDelay = options.matchmakingBotMoveDelayMs?.()
+      ?? randomBotMoveDelayMs(occupiedCellCount(room.game), matchmakingBotRandom);
+    const delay = botMoveResolutionGraceMs(room.game) + Math.max(1_000, thinkingDelay);
     const timer = setTimeout(() => {
       matchmakingBotMoveTimers.delete(room.code);
       const latest = roomService.getRoom(room.code);
       if (!latest.ok || latest.value.game?.status !== "playing") return;
+      if (!isScheduledBotTurnCurrent(
+        latest.value.game,
+        scheduledGameId,
+        scheduledTurnNumber,
+      )) return;
       const latestActive = activeMatchmakingBotRooms.get(room.code) ?? botDefinitionForRoom(latest.value);
       if (latestActive === null || latest.value.game.currentPlayerId !== latestActive.playerId) return;
 
@@ -709,7 +720,7 @@ export const createServer = (options: ServerOptions = {}) => {
           "Failed to calculate matchmaking bot move",
         );
       }
-    }, Math.max(1_000, Math.min(10_000, Math.round(delay))));
+    }, Math.max(1_000, Math.min(7_350, Math.round(delay))));
     timer.unref?.();
     matchmakingBotMoveTimers.set(room.code, timer);
   };

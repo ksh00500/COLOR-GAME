@@ -1,4 +1,5 @@
 import type { AiDifficulty } from "@color-game/ai-engine";
+import type { GameState } from "@color-game/shared-types";
 import type { MatchmakingMode } from "./matchmaking-wait-store.js";
 
 export interface MatchmakingBotDefinition {
@@ -47,15 +48,69 @@ export const chooseMatchmakingBot = (
 export const botFallbackDelayMs = (estimatedWaitSeconds: number, multiplier = 2): number =>
   Math.max(1_000, Math.round(estimatedWaitSeconds * multiplier * 1_000));
 
-const botMoveDelayBuckets = [
-  { cumulativeProbability: 0.5, minMs: 1_000, maxMs: 3_000 },
-  { cumulativeProbability: 0.7, minMs: 3_001, maxMs: 5_000 },
-  { cumulativeProbability: 0.9, minMs: 5_001, maxMs: 7_000 },
-  { cumulativeProbability: 0.98, minMs: 7_001, maxMs: 9_000 },
-  { cumulativeProbability: 1, minMs: 9_001, maxMs: 10_000 },
-] as const;
+interface BotMoveDelayBucket {
+  cumulativeProbability: number;
+  minMs: number;
+  maxMs: number;
+}
 
-export const randomBotMoveDelayMs = (random: () => number = Math.random): number => {
+const delayBucketsForOccupiedCells = (occupiedCells: number): readonly BotMoveDelayBucket[] => {
+  if (occupiedCells <= 5) {
+    return [{ cumulativeProbability: 1, minMs: 1_000, maxMs: 2_000 }];
+  }
+  if (occupiedCells <= 10) {
+    return [
+      { cumulativeProbability: 0.5, minMs: 1_000, maxMs: 2_000 },
+      { cumulativeProbability: 0.8, minMs: 2_000, maxMs: 3_000 },
+      { cumulativeProbability: 1, minMs: 3_000, maxMs: 4_000 },
+    ];
+  }
+  if (occupiedCells <= 17) {
+    return [
+      { cumulativeProbability: 0.2, minMs: 1_500, maxMs: 2_000 },
+      { cumulativeProbability: 0.75, minMs: 2_500, maxMs: 4_000 },
+      { cumulativeProbability: 1, minMs: 4_500, maxMs: 5_000 },
+    ];
+  }
+  return [
+    { cumulativeProbability: 0.1, minMs: 2_000, maxMs: 2_500 },
+    { cumulativeProbability: 0.65, minMs: 3_000, maxMs: 4_000 },
+    { cumulativeProbability: 1, minMs: 4_500, maxMs: 6_000 },
+  ];
+};
+
+const quantizedDelay = (minMs: number, maxMs: number, progress: number): number => {
+  const stepCount = Math.floor((maxMs - minMs) / 500) + 1;
+  const step = Math.min(stepCount - 1, Math.floor(progress * stepCount));
+  return minMs + step * 500;
+};
+
+export const occupiedCellCount = (game: GameState): number =>
+  game.board.reduce(
+    (count, row) => count + row.filter((cell) => cell !== null).length,
+    0,
+  );
+
+export const MATCHMAKING_BOT_RESOLUTION_GRACE_MS = 1_350;
+
+export const botMoveResolutionGraceMs = (game: GameState): number =>
+  (game.lastMove?.removedCells.length ?? 0) > 0
+    ? MATCHMAKING_BOT_RESOLUTION_GRACE_MS
+    : 0;
+
+export const isScheduledBotTurnCurrent = (
+  game: GameState,
+  scheduledGameId: string,
+  scheduledTurnNumber: number,
+): boolean => game.id === scheduledGameId && game.turnNumber === scheduledTurnNumber;
+
+export const randomBotMoveDelayMs = (
+  occupiedCells: number,
+  random: () => number = Math.random,
+): number => {
+  const botMoveDelayBuckets = delayBucketsForOccupiedCells(
+    Math.max(0, Math.min(25, Math.floor(occupiedCells))),
+  );
   const sample = Math.max(0, Math.min(0.999999999, random()));
   let previousProbability = 0;
 
@@ -63,11 +118,10 @@ export const randomBotMoveDelayMs = (random: () => number = Math.random): number
     if (sample < bucket.cumulativeProbability) {
       const progress = (sample - previousProbability)
         / (bucket.cumulativeProbability - previousProbability);
-      const bucketSize = bucket.maxMs - bucket.minMs + 1;
-      return bucket.minMs + Math.min(bucketSize - 1, Math.floor(progress * bucketSize));
+      return quantizedDelay(bucket.minMs, bucket.maxMs, progress);
     }
     previousProbability = bucket.cumulativeProbability;
   }
 
-  return 10_000;
+  return botMoveDelayBuckets.at(-1)?.maxMs ?? 1_000;
 };

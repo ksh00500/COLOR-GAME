@@ -23,6 +23,7 @@ import { notifyInvalidMove, notifyTilePlaced } from "../nativeFeedback";
 import { resolveColorShortcutIndex, useSettings } from "../settings";
 import { useI18n } from "../i18n";
 import { createAppSocket } from "../socket";
+import { isRoomSnapshotNewer } from "../roomSnapshotOrder";
 
 type ConnectionStatus = "connecting" | "connected" | "disconnected" | "error";
 
@@ -136,6 +137,8 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
   const roomCodeRef = useRef(initialCode);
   const playerIdRef = useRef<string | null>(initialPlayerId);
   const effectTimers = useRef<number[]>([]);
+  const effectGenerationRef = useRef(0);
+  const latestRoomRef = useRef<RoomSnapshot | null>(readRoomSnapshot(initialCode));
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>("connecting");
   const [profile, setProfile] = useState(readProfile);
   const [hasPremium, setHasPremium] = useState(false);
@@ -255,16 +258,19 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
     effectTimers.current.push(timer);
   }, [settings.soundEnabled]);
 
-  const applyRoom = useCallback((nextRoom: RoomSnapshot) => {
+  const applyRoom = useCallback((nextRoom: RoomSnapshot): boolean => {
+    const current = latestRoomRef.current;
+    if (!isRoomSnapshotNewer(current, nextRoom)) return false;
+
+    latestRoomRef.current = nextRoom;
     roomCodeRef.current = nextRoom.code;
     saveRoomSnapshot(nextRoom);
-    setRoom((current) => {
-      previousBoardRef.current = current?.game?.board ?? null;
-      return nextRoom;
-    });
+    previousBoardRef.current = current?.game?.board ?? null;
+    setRoom(nextRoom);
     if (nextRoom.game !== null) {
       setMatchStartedAt((current) => (current === 0 ? Date.now() : current));
     }
+    return true;
   }, []);
 
   const rememberPlayer = useCallback((
@@ -281,7 +287,10 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
     }
   }, []);
 
-  useEffect(() => clearEffectTimers, [clearEffectTimers]);
+  useEffect(() => () => {
+    effectGenerationRef.current += 1;
+    clearEffectTimers();
+  }, [clearEffectTimers]);
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 250);
@@ -353,6 +362,9 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
     }
     const moveKey = `${game.lastMove.turnNumber}:${game.lastMove.playerId}:${game.lastMove.row}:${game.lastMove.col}`;
     if (animatedMoveKey.current === moveKey) return;
+    clearEffectTimers();
+    effectGenerationRef.current += 1;
+    const effectGeneration = effectGenerationRef.current;
     animatedMoveKey.current = moveKey;
     const shouldCueOpponentTurn =
       playerId !== null &&
@@ -369,6 +381,11 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
       : 150;
 
     setLastPlaced({ row: game.lastMove.row, col: game.lastMove.col });
+    setVisualBoard(null);
+    setScoringCells(new Set());
+    setIsBoardClearing(false);
+    setScoreNotice(null);
+    setTurnCueActive(false);
     if (game.lastMove.removedCells.length > 0) {
       const previousBoard = previousBoardRef.current;
       if (previousBoard !== null) {
@@ -389,6 +406,7 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
         const earnedScore = game.lastMove.earnedScore;
         setScoringCells(new Set());
         const scorePhaseTimer = window.setTimeout(() => {
+          if (effectGenerationRef.current !== effectGeneration) return;
           setScoringCells(nextScoringCells);
           setScoreNotice({
             playerId: scoringPlayerId,
@@ -398,6 +416,7 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
         effectTimers.current.push(scorePhaseTimer);
       }
       const timer = window.setTimeout(() => {
+        if (effectGenerationRef.current !== effectGeneration) return;
         setVisualBoard(null);
         setScoringCells(new Set());
         setIsBoardClearing(false);
@@ -405,17 +424,23 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
       effectTimers.current.push(timer);
     }
     if (shouldCueOpponentTurn) {
-      const timer = window.setTimeout(triggerOpponentTurnComplete, removalDelay);
+      const timer = window.setTimeout(() => {
+        if (effectGenerationRef.current !== effectGeneration) return;
+        triggerOpponentTurnComplete();
+      }, removalDelay);
       effectTimers.current.push(timer);
     }
     if (game.lastMove.earnedScore > 0) {
       const timer = window.setTimeout(
-        () => setScoreNotice(null),
+        () => {
+          if (effectGenerationRef.current !== effectGeneration) return;
+          setScoreNotice(null);
+        },
         effectTimeline.scoreNoticeDurationMs,
       );
       effectTimers.current.push(timer);
     }
-  }, [game, playerId, settings.presentationSpeed, triggerOpponentTurnComplete]);
+  }, [clearEffectTimers, game, playerId, settings.presentationSpeed, triggerOpponentTurnComplete]);
 
   useEffect(() => {
     const handleShortcut = (event: KeyboardEvent) => {
@@ -521,46 +546,6 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
           effectTimers.current.push(timer);
           return;
         }
-        const lastMove = response.room?.game?.lastMove;
-        if (lastMove !== undefined && lastMove !== null && lastMove.removedCells.length > 0) {
-          animatedMoveKey.current = `${lastMove.turnNumber}:${lastMove.playerId}:${lastMove.row}:${lastMove.col}`;
-          const isFullBoardClear = lastMove.earnedScore === 0;
-          const effectTimeline = getMoveEffectTimeline(
-            settings.presentationSpeed,
-            isFullBoardClear,
-          );
-          const nextScoringCells = new Set(
-            lastMove.removedCells.map((cell) => `${cell.row}:${cell.col}`),
-          );
-          setLastPlaced(position);
-          setIsBoardClearing(isFullBoardClear);
-          if (isFullBoardClear) {
-            setScoringCells(nextScoringCells);
-          } else {
-            setScoringCells(new Set());
-            const scorePhaseTimer = window.setTimeout(() => {
-              setScoringCells(nextScoringCells);
-              setScoreNotice({ playerId, score: lastMove.earnedScore });
-            }, effectTimeline.scorePhaseDelayMs);
-            effectTimers.current.push(scorePhaseTimer);
-          }
-          const timer = window.setTimeout(() => {
-            setVisualBoard(null);
-            setScoringCells(new Set());
-            setIsBoardClearing(false);
-            if (response.room !== undefined) applyRoom(response.room);
-          }, effectTimeline.boardCommitDelayMs);
-          effectTimers.current.push(timer);
-          if (lastMove.earnedScore > 0) {
-            const noticeTimer = window.setTimeout(
-              () => setScoreNotice(null),
-              effectTimeline.scoreNoticeDurationMs,
-            );
-            effectTimers.current.push(noticeTimer);
-          }
-          return;
-        }
-        setVisualBoard(null);
         if (response.room !== undefined) applyRoom(response.room);
       },
     );
