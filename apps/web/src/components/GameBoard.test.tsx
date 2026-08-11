@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
-import type { Board } from "@color-game/shared-types";
+import type { Board, MatchCosmetics } from "@color-game/shared-types";
 import { GameBoard } from "./GameBoard";
 
 vi.mock("../i18n", () => ({
@@ -40,9 +40,38 @@ describe("GameBoard score callout", () => {
     );
 
     expect(html).toContain("score-effect-callout");
-    expect(html).toContain('data-fx-engine="modern"');
-    expect(html).toContain("tango-board-fx");
+    expect(html).not.toContain("tango-board-fx");
     expect(html).toContain(">+1<");
     expect(html).not.toContain(">+3<");
+  });
+
+  it("keeps Cosmos Orbit on the original CSS Legendary renderer", () => {
+    const cosmetics: MatchCosmetics = {
+      placementEffect: {
+        id: "place-cosmos-orbit",
+        preset: "orbit",
+        colors: ["#8b7de4", "#56d2ca"],
+        durationMs: 350,
+      },
+    };
+
+    const html = renderToStaticMarkup(
+      <GameBoard
+        board={board}
+        selectedColor="colorA"
+        canPlay={false}
+        showShapes={false}
+        focusedIndex={0}
+        scoringCells={new Set()}
+        lastPlaced={{ row: 0, col: 2 }}
+        invalidCell={null}
+        activeCosmetics={cosmetics}
+        onFocusedIndexChange={() => undefined}
+        onPlace={() => undefined}
+      />,
+    );
+
+    expect(html).not.toContain("tango-board-fx");
+    expect(html).toContain('data-placement-preset="orbit"');
   });
 });
