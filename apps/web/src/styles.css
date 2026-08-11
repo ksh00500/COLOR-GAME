@@ -8546,6 +8546,27 @@ kbd {
   }
 }
 
+/* Keep the color-choice affordance explicit on compact game layouts.
+   The label stays intentionally English across every supported locale. */
+@media (max-width: 620px) {
+  .game-control-panel .picker-label {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    padding: 0 0.15rem;
+  }
+
+  .game-control-panel .picker-label span {
+    color: var(--app-ink-soft, var(--ink-soft));
+    font-size: 0.52rem;
+    letter-spacing: 0.16em;
+  }
+
+  .game-control-panel .picker-shortcuts {
+    display: none;
+  }
+}
+
 /* Mobile replay: compact matchup, board-first playback, and thumb-friendly controls */
 @media (max-width: 640px) {
   .game-page .replay-shell {

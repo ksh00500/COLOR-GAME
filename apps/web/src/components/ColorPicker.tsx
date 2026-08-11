@@ -23,7 +23,7 @@ export function ColorPicker({ selected, disabled, showShapes = false, onSelect }
     <section className="color-picker" aria-label={t("타일 색상 선택")}>
       <div className="picker-label">
         <span>SELECT COLOR</span>
-        <small>{t("현재 단축키: {keys}", { keys: shortcutLabels.join(" · ") })}</small>
+        <small className="picker-shortcuts">{t("현재 단축키: {keys}", { keys: shortcutLabels.join(" · ") })}</small>
       </div>
       <div className="color-options">
         {colorOptions.map((option, index) => (
