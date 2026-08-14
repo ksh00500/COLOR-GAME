@@ -53,13 +53,17 @@ describe("CosmeticPreview", () => {
   });
 
   it("uses the shared scoring renderer instead of letter placeholders", () => {
-    const score = renderToStaticMarkup(<CosmeticPreview item={cosmetic("score_effect", "wash")} label="score" />);
+    const score = renderToStaticMarkup(<CosmeticPreview item={cosmetic("score_effect", "wash")} label="score" actionLabel="Preview effect" />);
     const victory = renderToStaticMarkup(<CosmeticPreview item={cosmetic("victory_effect")} label="victory" />);
 
     expect(score).toContain("score-preview-motif-wash");
     expect(score).toContain("score-preview-board");
     expect((score.match(/score-preview-cell/g) ?? [])).toHaveLength(3);
     expect(score).toContain('data-score-fx-engine="modern"');
+    expect(score).toContain("score-preview-points");
+    expect(score).toContain("preview-replay-action");
+    expect(score).toContain("Preview effect");
+    expect(score).not.toContain("placement-preview-replay-hint");
     expect(score).toContain("+4");
     expect(victory).toContain("victory-cup");
     expect(victory).toContain("victory-laurel");

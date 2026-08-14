@@ -551,16 +551,16 @@ export function TilePalettePanel({
               {activeStyleItems.map((item) => {
                 const equipped = economy.styleLoadout?.[activeStyle.key] === item.id;
                 return (
-                  <button
+                  <article
                     key={item.id}
-                    type="button"
-                    className={`rarity-${item.rarity}${equipped ? " selected" : ""}`}
-                    disabled={busy !== null || equipped}
-                    onClick={() => void equipStyle(activeStyle.key, item.id)}
+                    className={`style-library-card rarity-${item.rarity}${equipped ? " selected" : ""}`}
                   >
                     <span className="style-preview-stage">
-                      <CosmeticPreview item={item} label={localizedCosmeticName(item, locale)} />
-                      <small>{t("효과 미리보기")}</small>
+                      <CosmeticPreview
+                        item={item}
+                        label={localizedCosmeticName(item, locale)}
+                        actionLabel={t("효과 미리보기")}
+                      />
                     </span>
                     <span className="style-library-card-copy">
                       <small>{t(item.rarity)}</small>
@@ -568,8 +568,16 @@ export function TilePalettePanel({
                       <p>{localizedCosmeticDescription(item, locale)}</p>
                       <em>{t(styleEffectMoment(activeStyle.category))}</em>
                     </span>
-                    {equipped && <b>{t("사용 중")}</b>}
-                  </button>
+                    <button
+                      className="style-library-card-action"
+                      type="button"
+                      disabled={busy !== null || equipped}
+                      aria-pressed={equipped}
+                      onClick={() => void equipStyle(activeStyle.key, item.id)}
+                    >
+                      {equipped ? t("장착 중") : t("장착")}
+                    </button>
+                  </article>
                 );
               })}
             </div>

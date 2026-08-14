@@ -1964,32 +1964,17 @@ html[data-tango-board-theme="tango"] .game-board-frame { background-image: linea
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: .85rem;
 }
-.style-library-grid > button {
-  position: relative; display: grid; grid-template-rows: minmax(9rem, 1fr) auto; gap: .65rem;
+.style-library-card {
+  position: relative; display: grid; grid-template-rows: minmax(9rem, 1fr) auto auto; gap: .65rem;
   min-width: 0; padding: .7rem; overflow: hidden;
   border: 1px solid var(--border-color); border-radius: 1.15rem;
-  color: var(--text-primary); background: var(--surface-deep); cursor: pointer;
+  color: var(--text-primary); background: var(--surface-deep);
   transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
 }
-.style-library-grid > button:hover:not(:disabled) { transform: translateY(-3px); border-color: color-mix(in srgb, currentColor 55%, var(--border-color)); box-shadow: 0 .8rem 1.8rem rgba(0,0,0,.16); }
-.style-library-grid > button.selected { border-color: var(--accent); box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--accent) 28%, transparent); }
+.style-library-card:hover { transform: translateY(-3px); border-color: color-mix(in srgb, currentColor 55%, var(--border-color)); box-shadow: 0 .8rem 1.8rem rgba(0,0,0,.16); }
+.style-library-card.selected { border-color: var(--accent); box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--accent) 28%, transparent); }
 .style-library-grid .style-preview-stage { position: relative; display: block; min-width: 0; }
 .style-library-grid .style-preview-stage > .atelier-cosmetic-preview { width: 100%; min-height: 9rem; }
-.style-library-grid .style-preview-stage > small {
-  position: absolute;
-  left: .55rem;
-  bottom: .55rem;
-  z-index: 6;
-  padding: .25rem .42rem;
-  border: 1px solid rgba(255,255,255,.16);
-  border-radius: 999px;
-  color: #fff;
-  background: rgba(10,10,10,.68);
-  backdrop-filter: blur(7px);
-  font-size: .58rem;
-  font-weight: 850;
-  letter-spacing: .03em;
-}
 .style-library-card-copy { display: grid; gap: .28rem; min-width: 0; text-align: left; }
 .style-library-card-copy > small { color: var(--text-muted); font-size: .68rem; font-weight: 850; text-transform: uppercase; }
 .style-library-card-copy > strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -2004,7 +1989,16 @@ html[data-tango-board-theme="tango"] .game-board-frame { background-image: linea
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }
-.style-library-grid > button > b { position: absolute; top: .8rem; right: .8rem; padding: .25rem .48rem; border-radius: 999px; color: #fff; background: var(--accent); font-size: .67rem; }
+.style-library-card-action {
+  width: 100%; min-height: 2.55rem; padding: .58rem .75rem;
+  border: 1px solid color-mix(in srgb, var(--accent) 38%, var(--border-color)); border-radius: .72rem;
+  color: #fff; background: var(--accent); cursor: pointer;
+  font-size: .74rem; font-weight: 850;
+  transition: transform .18s ease, filter .18s ease, border-color .18s ease, background .18s ease;
+}
+.style-library-card-action:hover:not(:disabled) { transform: translateY(-1px); filter: brightness(1.08); }
+.style-library-card-action:focus-visible { outline: 2px solid color-mix(in srgb, var(--accent) 70%, white); outline-offset: 2px; }
+.style-library-card-action:disabled { cursor: default; opacity: 1; color: var(--text-primary); background: color-mix(in srgb, var(--accent) 14%, var(--surface-raised)); }
 .style-library-empty { display: grid; justify-items: center; gap: .5rem; padding: 3rem 1rem; border: 1px dashed var(--border-color); border-radius: 1.1rem; color: var(--text-secondary); text-align: center; }
 .style-library-empty .cosmetic-category-icon { width: 4rem; height: 4rem; opacity: .72; }
 
@@ -2530,7 +2524,7 @@ html[data-tango-score-effect="cosmos-fold"]
   .style-search-field { min-width: 0; width: 100%; }
   .style-rarity-filter { display: flex; overflow-x: auto; }
   .style-library-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .55rem; }
-  .style-library-grid > button { grid-template-rows: minmax(7rem, 1fr) auto; padding: .5rem; }
+  .style-library-card { grid-template-rows: minmax(7rem, 1fr) auto auto; padding: .5rem; }
   .style-library-grid .style-preview-stage > .atelier-cosmetic-preview { min-height: 7rem; }
   .style-library-card-copy > p { font-size: .64rem; }
   .style-library-card-copy > em { padding-inline: .38rem; font-size: .57rem; }

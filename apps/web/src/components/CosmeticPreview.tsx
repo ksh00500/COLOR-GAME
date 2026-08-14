@@ -14,13 +14,25 @@ interface CosmeticPreviewProps {
   item: CosmeticItem;
   className?: string;
   label?: string;
+  actionLabel?: string;
 }
 
 const PLACEMENT_PREVIEW_POSITION: Position = { row: 0, col: 0 };
 const EMPTY_SCORING_CELLS = new Set<string>();
 const SCORE_PREVIEW_CELLS = new Set(["0:0", "0:1", "0:2"]);
 
-function PlacementEffectPreview({ item }: { item: CosmeticItem }) {
+function PreviewReplayAction({ label }: { label?: string }) {
+  if (label === undefined) return null;
+
+  return (
+    <span className="preview-replay-action" aria-hidden="true">
+      <span className="preview-replay-action-icon">↻</span>
+      <span>{label}</span>
+    </span>
+  );
+}
+
+function PlacementEffectPreview({ item, actionLabel }: { item: CosmeticItem; actionLabel?: string }) {
   const boardRef = useRef<HTMLSpanElement>(null);
   const [run, setRun] = useState(0);
   const [active, setActive] = useState(false);
@@ -83,12 +95,12 @@ function PlacementEffectPreview({ item }: { item: CosmeticItem }) {
           />
         )}
       </span>
-      <span className="placement-preview-replay-hint" aria-hidden="true">↻</span>
+      <PreviewReplayAction {...(actionLabel === undefined ? {} : { label: actionLabel })} />
     </span>
   );
 }
 
-function ScoreEffectPreview({ item }: { item: CosmeticItem }) {
+function ScoreEffectPreview({ item, actionLabel }: { item: CosmeticItem; actionLabel?: string }) {
   const boardRef = useRef<HTMLSpanElement>(null);
   const [run, setRun] = useState(0);
   const [active, setActive] = useState(false);
@@ -145,13 +157,13 @@ function ScoreEffectPreview({ item }: { item: CosmeticItem }) {
           />
         )}
       </span>
-      <strong>+4</strong>
-      <span className="placement-preview-replay-hint" aria-hidden="true">↻</span>
+      <strong className={`score-preview-points${active ? " is-active" : ""}`} aria-hidden="true">+4</strong>
+      <PreviewReplayAction {...(actionLabel === undefined ? {} : { label: actionLabel })} />
     </span>
   );
 }
 
-export function CosmeticPreview({ item, className = "", label }: CosmeticPreviewProps) {
+export function CosmeticPreview({ item, className = "", label, actionLabel }: CosmeticPreviewProps) {
   if (item.category === "tile_color") {
     return <TileSkinPreview item={item} className={className} {...(label === undefined ? {} : { label })} />;
   }
@@ -166,7 +178,7 @@ export function CosmeticPreview({ item, className = "", label }: CosmeticPreview
       className={`atelier-cosmetic-preview atelier-cosmetic-preview-${item.category} preset-${item.preset ?? "default"} rarity-${item.rarity} ${className}`}
       data-fx-language="modern"
       style={style}
-      role={item.category === "placement_effect" ? "group" : "img"}
+      role={item.category === "placement_effect" || item.category === "score_effect" ? "group" : "img"}
       aria-label={label}
     >
       {item.category === "board_theme" && (
@@ -181,10 +193,10 @@ export function CosmeticPreview({ item, className = "", label }: CosmeticPreview
         </span>
       )}
       {item.category === "placement_effect" && (
-        <PlacementEffectPreview item={item} />
+        <PlacementEffectPreview item={item} {...(actionLabel === undefined ? {} : { actionLabel })} />
       )}
       {item.category === "score_effect" && (
-        <ScoreEffectPreview item={item} />
+        <ScoreEffectPreview item={item} {...(actionLabel === undefined ? {} : { actionLabel })} />
       )}
       {item.category === "victory_effect" && (
         <span className="atelier-cosmetic-preview-victory">
