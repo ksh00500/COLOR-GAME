@@ -19,7 +19,9 @@ import { AttendanceCheckInModal } from "./components/AttendanceCheckInModal";
 import { AdminPage } from "./pages/AdminPage";
 import { NativeBannerAdController } from "./components/NativeBannerAdController";
 
-const FxLabPage = import.meta.env.DEV
+const fxLabEnabled = import.meta.env.DEV || import.meta.env.VITE_ENABLE_FX_LAB === "true";
+
+const FxLabPage = fxLabEnabled
   ? lazy(async () => {
       const module = await import("./pages/FxLabPage");
       return { default: module.FxLabPage };
@@ -29,7 +31,11 @@ const FxLabPage = import.meta.env.DEV
 export function App() {
   const pathname = useLocation().pathname;
   const adminRoute = pathname.startsWith("/admin");
-  const fxLabRoute = import.meta.env.DEV && pathname === "/fx-lab";
+  const fxLabRoute = fxLabEnabled && (
+    pathname === "/fx-lab"
+    || pathname === "/fx-preview"
+    || pathname === "/fx-preview/"
+  );
   const standaloneRoute = adminRoute || fxLabRoute;
   return (
     <>
@@ -39,14 +45,24 @@ export function App() {
       <Routes>
         <Route path="/admin" element={<AdminPage />} />
         {FxLabPage !== null && (
-          <Route
-            path="/fx-lab"
-            element={(
+          <>
+            <Route
+              path="/fx-lab"
+              element={(
+                <Suspense fallback={<div className="fx-lab-loading">FX 엔진을 준비하고 있습니다.</div>}>
+                  <FxLabPage />
+                </Suspense>
+              )}
+            />
+            <Route
+              path="/fx-preview/*"
+              element={(
               <Suspense fallback={<div className="fx-lab-loading">FX 엔진을 준비하고 있습니다.</div>}>
                 <FxLabPage />
               </Suspense>
-            )}
-          />
+              )}
+            />
+          </>
         )}
         <Route path="/" element={<LobbyPage />} />
         <Route path="/game" element={<GamePage />} />

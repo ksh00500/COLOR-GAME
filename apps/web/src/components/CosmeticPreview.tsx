@@ -1,12 +1,86 @@
-import type { CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
+import type { Position } from "@color-game/shared-types";
 import type { CosmeticItem } from "../api";
 import { cosmeticBackground } from "../cosmetics";
 import { TileSkinPreview } from "./TileSkinPreview";
+import { TangoBoardFx } from "./TangoBoardFx";
+import { PLACEMENT_FX_DURATION_MS, resolveBoardFxDesign } from "./boardFxDesign";
 
 interface CosmeticPreviewProps {
   item: CosmeticItem;
   className?: string;
   label?: string;
+}
+
+const PLACEMENT_PREVIEW_POSITION: Position = { row: 0, col: 0 };
+const EMPTY_SCORING_CELLS = new Set<string>();
+
+function PlacementEffectPreview({ item }: { item: CosmeticItem }) {
+  const boardRef = useRef<HTMLSpanElement>(null);
+  const [run, setRun] = useState(0);
+  const [active, setActive] = useState(false);
+  const design = resolveBoardFxDesign(item.preset ?? undefined, undefined).placement;
+  const duration = PLACEMENT_FX_DURATION_MS[design];
+
+  useEffect(() => {
+    if (!active) return;
+    const timeout = window.setTimeout(() => setActive(false), duration + 100);
+    return () => window.clearTimeout(timeout);
+  }, [active, duration, run]);
+
+  const replay = () => {
+    setActive(false);
+    window.requestAnimationFrame(() => {
+      setRun((value) => value + 1);
+      setActive(true);
+    });
+  };
+  const onKeyDown = (event: KeyboardEvent<HTMLSpanElement>) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    replay();
+  };
+
+  return (
+    <span
+      className="placement-preview-stage"
+      role="button"
+      tabIndex={0}
+      aria-label={`${item.nameKo} 효과 미리보기 재생`}
+      onClick={(event) => {
+        event.stopPropagation();
+        replay();
+      }}
+      onKeyDown={onKeyDown}
+    >
+      <span
+        ref={boardRef}
+        className="placement-preview-board-grid"
+        data-placement-fx-engine="modern"
+      >
+        <span className="placement-preview-cell" data-cell-row="0" data-cell-col="0">
+          <span
+            key={`${run}:${active ? "active" : "idle"}`}
+            className={`placement-preview-tile${active ? " placement-tile-motion" : ""}`}
+            data-placement-motion={design}
+          />
+        </span>
+        {active && (
+          <TangoBoardFx
+            key={run}
+            boardRef={boardRef}
+            lastPlaced={PLACEMENT_PREVIEW_POSITION}
+            scoringCells={EMPTY_SCORING_CELLS}
+            placementPreset={item.preset ?? undefined}
+            placementColors={item.colors}
+            scoreColors={[]}
+            motionStyle="refined"
+          />
+        )}
+      </span>
+      <span className="placement-preview-replay-hint" aria-hidden="true">↻</span>
+    </span>
+  );
 }
 
 function ScoreEffectPreview({ preset = "fade" }: { preset: string | null | undefined }) {
@@ -160,7 +234,7 @@ export function CosmeticPreview({ item, className = "", label }: CosmeticPreview
       className={`atelier-cosmetic-preview atelier-cosmetic-preview-${item.category} preset-${item.preset ?? "default"} rarity-${item.rarity} ${className}`}
       data-fx-language="modern"
       style={style}
-      role="img"
+      role={item.category === "placement_effect" ? "group" : "img"}
       aria-label={label}
     >
       {item.category === "board_theme" && (
@@ -175,17 +249,7 @@ export function CosmeticPreview({ item, className = "", label }: CosmeticPreview
         </span>
       )}
       {item.category === "placement_effect" && (
-        <span className="atelier-cosmetic-preview-effect-stage">
-          <svg className="atelier-cosmetic-preview-effect-lines" viewBox="0 0 100 100" aria-hidden="true">
-            <circle cx="50" cy="50" r="31" />
-            <circle cx="50" cy="50" r="42" />
-            <path d="M50 4v13M50 83v13M4 50h13M83 50h13M18 18l9 9M73 73l9 9M82 18l-9 9M27 73l-9 9" />
-          </svg>
-          <span className="atelier-cosmetic-preview-tile placement-demo" />
-          <span className="preview-effect-particles" aria-hidden="true">
-            {Array.from({ length: 10 }, (_, index) => <i key={index} />)}
-          </span>
-        </span>
+        <PlacementEffectPreview item={item} />
       )}
       {item.category === "score_effect" && (
         <ScoreEffectPreview preset={item.preset} />

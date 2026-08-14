@@ -1,16 +1,25 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
+import "pixi.js/unsafe-eval";
+import * as pixi from "pixi.js";
 import type { Application, ColorSource, Container, Graphics } from "pixi.js";
 import type { Position } from "@color-game/shared-types";
-import { resolveBoardFxDesign } from "./boardFxDesign";
+import {
+  PLACEMENT_FX_DURATION_MS,
+  resolveBoardFxDesign,
+  type PlacementFxDesign,
+} from "./boardFxDesign";
 
 interface TangoBoardFxProps {
-  boardRef: RefObject<HTMLDivElement>;
+  boardRef: RefObject<HTMLElement>;
   lastPlaced: Position | null;
   scoringCells: Set<string>;
   placementPreset?: string | undefined;
   scorePreset?: string | undefined;
   placementColors: readonly string[];
   scoreColors: readonly string[];
+  motionStyle?: "legacy" | "refined";
+  placementSequenceKey?: string | number;
+  onReadyChange?: ((ready: boolean) => void) | undefined;
 }
 
 interface CellRect {
@@ -22,7 +31,7 @@ interface CellRect {
   centerY: number;
 }
 
-type PixiModule = typeof import("pixi.js");
+type PixiModule = typeof pixi;
 type SequenceRef = { current: number };
 
 const FALLBACK_ACCENT = "#e2c49a";
@@ -30,6 +39,9 @@ const easeOutCubic = (value: number) => 1 - ((1 - value) ** 3);
 const easeInOutCubic = (value: number) => value < 0.5
   ? 4 * value * value * value
   : 1 - ((-2 * value + 2) ** 3) / 2;
+const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
+const windowProgress = (value: number, start: number, end: number) => clamp01((value - start) / (end - start));
+const softPulse = (value: number, start: number, end: number) => Math.sin(windowProgress(value, start, end) * Math.PI);
 
 function safeColor(value: string | undefined): ColorSource {
   return /^#[0-9a-f]{6}$/i.test(value ?? "") ? value! : FALLBACK_ACCENT;
@@ -50,6 +62,722 @@ function drawDiamond(graphics: Graphics, x: number, y: number, radius: number) {
   ], true);
 }
 
+function drawPetal(pixi: PixiModule, width: number, height: number, color: ColorSource) {
+  const petal = new pixi.Container();
+  const glow = new pixi.Graphics()
+    .ellipse(0, -height * 0.24, width * 0.7, height * 0.46)
+    .fill({ color, alpha: 0.14 });
+  const body = new pixi.Graphics()
+    .moveTo(0, 0)
+    .bezierCurveTo(width * 0.58, -height * 0.22, width * 0.45, -height * 0.76, 0, -height)
+    .bezierCurveTo(-width * 0.45, -height * 0.76, -width * 0.58, -height * 0.22, 0, 0)
+    .fill({ color, alpha: 0.7 })
+    .stroke({ color: "#f8f2ff", width: Math.max(0.55, width * 0.035), alpha: 0.42 });
+  const vein = new pixi.Graphics()
+    .moveTo(0, -height * 0.06)
+    .lineTo(0, -height * 0.72)
+    .stroke({ color: "#fffdf1", width: Math.max(0.5, width * 0.025), alpha: 0.38 });
+  petal.addChild(glow, body, vein);
+  return petal;
+}
+
+function drawTangoOutlineMark(
+  pixi: PixiModule,
+  size: number,
+  stroke: ColorSource,
+  shadow: ColorSource = "#171311",
+) {
+  const mark = new pixi.Container();
+  const scale = size / 92;
+  const specs = [
+    { x: 21, y: 36, rotation: -9 * Math.PI / 180 },
+    { x: 47, y: 28, rotation: -3 * Math.PI / 180 },
+    { x: 73, y: 20, rotation: 8 * Math.PI / 180 },
+  ] as const;
+  specs.forEach(({ x, y, rotation }, index) => {
+    const tile = new pixi.Container();
+    const tileSize = 32 * scale;
+    const darkOutline = new pixi.Graphics()
+      .roundRect(-tileSize / 2, -tileSize / 2, tileSize, tileSize, tileSize * 0.26)
+      .stroke({ color: shadow, width: Math.max(2.2, size * 0.043), alpha: 0.94 });
+    const fineOutline = new pixi.Graphics()
+      .roundRect(-tileSize / 2, -tileSize / 2, tileSize, tileSize, tileSize * 0.26)
+      .stroke({ color: stroke, width: Math.max(1.15, size * 0.021), alpha: 1 });
+    tile.addChild(darkOutline, fineOutline);
+    tile.position.set((x - 47) * scale, (y - 29) * scale);
+    tile.rotation = rotation;
+    tile.zIndex = index;
+    mark.addChild(tile);
+  });
+  const notches = new pixi.Graphics();
+  [[34, 32], [61, 24]].forEach(([x, y]) => {
+    notches
+      .circle((x! - 47) * scale, (y! - 29) * scale, 4.6 * scale)
+      .stroke({ color: shadow, width: Math.max(1.8, size * 0.032), alpha: 0.94 })
+      .circle((x! - 47) * scale, (y! - 29) * scale, 4.6 * scale)
+      .stroke({ color: stroke, width: Math.max(0.9, size * 0.016), alpha: 1 });
+  });
+  notches.zIndex = 4;
+  mark.addChild(notches);
+  mark.sortableChildren = true;
+  return mark;
+}
+
+type PlacementAnimate = (duration: number, update: (progress: number) => void) => Promise<void>;
+
+function scaleAround(graphic: Graphics | Container, rect: CellRect, scale: number) {
+  graphic.pivot.set(rect.centerX, rect.centerY);
+  graphic.position.set(rect.centerX, rect.centerY);
+  graphic.scale.set(scale);
+}
+
+function cellMask(pixi: PixiModule, rect: CellRect) {
+  const inset = Math.max(2, rect.width * 0.035);
+  return new pixi.Graphics()
+    .roundRect(
+      rect.x + inset,
+      rect.y + inset,
+      rect.width - inset * 2,
+      rect.height - inset * 2,
+      Math.max(5, rect.width * 0.12),
+    )
+    .fill({ color: "#ffffff" });
+}
+
+async function renderRefinedPlacement({
+  pixi,
+  layer,
+  rect,
+  design,
+  primary,
+  secondary,
+  animate,
+}: {
+  pixi: PixiModule;
+  layer: Container;
+  rect: CellRect;
+  design: PlacementFxDesign;
+  primary: ColorSource;
+  secondary: ColorSource;
+  animate: PlacementAnimate;
+}) {
+  const mask = cellMask(pixi, rect);
+  const stage = new pixi.Container();
+  stage.mask = mask;
+  layer.addChild(mask, stage);
+
+  const exitAlpha = (raw: number, start = 0.68) => raw < start
+    ? 1
+    : 1 - easeInOutCubic((raw - start) / (1 - start));
+
+  if (design === "maple-tap") {
+    await animate(PLACEMENT_FX_DURATION_MS[design], () => undefined);
+    return;
+  }
+
+  if (design === "walnut-shadow") {
+    await animate(PLACEMENT_FX_DURATION_MS[design], () => undefined);
+    return;
+  }
+
+  if (design === "ivory-click") {
+    const capSize = rect.width * 0.185;
+    const inset = rect.width * 0.105;
+    const guide = new pixi.Graphics()
+      .roundRect(rect.x + rect.width * 0.13, rect.y + rect.height * 0.13, rect.width * 0.74, rect.height * 0.74, rect.width * 0.13)
+      .stroke({ color: "#fff4d7", width: Math.max(0.7, rect.width * 0.012), alpha: 0.34 });
+    guide.alpha = 0;
+    stage.addChild(guide);
+    const corners = [
+      { x: rect.x + inset, y: rect.y + inset, sx: 1, sy: 1, dx: -0.2, dy: -0.2, start: 0 },
+      { x: rect.x + rect.width - inset, y: rect.y + inset, sx: -1, sy: 1, dx: 0.2, dy: -0.2, start: 0.04 },
+      { x: rect.x + inset, y: rect.y + rect.height - inset, sx: 1, sy: -1, dx: -0.2, dy: 0.2, start: 0.08 },
+      { x: rect.x + rect.width - inset, y: rect.y + rect.height - inset, sx: -1, sy: -1, dx: 0.2, dy: 0.2, start: 0.12 },
+    ].map(({ x, y, sx, sy, dx, dy, start }) => {
+      const cap = new pixi.Container();
+      const shadow = new pixi.Graphics()
+        .moveTo(sx * capSize, 0)
+        .lineTo(0, 0)
+        .lineTo(0, sy * capSize)
+        .stroke({ color: "#171411", width: Math.max(4, rect.width * 0.074), alpha: 0.54 });
+      const outline = new pixi.Graphics()
+        .moveTo(sx * capSize, 0)
+        .lineTo(0, 0)
+        .lineTo(0, sy * capSize)
+        .stroke({ color: "#665a49", width: Math.max(3.1, rect.width * 0.058), alpha: 0.96 });
+      const ivory = new pixi.Graphics()
+        .moveTo(sx * capSize, 0)
+        .lineTo(0, 0)
+        .lineTo(0, sy * capSize)
+        .stroke({ color: "#fff5df", width: Math.max(1.7, rect.width * 0.032), alpha: 1 });
+      const bevel = new pixi.Graphics()
+        .moveTo(sx * capSize * 0.78, sy * rect.height * 0.012)
+        .lineTo(sx * rect.width * 0.012, sy * rect.height * 0.012)
+        .lineTo(sx * rect.width * 0.012, sy * capSize * 0.78)
+        .stroke({ color: "#ffffff", width: Math.max(0.6, rect.width * 0.011), alpha: 0.58 });
+      cap.addChild(shadow, outline, ivory, bevel);
+      cap.position.set(x + rect.width * dx, y + rect.height * dy);
+      cap.alpha = 0;
+      stage.addChild(cap);
+      return { cap, x, y, dx, dy, start };
+    });
+    const lock = new pixi.Graphics()
+      .circle(rect.centerX, rect.centerY, Math.max(2.2, rect.width * 0.044))
+      .stroke({ color: "#fff4d7", width: Math.max(0.7, rect.width * 0.012), alpha: 0.9 })
+      .circle(rect.centerX, rect.centerY, Math.max(1.2, rect.width * 0.022))
+      .fill({ color: "#d7a84f", alpha: 0.95 });
+    lock.alpha = 0;
+    stage.addChild(lock);
+    await animate(PLACEMENT_FX_DURATION_MS[design], (raw) => {
+      const exit = exitAlpha(raw, 0.78);
+      guide.alpha = softPulse(raw, 0.08, 0.78) * 0.52;
+      corners.forEach(({ cap, x, y, dx, dy, start }) => {
+        const local = easeOutCubic(Math.max(0, Math.min(1, (raw - start) / 0.42)));
+        const click = 1 - softPulse(raw, 0.54, 0.72) * 0.055;
+        cap.position.set(x + rect.width * dx * (1 - local), y + rect.height * dy * (1 - local));
+        cap.scale.set(click);
+        cap.alpha = local * exit;
+      });
+      lock.alpha = Math.sin(Math.max(0, Math.min(1, (raw - 0.52) / 0.28)) * Math.PI) * exit;
+    });
+    return;
+  }
+
+  if (design === "charcoal-stamp") {
+    const logo = drawTangoOutlineMark(pixi, rect.width * 0.78, "#fff4d7", "#171311");
+    logo.position.set(rect.centerX, rect.centerY);
+    logo.alpha = 0;
+    stage.addChild(logo);
+    await animate(PLACEMENT_FX_DURATION_MS[design], (raw) => {
+      const strike = easeOutCubic(Math.min(1, raw / 0.38));
+      const exit = exitAlpha(raw, 0.7);
+      logo.position.y = rect.centerY - rect.height * 0.11 * (1 - strike);
+      logo.scale.set(1.2 - strike * 0.2, 1.12 - strike * 0.12);
+      logo.alpha = strike * exit;
+    });
+    return;
+  }
+
+  if (design === "moss-leaf") {
+    const surfaceShade = new pixi.Graphics()
+      .roundRect(rect.x, rect.y, rect.width, rect.height, rect.width * 0.18)
+      .fill({ color: "#16241a", alpha: 0.13 });
+    surfaceShade.alpha = 0;
+
+    const createPatina = (
+      centerX: number,
+      centerY: number,
+      radiusX: number,
+      radiusY: number,
+      color: ColorSource,
+    ) => {
+      const patina = new pixi.Container();
+      const layers = [
+        { scale: 1, alpha: 0.045 },
+        { scale: 0.76, alpha: 0.07 },
+        { scale: 0.48, alpha: 0.1 },
+      ];
+      layers.forEach(({ scale, alpha }) => {
+        patina.addChild(new pixi.Graphics()
+          .ellipse(centerX, centerY, radiusX * scale, radiusY * scale)
+          .fill({ color, alpha }));
+      });
+      patina.pivot.set(centerX, centerY);
+      patina.position.set(centerX, centerY);
+      patina.alpha = 0;
+      return patina;
+    };
+
+    const lowerPatina = createPatina(
+      rect.x + rect.width * 0.18,
+      rect.y + rect.height * 0.82,
+      rect.width * 0.72,
+      rect.height * 0.52,
+      primary,
+    );
+    const upperPatina = createPatina(
+      rect.x + rect.width * 0.86,
+      rect.y + rect.height * 0.12,
+      rect.width * 0.58,
+      rect.height * 0.44,
+      secondary,
+    );
+    const softSheen = new pixi.Graphics()
+      .ellipse(rect.centerX, rect.centerY, rect.width * 0.44, rect.height * 0.12)
+      .fill({ color: "#e6efd0", alpha: 0.055 });
+    softSheen.rotation = -0.32;
+    softSheen.alpha = 0;
+    stage.addChild(surfaceShade, lowerPatina, upperPatina, softSheen);
+
+    await animate(PLACEMENT_FX_DURATION_MS[design], (raw) => {
+      const settle = easeOutCubic(windowProgress(raw, 0.04, 0.5));
+      const exit = exitAlpha(raw, 0.74);
+      const wash = softPulse(raw, 0.06, 0.72) * exit;
+      surfaceShade.alpha = wash * 0.68;
+      lowerPatina.alpha = wash;
+      upperPatina.alpha = wash * 0.88;
+      lowerPatina.position.set(
+        rect.x + rect.width * (0.12 + settle * 0.06),
+        rect.y + rect.height * (0.88 - settle * 0.06),
+      );
+      upperPatina.position.set(
+        rect.x + rect.width * (0.92 - settle * 0.06),
+        rect.y + rect.height * (0.06 + settle * 0.06),
+      );
+      const patinaScale = 0.92 + settle * 0.08;
+      lowerPatina.scale.set(patinaScale);
+      upperPatina.scale.set(patinaScale);
+      softSheen.alpha = softPulse(raw, 0.18, 0.58) * 0.42 * exit;
+      softSheen.position.x = rect.width * 0.08 * (settle - 0.5);
+    });
+    return;
+  }
+
+  if (design === "coastal-ripple") {
+    const sheen = new pixi.Graphics()
+      .roundRect(rect.x + rect.width * 0.1, rect.y + rect.height * 0.08, rect.width * 0.13, rect.height * 0.84, rect.width * 0.06)
+      .fill({ color: "#f1ffff", alpha: 0.2 });
+    sheen.rotation = -0.24;
+    sheen.pivot.set(rect.centerX, rect.centerY);
+    sheen.position.set(rect.centerX - rect.width * 0.45, rect.centerY);
+    stage.addChild(sheen);
+    await animate(PLACEMENT_FX_DURATION_MS[design], (raw) => {
+      const sweep = windowProgress(raw, 0.12, 0.76);
+      const exit = exitAlpha(raw, 0.8);
+      sheen.alpha = softPulse(raw, 0.08, 0.82) * 0.34 * exit;
+      sheen.position.set(rect.centerX - rect.width * 0.52 + rect.width * 1.04 * sweep, rect.centerY);
+    });
+    return;
+  }
+
+  if (design === "brass-ring") {
+    const ringSpecs = [
+      { width: 0.36, height: 0.16, rotation: -0.55, direction: 1, color: primary },
+      { width: 0.18, height: 0.38, rotation: 0.34, direction: -1, color: secondary },
+      { width: 0.34, height: 0.2, rotation: 1.02, direction: 1, color: "#d9aa50" as ColorSource },
+    ];
+    const rings = ringSpecs.map((spec) => {
+      const ring = new pixi.Container();
+      const shadow = new pixi.Graphics()
+        .ellipse(0, rect.height * 0.012, rect.width * spec.width, rect.height * spec.height)
+        .stroke({ color: "#21160d", width: Math.max(2.8, rect.width * 0.043), alpha: 0.64 });
+      const body = new pixi.Graphics()
+        .ellipse(0, 0, rect.width * spec.width, rect.height * spec.height)
+        .stroke({ color: spec.color, width: Math.max(1.65, rect.width * 0.026), alpha: 0.96 });
+      const highlight = new pixi.Graphics()
+        .arc(0, 0, rect.width * spec.width, -2.72, -0.34)
+        .stroke({ color: "#fff0bd", width: Math.max(0.6, rect.width * 0.009), alpha: 0.82 });
+      const nodes = [0, Math.PI].map((angle) => new pixi.Graphics()
+        .circle(Math.cos(angle) * rect.width * spec.width, Math.sin(angle) * rect.height * spec.height, Math.max(1.25, rect.width * 0.018))
+        .stroke({ color: "#3a2613", width: Math.max(0.65, rect.width * 0.009), alpha: 0.88 })
+        .fill({ color: "#ffe2a0", alpha: 0.96 }));
+      ring.addChild(shadow, body, highlight, ...nodes);
+      ring.position.set(rect.centerX, rect.centerY);
+      ring.rotation = spec.rotation;
+      ring.alpha = 0;
+      stage.addChild(ring);
+      return { ring, ...spec };
+    });
+    const cageHalo = new pixi.Graphics()
+      .circle(rect.centerX, rect.centerY, rect.width * 0.32)
+      .stroke({ color: "#d9aa50", width: Math.max(0.55, rect.width * 0.009), alpha: 0.28 });
+    const coreShadow = new pixi.Graphics()
+      .circle(rect.centerX, rect.centerY + rect.height * 0.015, rect.width * 0.1)
+      .fill({ color: "#1b120b", alpha: 0.58 });
+    const core = new pixi.Graphics()
+      .circle(rect.centerX, rect.centerY, rect.width * 0.082)
+      .stroke({ color: "#5f3918", width: Math.max(1.5, rect.width * 0.023), alpha: 0.96 })
+      .fill({ color: "#d9aa50", alpha: 0.9 })
+      .circle(rect.centerX, rect.centerY, rect.width * 0.035)
+      .fill({ color: "#fff2bd", alpha: 0.96 });
+    const coreLens = new pixi.Graphics()
+      .circle(rect.centerX, rect.centerY, rect.width * 0.13)
+      .stroke({ color: "#fff0bd", width: Math.max(0.65, rect.width * 0.01), alpha: 0.32 })
+      .circle(rect.centerX, rect.centerY, rect.width * 0.18)
+      .stroke({ color: "#d9aa50", width: Math.max(0.5, rect.width * 0.008), alpha: 0.2 });
+    const lockGlint = drawDiamond(new pixi.Graphics(), rect.centerX, rect.centerY, rect.width * 0.055)
+      .fill({ color: "#fff8d8", alpha: 0.92 });
+    cageHalo.alpha = 0;
+    coreShadow.alpha = 0;
+    core.alpha = 0;
+    coreLens.alpha = 0;
+    lockGlint.alpha = 0;
+    stage.addChild(cageHalo, coreLens, coreShadow, core, lockGlint);
+    await animate(PLACEMENT_FX_DURATION_MS[design], (raw) => {
+      const assemble = easeOutCubic(windowProgress(raw, 0.04, 0.34));
+      const lock = easeInOutCubic(windowProgress(raw, 0.5, 0.78));
+      const exit = exitAlpha(raw, 0.84);
+      rings.forEach(({ ring, rotation, direction }, index) => {
+        const stagger = easeOutCubic(windowProgress(raw, 0.02 + index * 0.035, 0.34 + index * 0.035));
+        ring.alpha = stagger * exit;
+        ring.scale.set(0.7 + stagger * 0.3);
+        ring.rotation = rotation + direction * (1.55 * (1 - lock) + raw * 1.55);
+      });
+      cageHalo.alpha = assemble * exit * 0.55;
+      scaleAround(cageHalo, rect, 0.72 + assemble * 0.28);
+      coreShadow.alpha = lock * exit * 0.72;
+      coreLens.alpha = lock * exit;
+      scaleAround(coreLens, rect, 0.76 + lock * 0.24);
+      core.alpha = lock * exit;
+      scaleAround(coreShadow, rect, 0.7 + lock * 0.3);
+      scaleAround(core, rect, 0.68 + lock * 0.32);
+      lockGlint.alpha = softPulse(raw, 0.66, 0.86) * exit;
+    });
+    return;
+  }
+
+  if (design === "moonlight-bloom") {
+    const outerGlow = new pixi.Graphics()
+      .circle(rect.centerX, rect.centerY, rect.width * 0.41)
+      .fill({ color: secondary, alpha: 0.1 });
+    const glow = new pixi.Graphics()
+      .circle(rect.centerX, rect.centerY, rect.width * 0.34)
+      .stroke({ color: "#e9e5ff", width: Math.max(0.8, rect.width * 0.013), alpha: 0.62 });
+    const petals = Array.from({ length: 8 }, (_, index) => index * Math.PI / 4).map((angle) => {
+      const petal = drawPetal(pixi, rect.width * 0.14, rect.height * 0.26, primary);
+      petal.position.set(rect.centerX, rect.centerY);
+      petal.rotation = angle;
+      petal.scale.set(0.12);
+      petal.alpha = 0;
+      stage.addChild(petal);
+      return { petal, baseAngle: angle };
+    });
+    const coreGlow = new pixi.Graphics()
+      .circle(rect.centerX, rect.centerY, rect.width * 0.16)
+      .fill({ color: "#ddd8ff", alpha: 0.24 });
+    const moon = new pixi.Graphics()
+      .circle(rect.centerX, rect.centerY, rect.width * 0.062)
+      .stroke({ color: "#ffffff", width: Math.max(0.65, rect.width * 0.011), alpha: 0.82 })
+      .circle(rect.centerX, rect.centerY, rect.width * 0.047)
+      .fill({ color: "#fff9dc", alpha: 0.98 });
+    stage.addChild(outerGlow, glow, coreGlow, moon);
+    await animate(PLACEMENT_FX_DURATION_MS[design], (raw) => {
+      const reveal = easeInOutCubic(Math.min(1, raw / 0.62));
+      const exit = exitAlpha(raw, 0.8);
+      outerGlow.alpha = reveal * exit * 0.3;
+      scaleAround(outerGlow, rect, 0.64 + reveal * 0.36);
+      glow.alpha = reveal * exit * 0.7;
+      scaleAround(glow, rect, 0.72 + reveal * 0.28);
+      coreGlow.alpha = reveal * exit * 0.76;
+      scaleAround(coreGlow, rect, 0.5 + reveal * 0.5);
+      petals.forEach(({ petal, baseAngle }, index) => {
+        const pairDelay = Math.floor(index / 2) * 0.055;
+        const local = easeOutCubic(Math.max(0, Math.min(1, (raw - 0.12 - pairDelay) / 0.42)));
+        petal.alpha = local * exit * 0.92;
+        petal.scale.set(0.12 + local * 0.88);
+        petal.rotation = baseAngle;
+      });
+      moon.alpha = easeOutCubic(windowProgress(raw, 0, 0.3)) * exit;
+      scaleAround(moon, rect, 0.68 + reveal * 0.32);
+    });
+    return;
+  }
+
+  if (design === "ember-seal") {
+    const sparkSpecs = [
+      { offset: -0.2, drift: -0.06, rise: 0.3, delay: 0.02, depth: 0.7 },
+      { offset: -0.12, drift: 0.035, rise: 0.38, delay: 0.07, depth: 1 },
+      { offset: -0.04, drift: -0.018, rise: 0.26, delay: 0.13, depth: 0.58 },
+      { offset: 0.055, drift: 0.052, rise: 0.36, delay: 0.04, depth: 0.88 },
+      { offset: 0.14, drift: -0.032, rise: 0.31, delay: 0.11, depth: 0.74 },
+      { offset: 0.21, drift: 0.058, rise: 0.24, delay: 0.17, depth: 0.52 },
+      { offset: 0.01, drift: 0.025, rise: 0.44, delay: 0.2, depth: 0.92 },
+    ] as const;
+    const sparks = sparkSpecs.map((spec, index) => {
+      const spark = new pixi.Container();
+      const trail = new pixi.Graphics()
+        .moveTo(0, rect.height * 0.055)
+        .bezierCurveTo(
+          -rect.width * spec.drift * 0.35,
+          rect.height * 0.02,
+          rect.width * spec.drift * 0.25,
+          -rect.height * 0.015,
+          0,
+          -rect.height * 0.045,
+        )
+        .stroke({ color: index % 3 === 0 ? "#ff6b2f" : "#ffb24f", width: Math.max(0.65, rect.width * 0.009), alpha: 0.44 });
+      const glow = new pixi.Graphics()
+        .ellipse(0, 0, Math.max(1.8, rect.width * 0.027), Math.max(1.2, rect.height * 0.017))
+        .fill({ color: index % 2 === 0 ? "#ff6b2f" : "#ffc15a", alpha: 0.2 });
+      const core = new pixi.Graphics()
+        .ellipse(0, 0, Math.max(0.75, rect.width * 0.009), Math.max(1.1, rect.height * 0.014))
+        .fill({ color: index % 2 === 0 ? "#ff7a35" : "#ffd477", alpha: 0.98 })
+        .circle(-rect.width * 0.0015, -rect.height * 0.004, Math.max(0.34, rect.width * 0.0038))
+        .fill({ color: "#fff4ca", alpha: 0.96 });
+      spark.addChild(trail, glow, core);
+      spark.position.set(rect.centerX + rect.width * spec.offset, rect.y + rect.height * 0.76);
+      spark.alpha = 0;
+      stage.addChild(spark);
+      return { spark, ...spec };
+    });
+    await animate(PLACEMENT_FX_DURATION_MS[design], (raw) => {
+      const exit = exitAlpha(raw, 0.9);
+      sparks.forEach(({ spark, offset, delay, drift, rise, depth }, index) => {
+        const local = windowProgress(raw, 0.05 + delay, 0.62 + delay);
+        const pulse = Math.sin(local * Math.PI);
+        const lift = easeOutCubic(local);
+        spark.alpha = pulse * exit * (0.74 + depth * 0.26);
+        spark.x = rect.centerX + rect.width * (offset + drift * lift + Math.sin(local * Math.PI * 1.35 + index * 0.8) * 0.012);
+        spark.y = rect.y + rect.height * (0.76 - lift * rise);
+        spark.rotation = (index % 2 === 0 ? -1 : 1) * (0.2 + lift * 0.42);
+        const depthScale = 0.32 + pulse * (0.42 + depth * 0.34);
+        spark.scale.set(depthScale, depthScale * (0.78 + depth * 0.24));
+      });
+    });
+    return;
+  }
+
+  if (design === "prism-fold") {
+    const aperture = new pixi.Container();
+    aperture.position.set(rect.centerX, rect.centerY);
+    aperture.alpha = 0;
+    stage.addChild(aperture);
+    const depthPlate = drawDiamond(new pixi.Graphics(), 0, rect.height * 0.018, rect.width * 0.185)
+      .fill({ color: "#12131b", alpha: 0.46 })
+      .stroke({ color: "#ffffff", width: Math.max(1, rect.width * 0.014), alpha: 0.16 });
+    const facetColors = ["#de5877", "#e1a04b", "#55b7a1", "#4aa0c9", "#6571dc", "#ad63d2"] as const;
+    const facets = facetColors.map((color, index) => {
+      const angle = -Math.PI / 2 + index * Math.PI / 3;
+      const facetContainer = new pixi.Container();
+      const shadow = new pixi.Graphics()
+        .poly([
+          0, -rect.height * 0.015,
+          rect.width * 0.325, -rect.height * 0.105,
+          rect.width * 0.305, rect.height * 0.105,
+          0, rect.height * 0.015,
+        ], true)
+        .fill({ color: "#11131d", alpha: 0.36 });
+      const facet = new pixi.Graphics()
+        .poly([
+          0, -rect.height * 0.02,
+          rect.width * 0.31, -rect.height * 0.09,
+          rect.width * 0.285, rect.height * 0.09,
+          0, rect.height * 0.02,
+        ], true)
+        .fill({ color, alpha: 0.46 })
+        .stroke({ color: "#fffbed", width: Math.max(0.5, rect.width * 0.0075), alpha: 0.46 });
+      const innerRefraction = new pixi.Graphics()
+        .moveTo(rect.width * 0.04, 0)
+        .lineTo(rect.width * 0.25, -rect.height * 0.058)
+        .stroke({ color: "#ffffff", width: Math.max(0.45, rect.width * 0.0065), alpha: 0.32 });
+      facetContainer.addChild(shadow, facet, innerRefraction);
+      facetContainer.rotation = angle;
+      facetContainer.scale.x = 0.03;
+      aperture.addChild(facetContainer);
+      return { facet: facetContainer, angle };
+    });
+    const chromaticCore = new pixi.Container();
+    const coreShadow = drawDiamond(new pixi.Graphics(), 0, rect.height * 0.014, rect.width * 0.13)
+      .fill({ color: "#12131b", alpha: 0.58 });
+    const redEdge = drawDiamond(new pixi.Graphics(), -rect.width * 0.012, 0, rect.width * 0.116)
+      .stroke({ color: "#de5877", width: Math.max(1.2, rect.width * 0.018), alpha: 0.62 });
+    const blueEdge = drawDiamond(new pixi.Graphics(), rect.width * 0.012, 0, rect.width * 0.116)
+      .stroke({ color: "#6571dc", width: Math.max(1.2, rect.width * 0.018), alpha: 0.62 });
+    const core = drawDiamond(new pixi.Graphics(), 0, 0, rect.width * 0.108)
+      .fill({ color: "#f8f5ff", alpha: 0.23 })
+      .stroke({ color: "#fffdf4", width: Math.max(0.9, rect.width * 0.013), alpha: 0.9 });
+    const coreLens = drawDiamond(new pixi.Graphics(), 0, 0, rect.width * 0.052)
+      .fill({ color: "#ffffff", alpha: 0.55 });
+    chromaticCore.addChild(coreShadow, redEdge, blueEdge, core, coreLens);
+    chromaticCore.alpha = 0;
+    chromaticCore.scale.set(0.55);
+    aperture.addChild(depthPlate, chromaticCore);
+    const caustics = [-0.72, 0, 0.72].map((angle, index) => {
+      const ray = new pixi.Graphics()
+        .moveTo(rect.centerX + Math.cos(angle) * rect.width * 0.16, rect.centerY + Math.sin(angle) * rect.height * 0.16)
+        .lineTo(rect.centerX + Math.cos(angle) * rect.width * (0.31 + index * 0.025), rect.centerY + Math.sin(angle) * rect.height * (0.31 + index * 0.025))
+        .stroke({ color: facetColors[index * 2] ?? primary, width: Math.max(0.65, rect.width * 0.009), alpha: 0.38 });
+      ray.alpha = 0;
+      stage.addChild(ray);
+      return ray;
+    });
+    const spectralEdge = new pixi.Graphics()
+      .roundRect(rect.x + rect.width * 0.09, rect.y + rect.height * 0.09, rect.width * 0.82, rect.height * 0.82, rect.width * 0.18)
+      .stroke({ color: primary, width: Math.max(2.4, rect.width * 0.038), alpha: 0.22 })
+      .roundRect(rect.x + rect.width * 0.115, rect.y + rect.height * 0.115, rect.width * 0.77, rect.height * 0.77, rect.width * 0.16)
+      .stroke({ color: secondary, width: Math.max(1.1, rect.width * 0.017), alpha: 0.3 });
+    const sheen = new pixi.Graphics()
+      .poly([
+        rect.x + rect.width * 0.06, rect.y + rect.height * 0.86,
+        rect.x + rect.width * 0.19, rect.y + rect.height * 0.92,
+        rect.x + rect.width * 0.94, rect.y + rect.height * 0.14,
+        rect.x + rect.width * 0.82, rect.y + rect.height * 0.08,
+      ], true)
+      .fill({ color: "#ffffff", alpha: 0.16 });
+    spectralEdge.alpha = 0;
+    sheen.alpha = 0;
+    stage.addChild(spectralEdge, sheen);
+    await animate(PLACEMENT_FX_DURATION_MS[design], (raw) => {
+      const open = easeInOutCubic(windowProgress(raw, 0.04, 0.62));
+      const lock = easeOutCubic(windowProgress(raw, 0.48, 0.76));
+      const exit = exitAlpha(raw, 0.88);
+      aperture.alpha = open * exit;
+      aperture.rotation = -0.28 * (1 - open);
+      depthPlate.alpha = open * exit * 0.74;
+      depthPlate.scale.set(0.72 + open * 0.28);
+      facets.forEach(({ facet, angle }, index) => {
+        const local = easeOutCubic(windowProgress(raw, 0.04 + index * 0.026, 0.49 + index * 0.026));
+        facet.scale.x = 0.03 + local * 0.97;
+        facet.scale.y = 0.82 + local * 0.18;
+        facet.rotation = angle - (1 - local) * 0.36;
+        facet.alpha = (0.2 + local * 0.8) * exit;
+      });
+      chromaticCore.alpha = lock * exit;
+      chromaticCore.scale.set(0.55 + lock * 0.45);
+      chromaticCore.rotation = (1 - lock) * -0.42;
+      caustics.forEach((ray, index) => {
+        ray.alpha = softPulse(raw, 0.5 + index * 0.025, 0.82 + index * 0.018) * exit * 0.72;
+      });
+      spectralEdge.alpha = softPulse(raw, 0.34, 0.88) * exit * 0.92;
+      sheen.alpha = softPulse(raw, 0.57, 0.9) * exit * 0.92;
+      sheen.position.x = rect.width * windowProgress(raw, 0.57, 0.9) * 0.24;
+    });
+    return;
+  }
+
+  if (design === "cosmos-orbit") {
+    const wash = new pixi.Graphics().circle(rect.centerX, rect.centerY, rect.width * 0.43).fill({ color: secondary, alpha: 0.14 });
+    const innerWash = new pixi.Graphics().circle(rect.centerX, rect.centerY, rect.width * 0.23).fill({ color: primary, alpha: 0.2 });
+    const orbit = new pixi.Graphics().ellipse(rect.centerX, rect.centerY, rect.width * 0.4, rect.height * 0.22).stroke({ color: primary, width: 1.15, alpha: 0.78 });
+    const counterOrbit = new pixi.Graphics().ellipse(rect.centerX, rect.centerY, rect.width * 0.24, rect.height * 0.38).stroke({ color: secondary, width: 0.85, alpha: 0.54 });
+    orbit.pivot.set(rect.centerX, rect.centerY); orbit.position.set(rect.centerX, rect.centerY);
+    counterOrbit.pivot.set(rect.centerX, rect.centerY); counterOrbit.position.set(rect.centerX, rect.centerY);
+    const core = new pixi.Graphics().circle(rect.centerX, rect.centerY, Math.max(2.4, rect.width * 0.052)).fill({ color: "#f4f0ff", alpha: 0.88 });
+    const starOffsets = [[-0.27, -0.16], [0.28, 0.14], [0.12, -0.3], [-0.12, 0.3]] as const;
+    const stars = starOffsets.map(([x, y], index) => {
+      const star = drawDiamond(new pixi.Graphics(), rect.centerX + rect.width * x, rect.centerY + rect.height * y, Math.max(1.25, rect.width * 0.02))
+        .fill({ color: index % 2 === 0 ? primary : secondary, alpha: 0.9 });
+      stage.addChild(star);
+      return star;
+    });
+    stage.addChild(wash, innerWash, orbit, counterOrbit, core);
+    await animate(PLACEMENT_FX_DURATION_MS[design], (raw) => {
+      const settle = easeOutCubic(Math.min(1, raw / 0.3));
+      const reveal = easeInOutCubic(Math.max(0, Math.min(1, (raw - 0.08) / 0.46)));
+      const exit = exitAlpha(raw, 0.7);
+      wash.alpha = 0.52 * settle * exit;
+      innerWash.alpha = 0.66 * settle * exit;
+      orbit.alpha = reveal * exit;
+      counterOrbit.alpha = reveal * 0.78 * exit;
+      orbit.rotation = -0.18 + raw * 0.28;
+      counterOrbit.rotation = -0.48 - raw * 0.22;
+      core.alpha = settle * exit;
+      stars.forEach((star, index) => { star.alpha = easeOutCubic(Math.max(0, Math.min(1, (raw - 0.2 - index * 0.035) / 0.3))) * exit; });
+    });
+    return;
+  }
+
+  if (design === "tango-trinity") {
+    const colors = ["#b64f69", "#405f8e", "#3f806e"] as const;
+    const orbitHalo = new pixi.Graphics()
+      .circle(rect.centerX, rect.centerY, rect.width * 0.37)
+      .stroke({ color: "#f0d090", width: Math.max(0.65, rect.width * 0.01), alpha: 0.32 })
+      .circle(rect.centerX, rect.centerY, rect.width * 0.26)
+      .stroke({ color: "#fff6df", width: Math.max(0.45, rect.width * 0.007), alpha: 0.18 });
+    orbitHalo.alpha = 0;
+    stage.addChild(orbitHalo);
+    const resonance = ["#b64f69", "#405f8e", "#3f806e"].map((color, index) => {
+      const wave = new pixi.Graphics()
+        .circle(rect.centerX, rect.centerY, rect.width * (0.2 + index * 0.035))
+        .stroke({ color, width: Math.max(1.1, rect.width * 0.017), alpha: 0.7 });
+      wave.alpha = 0;
+      stage.addChild(wave);
+      return wave;
+    });
+    const finalSpecs = [
+      { x: -0.18, y: 0.095, rotation: -0.16 },
+      { x: 0, y: 0, rotation: -0.05 },
+      { x: 0.18, y: -0.095, rotation: 0.14 },
+    ] as const;
+    const marks = finalSpecs.map((spec, index) => {
+      const mark = new pixi.Container();
+      const size = rect.width * 0.235;
+      const glow = new pixi.Graphics()
+        .roundRect(-size * 0.56, -size * 0.56, size * 1.12, size * 1.12, size * 0.31)
+        .fill({ color: colors[index]!, alpha: 0.14 });
+      const shadow = new pixi.Graphics()
+        .roundRect(-size / 2, -size / 2 + rect.height * 0.012, size, size, size * 0.26)
+        .fill({ color: "#13110f", alpha: 0.45 });
+      const body = new pixi.Graphics()
+        .roundRect(-size / 2, -size / 2, size, size, size * 0.26)
+        .stroke({ color: "#fff3d7", width: Math.max(0.75, rect.width * 0.012), alpha: 0.68 })
+        .fill({ color: colors[index]!, alpha: 0.92 });
+      const notch = new pixi.Graphics()
+        .circle(size * 0.21, -size * 0.05, size * 0.085)
+        .fill({ color: "#fff8e7", alpha: 0.96 });
+      mark.addChild(glow, shadow, body, notch);
+      mark.alpha = 0;
+      stage.addChild(mark);
+      return { mark, spec, phase: -Math.PI / 2 + index * Math.PI * 2 / 3 };
+    });
+    const finalOutline = drawTangoOutlineMark(pixi, rect.width * 0.55, "#fff3d7", "#2a1b13");
+    finalOutline.position.set(rect.centerX, rect.centerY);
+    finalOutline.alpha = 0;
+    const crown = new pixi.Graphics()
+      .circle(rect.centerX, rect.centerY, rect.width * 0.29)
+      .stroke({ color: "#d9aa50", width: Math.max(1.2, rect.width * 0.018), alpha: 0.76 });
+    const burst = Array.from({ length: 6 }, (_, index) => {
+      const ray = new pixi.Graphics()
+        .moveTo(rect.centerX + rect.width * 0.32, rect.centerY)
+        .lineTo(rect.centerX + rect.width * 0.42, rect.centerY)
+        .stroke({ color: index % 2 === 0 ? "#fff4ce" : colors[index % 3]!, width: Math.max(0.7, rect.width * 0.011), alpha: 0.76 });
+      ray.pivot.set(rect.centerX, rect.centerY);
+      ray.position.set(rect.centerX, rect.centerY);
+      ray.rotation = index * Math.PI / 3;
+      ray.alpha = 0;
+      stage.addChild(ray);
+      return ray;
+    });
+    crown.alpha = 0;
+    stage.addChild(crown, finalOutline);
+    await animate(PLACEMENT_FX_DURATION_MS[design], (raw) => {
+      const orbitIn = easeOutCubic(windowProgress(raw, 0.02, 0.25));
+      const gather = easeInOutCubic(windowProgress(raw, 0.42, 0.76));
+      const resolve = easeOutCubic(windowProgress(raw, 0.67, 0.84));
+      const exit = exitAlpha(raw, 0.9);
+      orbitHalo.alpha = orbitIn * (1 - gather * 0.65) * exit;
+      scaleAround(orbitHalo, rect, 0.72 + orbitIn * 0.28);
+      marks.forEach(({ mark, spec, phase }, index) => {
+        const angle = phase + raw * Math.PI * 2.15;
+        const orbitX = Math.cos(angle) * rect.width * 0.3;
+        const orbitY = Math.sin(angle) * rect.height * 0.19;
+        const targetX = rect.width * spec.x;
+        const targetY = rect.height * spec.y;
+        mark.position.set(
+          rect.centerX + orbitX * (1 - gather) + targetX * gather,
+          rect.centerY + orbitY * (1 - gather) + targetY * gather,
+        );
+        mark.rotation = angle * 0.32 * (1 - gather) + spec.rotation * gather;
+        mark.scale.set(0.68 + orbitIn * 0.2 + gather * 0.12);
+        mark.alpha = orbitIn * exit;
+        if (index === 1) mark.zIndex = 2;
+      });
+      stage.sortableChildren = true;
+      finalOutline.alpha = resolve * exit * 0.92;
+      scaleAround(finalOutline, rect, 0.84 + resolve * 0.16);
+      crown.alpha = softPulse(raw, 0.66, 0.9) * exit;
+      scaleAround(crown, rect, 0.68 + resolve * 0.32);
+      resonance.forEach((wave, index) => {
+        const local = softPulse(raw, 0.68 + index * 0.025, 0.94 + index * 0.01);
+        wave.alpha = local * exit * (0.74 - index * 0.12);
+        scaleAround(wave, rect, 0.58 + local * (0.42 + index * 0.08));
+      });
+      burst.forEach((ray, index) => {
+        const local = softPulse(raw, 0.7 + index * 0.008, 0.94);
+        ray.alpha = local * exit * 0.8;
+        ray.scale.set(0.72 + local * 0.28);
+      });
+    });
+    return;
+  }
+
+  const outline = new pixi.Graphics()
+    .roundRect(rect.x + 4, rect.y + 4, rect.width - 8, rect.height - 8, rect.width * 0.1)
+    .stroke({ color: primary, width: 1.05, alpha: 0.7 });
+  stage.addChild(outline);
+  await animate(280, (raw) => { outline.alpha = Math.sin(raw * Math.PI) * 0.72; });
+}
+
 export function TangoBoardFx({
   boardRef,
   lastPlaced,
@@ -58,6 +786,9 @@ export function TangoBoardFx({
   scorePreset = "default",
   placementColors,
   scoreColors,
+  motionStyle = "legacy",
+  placementSequenceKey = 0,
+  onReadyChange,
 }: TangoBoardFxProps) {
   const hostRef = useRef<HTMLDivElement>(null);
   const appRef = useRef<Application | null>(null);
@@ -68,7 +799,9 @@ export function TangoBoardFx({
   const scoreSequenceRef = useRef(0);
   const rafsRef = useRef(new Set<number>());
   const [ready, setReady] = useState(false);
-  const placementKey = lastPlaced === null ? "none" : `${lastPlaced.row}:${lastPlaced.col}`;
+  const placementKey = lastPlaced === null
+    ? `none:${placementSequenceKey}`
+    : `${lastPlaced.row}:${lastPlaced.col}:${placementSequenceKey}`;
   const scoringKey = Array.from(scoringCells).sort().join("|");
   const placementColorKey = placementColors.join("|");
   const scoreColorKey = scoreColors.join("|");
@@ -135,7 +868,7 @@ export function TangoBoardFx({
     let disposed = false;
     let initializedApp: Application | null = null;
 
-    void import("pixi.js").then(async (pixi) => {
+    void (async () => {
       if (disposed || hostRef.current === null) return;
       const app = new pixi.Application();
       await app.init({
@@ -157,13 +890,17 @@ export function TangoBoardFx({
       appRef.current = app;
       pixiRef.current = pixi;
       setReady(true);
-    }).catch(() => {
+      onReadyChange?.(true);
+    })().catch((error: unknown) => {
+      console.error("[TangoBoardFx] Failed to initialize the effect renderer.", error);
+      onReadyChange?.(false);
       // The restrained CSS feedback remains available when WebGL cannot initialize.
     });
 
     return () => {
       disposed = true;
       setReady(false);
+      onReadyChange?.(false);
       cancelAll();
       destroyLayer(placementLayerRef.current);
       destroyLayer(scoreLayerRef.current);
@@ -171,7 +908,7 @@ export function TangoBoardFx({
       appRef.current = null;
       pixiRef.current = null;
     };
-  }, [cancelAll]);
+  }, [cancelAll, onReadyChange]);
 
   useEffect(() => {
     const app = appRef.current;
@@ -191,7 +928,17 @@ export function TangoBoardFx({
     app.stage.addChild(layer);
 
     const run = async () => {
-      if (designs.placement === "maple-press") {
+      if (motionStyle === "refined") {
+        await renderRefinedPlacement({
+          pixi,
+          layer,
+          rect,
+          design: designs.placement,
+          primary,
+          secondary,
+          animate: (duration, update) => tween(duration, placementSequenceRef, sequence, update),
+        });
+      } else if (designs.placement === "maple-tap") {
         const inset = Math.max(3, rect.width * 0.055);
         const shadow = new pixi.Graphics()
           .roundRect(rect.x + inset, rect.y + inset + 2, rect.width - inset * 2, rect.height - inset * 2, rect.width * 0.11)
@@ -286,6 +1033,7 @@ export function TangoBoardFx({
   }, [
     cancelSequence,
     designs.placement,
+    motionStyle,
     placementColorKey,
     placementKey,
     ready,
@@ -351,6 +1099,104 @@ export function TangoBoardFx({
             );
           });
           seam.alpha = raw < 0.56 ? easeOutCubic(raw / 0.56) : 1 - easeOutCubic((raw - 0.56) / 0.44);
+        });
+      } else if (designs.score === "cosmos-fold" && motionStyle === "refined") {
+        const ordered = [...rects].sort((a, b) => {
+          if (Math.abs(a.centerY - b.centerY) > 1) return a.centerY - b.centerY;
+          return a.centerX - b.centerX;
+        });
+        const board = boardRef.current;
+        const host = hostRef.current;
+        const boardBounds = board?.getBoundingClientRect();
+        const hostBounds = host?.getBoundingClientRect();
+        const boardMask = boardBounds !== undefined && hostBounds !== undefined
+          ? new pixi.Graphics()
+            .roundRect(
+              boardBounds.left - hostBounds.left,
+              boardBounds.top - hostBounds.top,
+              boardBounds.width,
+              boardBounds.height,
+              Math.max(6, ordered[0]!.width * 0.15),
+            )
+            .fill({ color: "#ffffff" })
+          : null;
+        const cosmos = new pixi.Container();
+        if (boardMask !== null) cosmos.mask = boardMask;
+
+        const connection = new pixi.Graphics();
+        ordered.forEach((rect, index) => {
+          if (index === 0) connection.moveTo(rect.centerX, rect.centerY);
+          else connection.lineTo(rect.centerX, rect.centerY);
+        });
+        connection.stroke({ color: secondary, width: 2.1, alpha: 0.62 });
+        connection.alpha = 0;
+
+        const cells = ordered.map((rect, index) => {
+          const color = [primary, secondary, tertiary][index % 3]!;
+          const halo = new pixi.Graphics()
+            .circle(rect.centerX, rect.centerY, rect.width * 0.37)
+            .fill({ color, alpha: 0.12 });
+          const ring = new pixi.Graphics()
+            .circle(rect.centerX, rect.centerY, rect.width * 0.31)
+            .stroke({ color, width: 1.15, alpha: 0.78 });
+          const glint = new pixi.Graphics()
+            .circle(rect.centerX, rect.centerY, Math.max(1.8, rect.width * 0.035))
+            .fill({ color: "#f3efff", alpha: 0.92 });
+          const cell = new pixi.Container();
+          cell.addChild(halo, ring, glint);
+          cell.alpha = 0;
+          cosmos.addChild(cell);
+          return { cell, halo, ring, glint, rect };
+        });
+
+        const particleOffsets = [
+          [-0.42, -0.25], [-0.24, 0.33], [-0.04, -0.38],
+          [0.18, 0.31], [0.39, -0.18], [0.46, 0.16],
+        ] as const;
+        const particles = particleOffsets.map(([offsetX, offsetY], index) => {
+          const particle = new pixi.Graphics()
+            .circle(0, 0, Math.max(1.15, ordered[0]!.width * (index % 3 === 0 ? 0.022 : 0.016)))
+            .fill({ color: index % 2 === 0 ? primary : tertiary, alpha: 0.84 });
+          const startX = centroid.x + ordered[0]!.width * offsetX;
+          const startY = centroid.y + ordered[0]!.height * offsetY;
+          particle.position.set(startX, startY);
+          particle.alpha = 0;
+          cosmos.addChild(particle);
+          return { particle, startX, startY };
+        });
+
+        cosmos.addChildAt(connection, 0);
+        if (boardMask !== null) layer.addChild(boardMask);
+        layer.addChild(cosmos);
+
+        await tween(980, scoreSequenceRef, sequence, (raw) => {
+          const traceIn = easeInOutCubic(Math.min(1, raw / 0.32));
+          const gather = easeInOutCubic(Math.max(0, Math.min(1, (raw - 0.32) / 0.42)));
+          const exit = raw < 0.76 ? 1 : 1 - easeInOutCubic((raw - 0.76) / 0.24);
+          connection.alpha = traceIn * (1 - gather * 0.46) * exit;
+          cells.forEach(({ cell, halo, ring, glint, rect }, index) => {
+            const reveal = easeOutCubic(Math.max(0, Math.min(1, (raw - index * 0.045) / 0.32)));
+            cell.alpha = reveal * exit;
+            cell.pivot.set(rect.centerX, rect.centerY);
+            cell.position.set(
+              rect.centerX + (centroid.x - rect.centerX) * gather * 0.08,
+              rect.centerY + (centroid.y - rect.centerY) * gather * 0.08,
+            );
+            const scale = 1 - gather * 0.16;
+            cell.scale.set(scale);
+            halo.alpha = 0.48 * reveal * exit;
+            ring.alpha = (0.64 + gather * 0.2) * exit;
+            ring.rotation = (index % 2 === 0 ? 1 : -1) * raw * 0.08;
+            glint.alpha = Math.min(1, reveal * 1.3) * exit;
+          });
+          particles.forEach(({ particle, startX, startY }, index) => {
+            const local = easeOutCubic(Math.max(0, Math.min(1, (raw - 0.18 - index * 0.025) / 0.46)));
+            particle.alpha = local * exit * 0.84;
+            particle.position.set(
+              startX + (centroid.x - startX) * gather * 0.58,
+              startY + (centroid.y - startY) * gather * 0.58,
+            );
+          });
         });
       } else if (designs.score === "cosmos-fold") {
         const cells = rects.map((rect, index) => {
@@ -429,6 +1275,7 @@ export function TangoBoardFx({
   }, [
     cancelSequence,
     designs.score,
+    motionStyle,
     ready,
     rectFor,
     scoreColorKey,
@@ -442,6 +1289,7 @@ export function TangoBoardFx({
       className="tango-board-fx"
       data-placement-design={designs.placement}
       data-score-design={designs.score}
+      data-motion-style={motionStyle}
       ref={hostRef}
       aria-hidden="true"
     />

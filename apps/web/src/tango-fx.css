@@ -3,7 +3,16 @@
   isolation: isolate;
 }
 
+.game-board-frame[data-placement-fx-engine="modern"] {
+  isolation: isolate;
+}
+
 .game-board-frame[data-fx-engine="modern"] .game-board {
+  position: relative;
+  z-index: 2;
+}
+
+.game-board-frame[data-placement-fx-engine="modern"] .game-board {
   position: relative;
   z-index: 2;
 }
@@ -32,8 +41,46 @@
   display: none !important;
 }
 
+/* Placement effects are upgraded independently. Score effects deliberately
+   keep their current renderer until their own visual pass is approved. */
+.game-board-frame[data-placement-fx-engine="modern"] .placement-effect-layer {
+  display: none !important;
+}
+
 .game-board-frame[data-fx-engine="modern"] .board-cell.placed .tile-face {
   animation: tango-tile-settle 260ms cubic-bezier(0.18, 0.86, 0.24, 1) both;
+}
+
+.game-board-frame[data-placement-fx-engine="modern"] .board-cell.placed .placement-tile-motion {
+  transform-origin: 50% 50%;
+  backface-visibility: hidden;
+  will-change: transform, filter, opacity;
+  animation: tango-tile-settle 280ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+.game-board-frame[data-placement-fx-engine="modern"] .board-cell.placed .placement-tile-motion[data-placement-motion="maple-tap"] {
+  animation-name: tango-maple-tap;
+  animation-duration: 320ms;
+}
+
+.game-board-frame[data-placement-fx-engine="modern"] .board-cell.placed .placement-tile-motion[data-placement-motion="walnut-shadow"] {
+  animation-name: tango-walnut-shadow;
+  animation-duration: 380ms;
+}
+
+.game-board-frame[data-placement-fx-engine="modern"] .board-cell.placed .placement-tile-motion[data-placement-motion="coastal-ripple"] {
+  animation-name: tango-coastal-ripple;
+  animation-duration: 500ms;
+}
+
+.game-board-frame[data-placement-fx-engine="modern"] .board-cell.placed .placement-tile-motion[data-placement-motion="moss-leaf"] {
+  animation-name: tango-moss-grain;
+  animation-duration: 640ms;
+}
+
+.game-board-frame[data-placement-fx-engine="modern"] .board-cell.placed .placement-tile-motion[data-placement-motion="prism-fold"] {
+  animation-name: tango-prism-aperture;
+  animation-duration: 860ms;
 }
 
 .game-board-frame[data-fx-engine="modern"] .score-effect-callout {
@@ -81,6 +128,100 @@
   isolation: isolate;
 }
 
+.placement-preview-stage {
+  position: relative;
+  display: grid;
+  width: 100%;
+  height: 100%;
+  place-items: center;
+  cursor: pointer;
+  outline: none;
+}
+
+.placement-preview-stage:focus-visible {
+  border-radius: 1rem;
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--cosmetic-preview-color-a) 72%, white);
+}
+
+.placement-preview-board-grid {
+  position: relative;
+  display: grid;
+  width: min(72%, 7.2rem);
+  aspect-ratio: 1;
+  place-items: center;
+  isolation: isolate;
+}
+
+.placement-preview-cell {
+  position: relative;
+  display: block;
+  width: 72%;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--cosmetic-preview-color-b) 42%, rgba(255,255,255,.18));
+  border-radius: 22%;
+  background: color-mix(in srgb, var(--cosmetic-preview-color-b) 20%, #1c1816);
+  box-shadow: inset 0 .15rem .45rem rgba(0,0,0,.3);
+}
+
+.placement-preview-tile {
+  position: absolute;
+  inset: 8%;
+  display: block;
+  border-radius: 19%;
+  background:
+    linear-gradient(145deg, rgba(255,255,255,.2), transparent 36%),
+    linear-gradient(135deg, var(--cosmetic-preview-color-a), var(--cosmetic-preview-color-b));
+  box-shadow: inset 0 1px rgba(255,255,255,.26), 0 .35rem .8rem rgba(0,0,0,.3);
+  transform-origin: 50% 50%;
+}
+
+.placement-preview-board-grid .tango-board-fx {
+  inset: 0;
+  border-radius: 22%;
+}
+
+.placement-preview-replay-hint {
+  position: absolute;
+  right: .7rem;
+  bottom: .55rem;
+  display: grid;
+  width: 1.55rem;
+  aspect-ratio: 1;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--cosmetic-preview-color-a) 36%, transparent);
+  border-radius: 50%;
+  color: color-mix(in srgb, var(--cosmetic-preview-color-a) 76%, white);
+  background: rgba(18,15,13,.68);
+  font-size: .82rem;
+  line-height: 1;
+}
+
+.placement-preview-tile.placement-tile-motion {
+  will-change: transform, filter, opacity;
+  animation: tango-tile-settle 280ms cubic-bezier(.4,0,.2,1) both;
+}
+
+.placement-preview-tile.placement-tile-motion[data-placement-motion="maple-tap"] {
+  animation: tango-maple-tap 320ms cubic-bezier(.18,.86,.24,1) both;
+}
+
+.placement-preview-tile.placement-tile-motion[data-placement-motion="walnut-shadow"] {
+  animation: tango-walnut-shadow 380ms cubic-bezier(.18,.86,.24,1) both;
+}
+
+.placement-preview-tile.placement-tile-motion[data-placement-motion="coastal-ripple"] {
+  animation: tango-coastal-ripple 500ms cubic-bezier(.18,.72,.2,1) both;
+}
+
+.placement-preview-tile.placement-tile-motion[data-placement-motion="moss-leaf"] {
+  animation: tango-moss-grain 640ms cubic-bezier(.4,0,.2,1) both;
+}
+
+.placement-preview-tile.placement-tile-motion[data-placement-motion="prism-fold"] {
+  animation: tango-prism-aperture 860ms cubic-bezier(.2,.74,.2,1) both;
+}
+
 .atelier-cosmetic-preview[data-fx-language="modern"] .atelier-cosmetic-preview-effect-stage,
 .atelier-cosmetic-preview[data-fx-language="modern"] .atelier-cosmetic-preview-score-stage {
   overflow: hidden;
@@ -109,6 +250,108 @@
   100% { transform: none; filter: none; }
 }
 
+@keyframes tango-maple-tap {
+  0% {
+    opacity: 0.78;
+    transform: translateY(-8%) scale(1.08);
+    filter: brightness(1.06);
+  }
+  54% {
+    opacity: 1;
+    transform: translateY(0) scaleX(1.025) scaleY(0.94);
+    filter: brightness(1.02);
+  }
+  76% {
+    transform: scaleX(0.987) scaleY(1.024);
+  }
+  100% {
+    transform: none;
+    filter: none;
+  }
+}
+
+@keyframes tango-walnut-shadow {
+  0% {
+    opacity: 0.82;
+    transform: translateY(-8%) scale(1.035);
+    filter: drop-shadow(0 0.55rem 0.42rem rgba(27, 17, 12, 0.24));
+  }
+  62% {
+    opacity: 1;
+    transform: translateY(0.8%) scale(0.992);
+    filter: drop-shadow(0 0.12rem 0.09rem rgba(27, 17, 12, 0.5));
+  }
+  100% {
+    transform: none;
+    filter: none;
+  }
+}
+
+@keyframes tango-coastal-ripple {
+  0% {
+    opacity: 0.82;
+    transform: perspective(12rem) translateY(-4%) rotateX(7deg) rotateY(-5deg) scale(1.025);
+    filter: brightness(1.07) saturate(1.06);
+  }
+  30% {
+    opacity: 1;
+    transform: perspective(12rem) translateY(0) rotateX(-3.4deg) rotateY(4.2deg) scaleX(1.015) scaleY(0.985);
+  }
+  58% {
+    transform: perspective(12rem) rotateX(2.1deg) rotateY(-2.6deg) scaleX(0.993) scaleY(1.008);
+    filter: brightness(1.035) saturate(1.04);
+  }
+  80% {
+    transform: perspective(12rem) rotateX(-0.8deg) rotateY(1deg);
+  }
+  100% {
+    transform: none;
+    filter: none;
+  }
+}
+
+@keyframes tango-moss-grain {
+  0% {
+    opacity: 0.94;
+    transform: translateY(-2%) scale(1.01);
+    filter: brightness(1.015) saturate(0.98);
+  }
+  36% {
+    opacity: 1;
+    transform: translateY(0) scale(0.996);
+    filter: brightness(0.975) saturate(1.055);
+  }
+  68% {
+    transform: scale(1.001);
+    filter: brightness(0.992) saturate(1.025);
+  }
+  100% {
+    transform: none;
+    filter: none;
+  }
+}
+
+@keyframes tango-prism-aperture {
+  0% {
+    opacity: 0.8;
+    transform: perspective(12rem) translateY(-3%) rotateZ(-1.5deg) scale(0.975);
+    filter: brightness(1.08) saturate(0.86);
+  }
+  46% {
+    opacity: 1;
+    transform: perspective(12rem) translateY(0) rotateZ(0.6deg) scale(1.008);
+    filter: brightness(1.12) saturate(1.16);
+  }
+  72% {
+    transform: perspective(12rem) rotateZ(-0.2deg) scale(0.998);
+    filter: brightness(1.035) saturate(1.07);
+  }
+  100% {
+    transform: none;
+    filter: none;
+  }
+}
+
 @keyframes tango-score-label {
   0% { opacity: 0; transform: translate(-50%, 0.3rem) scale(0.96); }
   20%, 70% { opacity: 1; }
@@ -117,6 +360,8 @@
 
 @media (prefers-reduced-motion: reduce) {
   .game-board-frame[data-fx-engine="modern"] .board-cell.placed .tile-face,
+  .game-board-frame[data-placement-fx-engine="modern"] .board-cell.placed .placement-tile-motion,
+  .placement-preview-tile.placement-tile-motion,
   .game-board-frame[data-fx-engine="modern"] .score-effect-callout {
     animation-duration: 1ms !important;
   }

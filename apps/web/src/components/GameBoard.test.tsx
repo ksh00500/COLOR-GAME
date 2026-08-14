@@ -45,7 +45,7 @@ describe("GameBoard score callout", () => {
     expect(html).not.toContain(">+3<");
   });
 
-  it("keeps Cosmos Orbit on the original CSS Legendary renderer", () => {
+  it("mounts the refined renderer for an equipped placement effect", () => {
     const cosmetics: MatchCosmetics = {
       placementEffect: {
         id: "place-cosmos-orbit",
@@ -71,7 +71,9 @@ describe("GameBoard score callout", () => {
       />,
     );
 
-    expect(html).not.toContain("tango-board-fx");
+    expect(html).toContain("tango-board-fx");
+    expect(html).toContain('data-placement-design="cosmos-orbit"');
     expect(html).toContain('data-placement-preset="orbit"');
+    expect(html).toContain('data-placement-fx-engine="modern"');
   });
 });

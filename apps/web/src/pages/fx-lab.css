@@ -19,6 +19,27 @@
   font-family: Inter, Pretendard, "Noto Sans KR", system-ui, sans-serif;
 }
 
+.fx-lab-page.theme-light {
+  --fx-panel: #f3eadc;
+  --fx-line: rgba(75, 55, 42, 0.15);
+  --fx-ink: #2c241f;
+  color: var(--fx-ink);
+  background: linear-gradient(135deg, #fbf5ea, #efe3d2 58%, #f7efe2);
+}
+
+.theme-light .fx-lab-copy h1,
+.theme-light .fx-lab-picker button strong,
+.theme-light .fx-lab-play,
+.theme-light .fx-lab-status strong { color: #2c241f; }
+.theme-light .fx-lab-lead,
+.theme-light .fx-lab-picker button small,
+.theme-light .fx-lab-next,
+.theme-light .fx-lab-status p { color: #67594d; }
+.theme-light .fx-lab-picker button,
+.theme-light .fx-lab-status { background: rgba(255, 250, 241, 0.74); }
+.theme-light .fx-lab-picker button.active { background: linear-gradient(145deg, rgba(165,72,96,.13), rgba(255,250,241,.92)); }
+.theme-light .fx-lab-play { color: #fff8ef; }
+
 .fx-lab-page::before {
   content: "";
   position: fixed;
@@ -68,15 +89,31 @@
 .fx-lab-kicker { margin: 0 0 1rem; color: #bc667a; font-size: 0.68rem; font-weight: 900; letter-spacing: 0.25em; }
 .fx-lab-copy h1 { margin: 0; color: #f4e9dc; font-family: Georgia, "Noto Serif KR", serif; font-size: clamp(3rem, 4.3vw, 4.8rem); font-weight: 600; line-height: 0.98; letter-spacing: -0.055em; white-space: nowrap; word-break: keep-all; }
 .fx-lab-lead { margin: 1.2rem 0 1.35rem; color: #b1a397; font-size: clamp(0.9rem, 1.05vw, 1.02rem); line-height: 1.68; word-break: keep-all; }
+.fx-lab-version { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 0.5rem 0.85rem; margin: 0 0 1rem; padding: 0.72rem 0.8rem; border: 1px solid rgba(222,197,164,0.13); border-radius: 0.3rem; background: rgba(25,21,19,0.64); }
+.fx-lab-version > span { color: #84766b; font-size: 0.61rem; font-weight: 900; letter-spacing: 0.13em; text-transform: uppercase; }
+.fx-lab-version > div { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 0.3rem; }
+.fx-lab-version button { min-height: 2.25rem; border: 1px solid rgba(222,197,164,0.14); border-radius: 0.24rem; color: #a99b8f; background: rgba(40,33,29,0.72); font-weight: 800; cursor: pointer; transition: color 180ms ease,border-color 180ms ease,background 180ms ease; }
+.fx-lab-version button:hover { border-color: rgba(206,124,144,0.42); color: #eaded2; }
+.fx-lab-version button.active { border-color: #b95c72; color: #f8ebde; background: rgba(151,58,80,0.28); }
+.fx-lab-version small { grid-column: 1/-1; color: #75695f; font-size: 0.66rem; line-height: 1.4; }
 
-.fx-lab-picker { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 0.55rem; margin: 0 0 0.9rem; padding: 0; border: 0; }
+.fx-lab-picker { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 0.55rem; max-height: 29rem; margin: 0 0 0.9rem; padding: 0 0.25rem 0 0; overflow: auto; border: 0; scrollbar-width: thin; scrollbar-color: rgba(185,92,114,0.55) transparent; }
 .fx-lab-picker legend { grid-column: 1/-1; margin-bottom: 0.45rem; color: #7f7166; font-size: 0.62rem; font-weight: 900; letter-spacing: 0.17em; }
-.fx-lab-picker button { display: grid; align-content: start; min-height: 6.8rem; padding: 0.85rem 0.9rem; border: 1px solid rgba(222,197,164,0.13); border-radius: 0.3rem; color: #d7c9bc; text-align: left; background: rgba(29,24,21,0.7); cursor: pointer; transition: border-color 0.18s ease,background 0.18s ease,transform 0.18s ease; }
+.fx-lab-picker button { display: grid; align-content: start; min-height: 6.4rem; padding: 0.78rem 0.82rem; border: 1px solid rgba(222,197,164,0.13); border-radius: 0.3rem; color: #d7c9bc; text-align: left; background: rgba(29,24,21,0.7); cursor: pointer; transition: border-color 0.18s ease,background 0.18s ease,transform 0.18s ease; }
 .fx-lab-picker button:hover { border-color: rgba(206,124,144,0.45); transform: translateY(-1px); }
 .fx-lab-picker button.active { border-color: #b95c72; background: linear-gradient(145deg,rgba(159,60,83,0.22),rgba(40,31,27,0.88)); box-shadow: inset 2px 0 #b95c72; }
 .fx-lab-picker button span { color: #b86477; font-size: 0.55rem; font-weight: 900; letter-spacing: 0.13em; }
 .fx-lab-picker button strong { margin-top: 0.26rem; color: #f1e5d8; font-size: 0.88rem; }
 .fx-lab-picker button small { margin-top: 0.36rem; color: #8f8074; font-size: 0.68rem; line-height: 1.45; word-break: keep-all; }
+.fx-lab-next { margin: -0.15rem 0 0.9rem; color: #8f8074; font-size: 0.72rem; line-height: 1.5; }
+
+.fx-lab-view-controls { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: .55rem; margin: 0 0 .9rem; }
+.fx-lab-view-controls > div { display: flex; align-items: center; gap: .3rem; min-width: 0; padding: .38rem; border: 1px solid var(--fx-line); border-radius: .3rem; background: rgba(24,20,18,.42); }
+.theme-light .fx-lab-view-controls > div { background: rgba(255,250,241,.68); }
+.fx-lab-view-controls span { flex: 1; min-width: 2.8rem; padding-left: .28rem; color: #8c7d70; font-size: .56rem; font-weight: 900; letter-spacing: .12em; }
+.fx-lab-view-controls button { min-height: 1.9rem; padding: 0 .55rem; border: 1px solid transparent; border-radius: .22rem; color: #a99a8d; background: transparent; font-size: .66rem; font-weight: 800; cursor: pointer; }
+.fx-lab-view-controls button:hover { color: var(--fx-ink); }
+.fx-lab-view-controls button.active { border-color: rgba(181,90,112,.48); color: var(--fx-ink); background: rgba(165,72,96,.16); }
 
 .fx-lab-status { min-height: 6.7rem; padding: 1rem 1.1rem; border: 1px solid rgba(222, 197, 164, 0.14); border-left: 2px solid var(--fx-accent); border-radius: 0.2rem; background: rgba(26, 21, 19, 0.72); }
 .fx-lab-status span { display: block; margin-bottom: 0.55rem; color: #c36c80; font-size: 0.65rem; font-weight: 900; letter-spacing: 0.2em; }
@@ -109,7 +146,15 @@
 .tile-a { --tile-color: #9a3e58; color: #d7899a; }
 .tile-b { --tile-color: linear-gradient(145deg,#2c4c70,#1c304d); color: #829ebb; }
 .tile-c { --tile-color: #376b59; color: #72aa95; }
-.phase-placement .fx-lab-cell[data-fx-cell="12"] .fx-lab-tile { animation: fx-lab-tile-land 0.34s cubic-bezier(0.18,0.86,0.24,1) both; }
+.surface-bright .fx-lab-tile { --tile-color: linear-gradient(145deg,#f4d487,#d9a64d); color: #fff0c4; }
+.surface-dark .fx-lab-tile { --tile-color: linear-gradient(145deg,#343237,#151519); color: #85818b; }
+.surface-gradient .fx-lab-tile { --tile-color: linear-gradient(145deg,#b84868 4%,#5169c2 51%,#3c9177 96%); color: #d6c9ff; }
+.fx-lab-board-stage[data-placement-fx-engine="modern"] .placement-tile-motion { transform-origin: 50% 50%; backface-visibility: hidden; will-change: transform,filter,opacity; animation: tango-tile-settle 280ms cubic-bezier(.4,0,.2,1) both; }
+.fx-lab-board-stage[data-placement-fx-engine="modern"] .placement-tile-motion[data-placement-motion="maple-tap"] { animation-name: tango-maple-tap; animation-duration: 320ms; }
+.fx-lab-board-stage[data-placement-fx-engine="modern"] .placement-tile-motion[data-placement-motion="walnut-shadow"] { animation-name: tango-walnut-shadow; animation-duration: 380ms; }
+.fx-lab-board-stage[data-placement-fx-engine="modern"] .placement-tile-motion[data-placement-motion="coastal-ripple"] { animation-name: tango-coastal-ripple; animation-duration: 560ms; }
+.fx-lab-board-stage[data-placement-fx-engine="modern"] .placement-tile-motion[data-placement-motion="moss-leaf"] { animation-name: tango-moss-cushion; animation-duration: 680ms; }
+.fx-lab-board-stage[data-placement-fx-engine="modern"] .placement-tile-motion[data-placement-motion="prism-fold"] { animation-name: tango-prism-aperture; animation-duration: 820ms; }
 .fx-lab-cell.cleared .fx-lab-tile { opacity: 0; transform: scale(0.94); filter: saturate(0.72); }
 
 .fx-lab-board-glow { position: absolute; z-index: 1; left: 50%; top: 50%; width: 46%; aspect-ratio: 1; border: 1px solid rgba(218,180,128,0.06); border-radius: 50%; transform: translate(-50%,-50%); }
@@ -141,7 +186,19 @@
   .fx-lab-board-heading b { display: none; }
   .fx-lab-board-stage { border-width: 0.35rem; }
   .fx-lab-copy { padding: 0 0.5rem; }
-  .fx-lab-picker { grid-template-columns: 1fr; }
-  .fx-lab-picker button { min-height: 0; }
+  .fx-lab-picker {
+    grid-template-columns: repeat(2,minmax(0,1fr));
+    grid-auto-rows: minmax(6.4rem,auto);
+    max-height: none;
+    padding-right: 0;
+    overflow: visible;
+  }
+  .fx-lab-picker button { min-height: 6.4rem; }
+  .fx-lab-view-controls { grid-template-columns: 1fr; }
   .fx-lab-selection-summary { gap: 0.6rem; font-size: 0.63rem; }
+}
+
+@media (max-width: 380px) {
+  .fx-lab-picker { grid-template-columns: 1fr; grid-auto-rows: minmax(5.8rem,auto); }
+  .fx-lab-picker button { min-height: 5.8rem; }
 }

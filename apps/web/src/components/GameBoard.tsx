@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import type { Board, MatchCosmetics, Position, TileColorId } from "@color-game/shared-types";
 import { useI18n } from "../i18n";
+import { TangoBoardFx } from "./TangoBoardFx";
+import { resolveBoardFxDesign } from "./boardFxDesign";
 
 interface GameBoardProps {
   board: Board;
@@ -31,6 +33,8 @@ const colorName: Record<TileColorId, string> = {
   colorC: "딥그린",
 };
 
+const EMPTY_SCORING_CELLS = new Set<string>();
+
 export function GameBoard({
   board,
   selectedColor,
@@ -50,6 +54,7 @@ export function GameBoard({
   const { t } = useI18n();
   const boardRef = useRef<HTMLDivElement>(null);
   const [inputMode, setInputMode] = useState<"keyboard" | "pointer">("keyboard");
+  const [placementFxReady, setPlacementFxReady] = useState(false);
   const size = board.length;
   const placementPreset = activeCosmetics === undefined
     ? undefined
@@ -59,6 +64,8 @@ export function GameBoard({
     : activeCosmetics?.scoreEffect?.preset ?? "default";
   const scoringSequence = Array.from(scoringCells);
   const scoreAnchor = scoringCells.values().next().value as string | undefined;
+  const equippedPlacementEffect = activeCosmetics?.placementEffect ?? null;
+  const placementDesign = resolveBoardFxDesign(placementPreset, undefined).placement;
 
   useEffect(() => {
     const focusedButton = boardRef.current?.querySelector<HTMLButtonElement>(
@@ -88,7 +95,10 @@ export function GameBoard({
     <div
       className={`game-board-frame ${canPlay ? "interactive" : "locked"} ${isClearing ? "clearing" : ""} ${inputMode}-active`}
       data-placement-preset={placementPreset}
+      data-placement-design={placementDesign}
       data-score-preset={scorePreset}
+      data-placement-fx-engine={equippedPlacementEffect !== null ? "modern" : "legacy"}
+      data-placement-fx-ready={placementFxReady ? "true" : "false"}
       style={{
         "--active-placement-a": activeCosmetics?.placementEffect?.colors[0],
         "--active-placement-b": activeCosmetics?.placementEffect?.colors[1] ?? activeCosmetics?.placementEffect?.colors[0],
@@ -158,7 +168,10 @@ export function GameBoard({
               >
                 <span className="board-cell-material" aria-hidden="true" />
                 {cell !== null && (
-                  <span className="tile-face">
+                  <span
+                    className={`tile-face ${placed ? "placement-tile-motion" : ""}`}
+                    data-placement-motion={placed ? placementDesign : undefined}
+                  >
                     {showShapes ? shapeForColor[cell] : ""}
                     {placed && (
                       <span className="placement-effect-layer" aria-hidden="true">
@@ -181,6 +194,19 @@ export function GameBoard({
           }),
         )}
       </div>
+      {equippedPlacementEffect !== null && (
+        <TangoBoardFx
+          boardRef={boardRef}
+          lastPlaced={lastPlaced}
+          scoringCells={EMPTY_SCORING_CELLS}
+          placementPreset={equippedPlacementEffect.preset}
+          scorePreset="default"
+          placementColors={equippedPlacementEffect.colors}
+          scoreColors={[]}
+          motionStyle="refined"
+          onReadyChange={setPlacementFxReady}
+        />
+      )}
       <span className="board-corner corner-a" aria-hidden="true" />
       <span className="board-corner corner-b" aria-hidden="true" />
       <span className="board-corner corner-c" aria-hidden="true" />
