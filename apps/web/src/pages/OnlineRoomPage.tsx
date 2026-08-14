@@ -845,6 +845,7 @@ export function OnlineRoomPage({ matchmakingEntry = false }: { matchmakingEntry?
               opponentLastPlaced={opponentLastPlaced}
               invalidCell={invalidCell}
               activeCosmetics={game.players.find((player) => player.id === (scoreNotice?.playerId ?? game.lastMove?.playerId))?.cosmetics ?? null}
+              effectSequenceKey={game.lastMove?.turnNumber ?? game.turnNumber}
               onFocusedIndexChange={setFocusedIndex}
               onPlace={placeTileOnline}
             />

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { CosmeticItem } from "./api";
-import { cosmeticBackground } from "./cosmetics";
+import type { CosmeticItem, EconomyOverview } from "./api";
+import { cosmeticBackground, matchCosmeticsFromEconomy } from "./cosmetics";
 
 const item = (input: Partial<CosmeticItem>): CosmeticItem => ({
   id: "test",
@@ -64,5 +64,80 @@ describe("cosmetic backgrounds", () => {
     expect(stainedGlass).not.toContain("rgba(25,22,29");
     expect(spectrum).toContain("radial-gradient");
     expect(spectrum).not.toContain("repeating-linear-gradient");
+  });
+});
+
+describe("match cosmetics", () => {
+  const economy = (inventory: CosmeticItem[], styleLoadout: EconomyOverview["styleLoadout"]): EconomyOverview => ({
+    wallet: { colorChips: 0, lifetimeEarned: 0, lifetimeSpent: 0 },
+    boxTickets: 0,
+    fragments: { common: 0, rare: 0, epic: 0, legendary: 0 },
+    weeklyStore: { weekKey: "2026-08-10", endsAt: "2026-08-17", items: [] },
+    attendance: {
+      dayKey: "2026-08-15",
+      weekKey: "2026-08-09",
+      weekStartsAt: "2026-08-09",
+      weekEndsAt: "2026-08-16",
+      attendedToday: false,
+      weeklyCount: 0,
+      weeklyGoal: 5,
+    },
+    catalog: inventory,
+    inventory,
+    loadout: {},
+    styleLoadout,
+    wishlist: [],
+    tilePalettes: [],
+    upcomingCategories: [],
+    quests: [],
+    ledger: [],
+    entitlements: [],
+    monetization: {
+      rewardAds: { status: "upcoming", rewardChips: 12, dailyLimit: 3, usedToday: 0 },
+      founderPack: {
+        status: "upcoming",
+        referencePriceKrw: 9_900,
+        bonusChips: 500,
+        startsAt: null,
+        endsAt: null,
+      },
+      premiumPack: { status: "upcoming", referencePriceKrw: 6_900 },
+    },
+    box: {
+      priceChips: 120,
+      fragmentRequirement: 4,
+      probabilityVersion: "test",
+      outcomes: [],
+    },
+  });
+
+  it("passes the equipped Forest Scatter definition to an AI match", () => {
+    const forestScatter = item({
+      id: "score-forest-scatter",
+      category: "score_effect",
+      equipSlot: "score_effect",
+      visualKind: "score",
+      preset: "scatter",
+      colors: ["#5f8d73", "#d9c99a"],
+      durationMs: 640,
+      owned: true,
+    });
+
+    expect(matchCosmeticsFromEconomy(
+      economy([forestScatter], { scoreEffect: forestScatter.id }),
+    )).toEqual({
+      scoreEffect: {
+        id: "score-forest-scatter",
+        preset: "scatter",
+        colors: ["#5f8d73", "#d9c99a"],
+        durationMs: 640,
+      },
+    });
+  });
+
+  it("does not activate a missing or unowned loadout item", () => {
+    expect(matchCosmeticsFromEconomy(
+      economy([], { scoreEffect: "score-forest-scatter" }),
+    )).toBeNull();
   });
 });

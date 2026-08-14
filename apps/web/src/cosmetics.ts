@@ -1,4 +1,5 @@
-import type { CosmeticItem } from "./api";
+import type { MatchCosmeticVisual, MatchCosmetics } from "@color-game/shared-types";
+import type { CosmeticItem, EconomyOverview, StyleLoadoutSlot } from "./api";
 
 export type CosmeticVisual = Pick<
   CosmeticItem,
@@ -30,4 +31,36 @@ export const cosmeticBackground = (item: CosmeticVisual): string => {
     return `linear-gradient(62deg, transparent 35%, ${colors[1] ?? "#d3a052"} 36% 42%, transparent 43%), radial-gradient(circle at 70% 24%, ${colors[2] ?? "#f1d39a"}, transparent 38%), ${colors[0] ?? "#541f2c"}`;
   }
   return `linear-gradient(115deg, ${colors.map((color, index) => `${color} ${(index / Math.max(1, colors.length - 1)) * 100}%`).join(", ")})`;
+};
+
+const matchCosmeticVisual = (
+  economy: EconomyOverview,
+  slot: StyleLoadoutSlot,
+  fallbackDurationMs: number,
+): MatchCosmeticVisual | undefined => {
+  const cosmeticId = economy.styleLoadout[slot];
+  if (cosmeticId === undefined) return undefined;
+
+  const cosmetic = economy.inventory.find((item) => item.id === cosmeticId);
+  if (cosmetic === undefined) return undefined;
+
+  return {
+    id: cosmetic.id,
+    preset: cosmetic.preset ?? "default",
+    colors: cosmetic.colors,
+    durationMs: cosmetic.durationMs ?? fallbackDurationMs,
+  };
+};
+
+export const matchCosmeticsFromEconomy = (
+  economy: EconomyOverview,
+): MatchCosmetics | null => {
+  const placementEffect = matchCosmeticVisual(economy, "placementEffect", 240);
+  const scoreEffect = matchCosmeticVisual(economy, "scoreEffect", 450);
+
+  if (placementEffect === undefined && scoreEffect === undefined) return null;
+  return {
+    ...(placementEffect === undefined ? {} : { placementEffect }),
+    ...(scoreEffect === undefined ? {} : { scoreEffect }),
+  };
 };

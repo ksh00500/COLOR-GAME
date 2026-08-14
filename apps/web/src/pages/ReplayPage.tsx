@@ -184,6 +184,7 @@ export function ReplayPage() {
               lastPlaced={frame.lastPlaced}
               invalidCell={null}
               activeCosmetics={frame.players.find((player) => player.id === currentMove?.playerId)?.cosmetics ?? null}
+              effectSequenceKey={currentMove?.turnNumber ?? 0}
               onFocusedIndexChange={setFocusedIndex}
               onPlace={() => undefined}
             />

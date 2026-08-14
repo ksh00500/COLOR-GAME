@@ -76,4 +76,37 @@ describe("GameBoard score callout", () => {
     expect(html).toContain('data-placement-preset="orbit"');
     expect(html).toContain('data-placement-fx-engine="modern"');
   });
+
+  it("mounts Forest Scatter with a move-specific replay key", () => {
+    const cosmetics: MatchCosmetics = {
+      scoreEffect: {
+        id: "score-forest-scatter",
+        preset: "scatter",
+        colors: ["#5f8d73", "#d9c99a"],
+        durationMs: 640,
+      },
+    };
+
+    const html = renderToStaticMarkup(
+      <GameBoard
+        board={board}
+        selectedColor="colorA"
+        canPlay={false}
+        showShapes={false}
+        focusedIndex={0}
+        scoringCells={new Set(["0:0", "0:1", "0:2"])}
+        scoreValue={1}
+        lastPlaced={{ row: 0, col: 2 }}
+        invalidCell={null}
+        activeCosmetics={cosmetics}
+        effectSequenceKey={7}
+        onFocusedIndexChange={() => undefined}
+        onPlace={() => undefined}
+      />,
+    );
+
+    expect(html).toContain("tango-board-fx");
+    expect(html).toContain('data-score-preset="scatter"');
+    expect(html).toContain('data-score-fx-engine="modern"');
+  });
 });

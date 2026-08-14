@@ -17,6 +17,7 @@ interface GameBoardProps {
   opponentLastPlaced?: Position | null;
   invalidCell: Position | null;
   activeCosmetics?: MatchCosmetics | null | undefined;
+  effectSequenceKey?: string | number;
   onFocusedIndexChange: (index: number) => void;
   onPlace: (position: Position) => void;
 }
@@ -48,6 +49,7 @@ export function GameBoard({
   opponentLastPlaced = null,
   invalidCell,
   activeCosmetics,
+  effectSequenceKey = 0,
   onFocusedIndexChange,
   onPlace,
 }: GameBoardProps) {
@@ -208,7 +210,8 @@ export function GameBoard({
           placementColors={equippedPlacementEffect?.colors ?? []}
           scoreColors={equippedScoreEffect?.colors ?? []}
           motionStyle="refined"
-          scoreSequenceKey={`${scoreAnchor ?? "none"}:${scoreValue ?? 0}`}
+          placementSequenceKey={effectSequenceKey}
+          scoreSequenceKey={`${effectSequenceKey}:${scoreAnchor ?? "none"}:${scoreValue ?? 0}`}
           onReadyChange={setBoardFxReady}
         />
       )}

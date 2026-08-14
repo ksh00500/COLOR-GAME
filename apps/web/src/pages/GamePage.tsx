@@ -8,9 +8,9 @@ import {
   placeTile,
   resignGame,
 } from "@color-game/game-core";
-import { fetchMe, getAuthToken, getCachedAccount, type Account } from "../api";
+import { fetchEconomy, fetchMe, getAuthToken, getCachedAccount, type Account } from "../api";
 import { notifyInvalidMove, notifyTilePlaced } from "../nativeFeedback";
-import type { Board, GamePlayer, GameState, Position, TileColorId } from "@color-game/shared-types";
+import type { Board, GamePlayer, GameState, MatchCosmetics, Position, TileColorId } from "@color-game/shared-types";
 import { AppSidebar } from "../components/AppSidebar";
 import { ColorPicker } from "../components/ColorPicker";
 import { GameBoard } from "../components/GameBoard";
@@ -22,6 +22,7 @@ import { playOpponentTurnCue } from "../audio";
 import { getMoveEffectTimeline } from "../effectTimeline";
 import { resolveColorShortcutIndex, useSettings } from "../settings";
 import { useI18n } from "../i18n";
+import { matchCosmeticsFromEconomy } from "../cosmetics";
 
 const HUMAN_ID = "player1";
 const AI_ID = "player2";
@@ -113,6 +114,9 @@ export function GamePage() {
   const [opponentLastPlaced, setOpponentLastPlaced] = useState<Position | null>(null);
   const [invalidCell, setInvalidCell] = useState<Position | null>(null);
   const [scoreNotice, setScoreNotice] = useState<{ playerId: string; score: number } | null>(null);
+  const [accountCosmetics, setAccountCosmetics] = useState<MatchCosmetics | null>(null);
+  const [effectPlayerId, setEffectPlayerId] = useState<string | null>(null);
+  const [effectSequenceKey, setEffectSequenceKey] = useState(0);
   const [focusedIndex, setFocusedIndex] = useState(12);
   const [isAnimating, setIsAnimating] = useState(false);
   const [isBoardClearing, setIsBoardClearing] = useState(false);
@@ -149,6 +153,10 @@ export function GamePage() {
           : player) as [GamePlayer, GamePlayer],
       }));
     }).catch(() => undefined);
+
+    void fetchEconomy({ force: true })
+      .then((economy) => setAccountCosmetics(matchCosmeticsFromEconomy(economy)))
+      .catch(() => setAccountCosmetics(null));
   }, []);
 
   const clearEffectTimers = useCallback(() => {
@@ -203,6 +211,8 @@ export function GamePage() {
       }
 
       if (playerId === HUMAN_ID) void notifyTilePlaced();
+      setEffectPlayerId(playerId);
+      setEffectSequenceKey((current) => current + 1);
       setLastPlaced(position);
       if (playerId === AI_ID) setOpponentLastPlaced(position);
       const shouldCueOpponentTurn =
@@ -311,6 +321,8 @@ export function GamePage() {
     setOpponentLastPlaced(null);
     setInvalidCell(null);
     setScoreNotice(null);
+    setEffectPlayerId(null);
+    setEffectSequenceKey(0);
     setIsAnimating(false);
     setIsBoardClearing(false);
     setIsAiThinking(false);
@@ -363,6 +375,8 @@ export function GamePage() {
               lastPlaced={lastPlaced}
               opponentLastPlaced={opponentLastPlaced}
               invalidCell={invalidCell}
+              activeCosmetics={effectPlayerId === HUMAN_ID ? accountCosmetics : null}
+              effectSequenceKey={effectSequenceKey}
               onFocusedIndexChange={setFocusedIndex}
               onPlace={(position) => applyMove(HUMAN_ID, position, selectedColors[HUMAN_ID] ?? "colorA")}
             />
