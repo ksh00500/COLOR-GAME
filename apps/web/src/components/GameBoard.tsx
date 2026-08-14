@@ -54,7 +54,7 @@ export function GameBoard({
   const { t } = useI18n();
   const boardRef = useRef<HTMLDivElement>(null);
   const [inputMode, setInputMode] = useState<"keyboard" | "pointer">("keyboard");
-  const [placementFxReady, setPlacementFxReady] = useState(false);
+  const [boardFxReady, setBoardFxReady] = useState(false);
   const size = board.length;
   const placementPreset = activeCosmetics === undefined
     ? undefined
@@ -65,7 +65,9 @@ export function GameBoard({
   const scoringSequence = Array.from(scoringCells);
   const scoreAnchor = scoringCells.values().next().value as string | undefined;
   const equippedPlacementEffect = activeCosmetics?.placementEffect ?? null;
+  const equippedScoreEffect = activeCosmetics?.scoreEffect ?? null;
   const placementDesign = resolveBoardFxDesign(placementPreset, undefined).placement;
+  const hasModernBoardFx = equippedPlacementEffect !== null || equippedScoreEffect !== null;
 
   useEffect(() => {
     const focusedButton = boardRef.current?.querySelector<HTMLButtonElement>(
@@ -98,7 +100,9 @@ export function GameBoard({
       data-placement-design={placementDesign}
       data-score-preset={scorePreset}
       data-placement-fx-engine={equippedPlacementEffect !== null ? "modern" : "legacy"}
-      data-placement-fx-ready={placementFxReady ? "true" : "false"}
+      data-score-fx-engine={equippedScoreEffect !== null ? "modern" : "legacy"}
+      data-placement-fx-ready={boardFxReady ? "true" : "false"}
+      data-score-fx-ready={boardFxReady ? "true" : "false"}
       style={{
         "--active-placement-a": activeCosmetics?.placementEffect?.colors[0],
         "--active-placement-b": activeCosmetics?.placementEffect?.colors[1] ?? activeCosmetics?.placementEffect?.colors[0],
@@ -194,17 +198,18 @@ export function GameBoard({
           }),
         )}
       </div>
-      {equippedPlacementEffect !== null && (
+      {hasModernBoardFx && (
         <TangoBoardFx
           boardRef={boardRef}
-          lastPlaced={lastPlaced}
-          scoringCells={EMPTY_SCORING_CELLS}
-          placementPreset={equippedPlacementEffect.preset}
-          scorePreset="default"
-          placementColors={equippedPlacementEffect.colors}
-          scoreColors={[]}
+          lastPlaced={equippedPlacementEffect !== null ? lastPlaced : null}
+          scoringCells={equippedScoreEffect !== null ? scoringCells : EMPTY_SCORING_CELLS}
+          placementPreset={equippedPlacementEffect?.preset ?? "default"}
+          scorePreset={equippedScoreEffect?.preset ?? "default"}
+          placementColors={equippedPlacementEffect?.colors ?? []}
+          scoreColors={equippedScoreEffect?.colors ?? []}
           motionStyle="refined"
-          onReadyChange={setPlacementFxReady}
+          scoreSequenceKey={`${scoreAnchor ?? "none"}:${scoreValue ?? 0}`}
+          onReadyChange={setBoardFxReady}
         />
       )}
       <span className="board-corner corner-a" aria-hidden="true" />

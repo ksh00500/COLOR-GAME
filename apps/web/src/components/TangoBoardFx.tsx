@@ -5,8 +5,10 @@ import type { Application, ColorSource, Container, Graphics } from "pixi.js";
 import type { Position } from "@color-game/shared-types";
 import {
   PLACEMENT_FX_DURATION_MS,
+  SCORE_FX_DURATION_MS,
   resolveBoardFxDesign,
   type PlacementFxDesign,
+  type ScoreFxDesign,
 } from "./boardFxDesign";
 
 interface TangoBoardFxProps {
@@ -19,6 +21,7 @@ interface TangoBoardFxProps {
   scoreColors: readonly string[];
   motionStyle?: "legacy" | "refined";
   placementSequenceKey?: string | number;
+  scoreSequenceKey?: string | number;
   onReadyChange?: ((ready: boolean) => void) | undefined;
 }
 
@@ -778,6 +781,392 @@ async function renderRefinedPlacement({
   await animate(280, (raw) => { outline.alpha = Math.sin(raw * Math.PI) * 0.72; });
 }
 
+type ScoreAnimate = (duration: number, update: (progress: number) => void) => Promise<void>;
+
+function orderScoreRects(rects: CellRect[]) {
+  if (rects.length < 2) return rects;
+  const minX = Math.min(...rects.map((rect) => rect.centerX));
+  const maxX = Math.max(...rects.map((rect) => rect.centerX));
+  const minY = Math.min(...rects.map((rect) => rect.centerY));
+  const maxY = Math.max(...rects.map((rect) => rect.centerY));
+  return [...rects].sort((a, b) => (maxX - minX >= maxY - minY)
+    ? a.centerX - b.centerX || a.centerY - b.centerY
+    : a.centerY - b.centerY || a.centerX - b.centerX);
+}
+
+function connectionPath(pixi: PixiModule, rects: CellRect[], color: ColorSource, width: number, alpha: number) {
+  const path = new pixi.Graphics();
+  rects.forEach((rect, index) => {
+    if (index === 0) path.moveTo(rect.centerX, rect.centerY);
+    else path.lineTo(rect.centerX, rect.centerY);
+  });
+  path.stroke({ color, width, alpha });
+  return path;
+}
+
+async function renderRefinedScore({
+  pixi,
+  layer,
+  rects,
+  design,
+  primary,
+  secondary,
+  tertiary,
+  animate,
+}: {
+  pixi: PixiModule;
+  layer: Container;
+  rects: CellRect[];
+  design: ScoreFxDesign;
+  primary: ColorSource;
+  secondary: ColorSource;
+  tertiary: ColorSource;
+  animate: ScoreAnimate;
+}) {
+  const ordered = orderScoreRects(rects);
+  const cellSize = Math.min(ordered[0]!.width, ordered[0]!.height);
+  const centroid = ordered.reduce((point, rect) => ({
+    x: point.x + rect.centerX / ordered.length,
+    y: point.y + rect.centerY / ordered.length,
+  }), { x: 0, y: 0 });
+  const duration = SCORE_FX_DURATION_MS[design];
+  const fadeOut = (raw: number, start = 0.7) => raw < start
+    ? 1
+    : 1 - easeInOutCubic((raw - start) / (1 - start));
+  const makeCellPanel = (rect: CellRect, color: ColorSource, fillAlpha = 0.1) => new pixi.Graphics()
+    .roundRect(rect.x + 4, rect.y + 4, rect.width - 8, rect.height - 8, rect.width * 0.11)
+    .fill({ color, alpha: fillAlpha })
+    .stroke({ color, width: Math.max(1, cellSize * 0.018), alpha: 0.72 });
+
+  if (design === "maple-fade" || design === "trace") {
+    const path = connectionPath(pixi, ordered, primary, Math.max(1, cellSize * 0.018), 0.54);
+    const panels = ordered.map((rect) => {
+      const panel = makeCellPanel(rect, primary, 0.1);
+      layer.addChild(panel);
+      return { panel, rect };
+    });
+    layer.addChildAt(path, 0);
+    await animate(duration, (raw) => {
+      const exit = fadeOut(raw, 0.62);
+      path.alpha = softPulse(raw, 0, 0.72) * 0.74;
+      panels.forEach(({ panel, rect }, index) => {
+        const local = easeOutCubic(windowProgress(raw, index * 0.045, 0.5 + index * 0.025));
+        const gather = easeInOutCubic(windowProgress(raw, 0.38, 0.9));
+        panel.alpha = local * exit;
+        panel.position.set(0, -cellSize * 0.08 * gather);
+        scaleAround(panel, rect, 1 - gather * 0.18);
+      });
+    });
+    return;
+  }
+
+  if (design === "walnut-sweep") {
+    const path = connectionPath(pixi, ordered, primary, Math.max(2, cellSize * 0.055), 0.18);
+    const panels = ordered.map((rect, index) => {
+      const panel = makeCellPanel(rect, index % 2 === 0 ? primary : secondary, 0.085);
+      panel.alpha = 0;
+      layer.addChild(panel);
+      return { panel, rect };
+    });
+    const head = new pixi.Graphics()
+      .roundRect(-cellSize * 0.08, -cellSize * 0.36, cellSize * 0.16, cellSize * 0.72, cellSize * 0.08)
+      .fill({ color: secondary, alpha: 0.82 });
+    layer.addChildAt(path, 0);
+    layer.addChild(head);
+    await animate(duration, (raw) => {
+      const travel = easeInOutCubic(windowProgress(raw, 0.04, 0.72));
+      const segment = travel * Math.max(1, ordered.length - 1);
+      const left = Math.min(ordered.length - 1, Math.floor(segment));
+      const right = Math.min(ordered.length - 1, left + 1);
+      const ratio = segment - left;
+      head.position.set(
+        ordered[left]!.centerX + (ordered[right]!.centerX - ordered[left]!.centerX) * ratio,
+        ordered[left]!.centerY + (ordered[right]!.centerY - ordered[left]!.centerY) * ratio,
+      );
+      head.alpha = fadeOut(raw, 0.72);
+      panels.forEach(({ panel, rect }, index) => {
+        const local = easeOutCubic(windowProgress(raw, 0.08 + index * 0.075, 0.42 + index * 0.075));
+        panel.alpha = local * fadeOut(raw, 0.7);
+        panel.skew.x = (1 - local) * 0.12;
+        scaleAround(panel, rect, 0.94 + local * 0.06);
+      });
+    });
+    return;
+  }
+
+  if (design === "ivory-lift") {
+    const panels = ordered.map((rect, index) => {
+      const glow = new pixi.Graphics()
+        .roundRect(rect.x + 5, rect.y + 7, rect.width - 10, rect.height - 10, rect.width * 0.1)
+        .fill({ color: index % 2 === 0 ? primary : secondary, alpha: 0.15 });
+      const glint = new pixi.Graphics()
+        .moveTo(rect.centerX, rect.y + rect.height * 0.78)
+        .lineTo(rect.centerX, rect.y + rect.height * 0.2)
+        .stroke({ color: "#fffaf0", width: Math.max(1.2, cellSize * 0.025), alpha: 0.78 });
+      const cell = new pixi.Container();
+      cell.addChild(glow, glint);
+      layer.addChild(cell);
+      return { cell, glint, rect, index };
+    });
+    await animate(duration, (raw) => {
+      const exit = fadeOut(raw, 0.72);
+      panels.forEach(({ cell, glint, rect, index }) => {
+        const local = easeOutCubic(windowProgress(raw, index * 0.055, 0.48 + index * 0.04));
+        cell.alpha = local * exit;
+        cell.position.y = -cellSize * 0.16 * local;
+        scaleAround(cell, rect, 0.94 + local * 0.06);
+        glint.alpha = softPulse(raw, 0.24 + index * 0.035, 0.7 + index * 0.02) * exit;
+      });
+    });
+    return;
+  }
+
+  if (design === "charcoal-dust") {
+    const path = connectionPath(pixi, ordered, primary, Math.max(1, cellSize * 0.02), 0.5);
+    const dust = ordered.flatMap((rect, cellIndex) => Array.from({ length: 5 }, (_, index) => {
+      const particle = new pixi.Graphics()
+        .circle(0, 0, Math.max(1, cellSize * (0.018 + (index % 2) * 0.006)))
+        .fill({ color: index % 3 === 0 ? secondary : primary, alpha: 0.8 });
+      const startX = rect.centerX + ((index % 3) - 1) * cellSize * 0.17;
+      const startY = rect.centerY + (Math.floor(index / 3) - 0.5) * cellSize * 0.18;
+      particle.position.set(startX, startY);
+      particle.alpha = 0;
+      layer.addChild(particle);
+      return { particle, startX, startY, index: cellIndex * 5 + index };
+    }));
+    layer.addChildAt(path, 0);
+    await animate(duration, (raw) => {
+      path.alpha = softPulse(raw, 0, 0.58) * 0.58;
+      dust.forEach(({ particle, startX, startY, index }) => {
+        const local = windowProgress(raw, 0.18 + (index % 5) * 0.025, 0.9);
+        particle.alpha = Math.sin(local * Math.PI) * 0.78;
+        particle.position.set(
+          startX + (centroid.x - startX) * local * 0.16 + Math.sin(index * 2.3) * cellSize * 0.08 * local,
+          startY - cellSize * (0.18 + (index % 4) * 0.055) * local,
+        );
+      });
+    });
+    return;
+  }
+
+  if (design === "forest-scatter") {
+    const vine = connectionPath(pixi, ordered, primary, Math.max(1.4, cellSize * 0.025), 0.68);
+    const leaves = ordered.flatMap((rect, cellIndex) => [-1, 1].map((side, index) => {
+      const leaf = new pixi.Graphics()
+        .ellipse(0, 0, cellSize * 0.11, cellSize * 0.055)
+        .fill({ color: index === 0 ? primary : secondary, alpha: 0.74 });
+      leaf.position.set(rect.centerX + side * cellSize * 0.16, rect.centerY - side * cellSize * 0.08);
+      leaf.rotation = side * 0.58;
+      leaf.alpha = 0;
+      layer.addChild(leaf);
+      return { leaf, cellIndex, side };
+    }));
+    layer.addChildAt(vine, 0);
+    await animate(duration, (raw) => {
+      vine.alpha = softPulse(raw, 0, 0.82) * 0.78;
+      leaves.forEach(({ leaf, cellIndex, side }) => {
+        const local = windowProgress(raw, 0.12 + cellIndex * 0.045, 0.72 + cellIndex * 0.02);
+        leaf.alpha = Math.sin(local * Math.PI) * 0.84;
+        leaf.rotation = side * (0.58 + local * 0.32);
+        leaf.scale.set(0.55 + easeOutCubic(local) * 0.45);
+      });
+    });
+    return;
+  }
+
+  if (design === "coastal-wash") {
+    const panels = ordered.map((rect) => {
+      const panel = makeCellPanel(rect, primary, 0.12);
+      layer.addChild(panel);
+      return { panel, rect };
+    });
+    const start = ordered[0]!;
+    const end = ordered.at(-1)!;
+    const wave = new pixi.Graphics()
+      .ellipse(0, 0, cellSize * 0.4, cellSize * 0.78)
+      .fill({ color: secondary, alpha: 0.24 })
+      .stroke({ color: "#e8ffff", width: Math.max(1, cellSize * 0.018), alpha: 0.7 });
+    wave.rotation = Math.atan2(end.centerY - start.centerY, end.centerX - start.centerX);
+    layer.addChild(wave);
+    await animate(duration, (raw) => {
+      const travel = easeInOutCubic(windowProgress(raw, 0.04, 0.78));
+      wave.position.set(
+        start.centerX + (end.centerX - start.centerX) * travel,
+        start.centerY + (end.centerY - start.centerY) * travel,
+      );
+      wave.alpha = fadeOut(raw, 0.8);
+      panels.forEach(({ panel, rect }, index) => {
+        const local = windowProgress(raw, 0.12 + index * 0.055, 0.72 + index * 0.025);
+        panel.alpha = Math.sin(local * Math.PI) * 0.72;
+        panel.skew.x = Math.sin(local * Math.PI * 2) * 0.035;
+        scaleAround(panel, rect, 1 + Math.sin(local * Math.PI) * 0.035);
+      });
+    });
+    return;
+  }
+
+  if (design === "brass-glint") {
+    const path = connectionPath(pixi, ordered, primary, Math.max(1.4, cellSize * 0.024), 0.52);
+    const nodes = ordered.map((rect) => new pixi.Graphics()
+      .circle(rect.centerX, rect.centerY, cellSize * 0.09)
+      .stroke({ color: secondary, width: Math.max(1.2, cellSize * 0.022), alpha: 0.78 }));
+    const glint = drawDiamond(new pixi.Graphics(), 0, 0, cellSize * 0.09)
+      .fill({ color: "#fff2bc", alpha: 0.94 });
+    layer.addChild(path, ...nodes, glint);
+    await animate(duration, (raw) => {
+      const travel = easeInOutCubic(windowProgress(raw, 0.08, 0.74));
+      const segment = travel * Math.max(1, ordered.length - 1);
+      const left = Math.min(ordered.length - 1, Math.floor(segment));
+      const right = Math.min(ordered.length - 1, left + 1);
+      const ratio = segment - left;
+      glint.position.set(
+        ordered[left]!.centerX + (ordered[right]!.centerX - ordered[left]!.centerX) * ratio,
+        ordered[left]!.centerY + (ordered[right]!.centerY - ordered[left]!.centerY) * ratio,
+      );
+      glint.rotation = raw * Math.PI;
+      glint.alpha = fadeOut(raw, 0.76);
+      path.alpha = softPulse(raw, 0, 0.9) * 0.74;
+      nodes.forEach((node, index) => { node.alpha = windowProgress(raw, index * 0.05, 0.4 + index * 0.04) * fadeOut(raw, 0.78); });
+    });
+    return;
+  }
+
+  if (design === "moonlight-dissolve") {
+    const halo = new pixi.Graphics()
+      .circle(centroid.x, centroid.y, cellSize * 0.48)
+      .fill({ color: primary, alpha: 0.13 })
+      .stroke({ color: secondary, width: Math.max(1, cellSize * 0.018), alpha: 0.58 });
+    const stars = ordered.flatMap((rect, cellIndex) => Array.from({ length: 3 }, (_, index) => {
+      const star = drawDiamond(new pixi.Graphics(), 0, 0, cellSize * (0.025 + index * 0.008))
+        .fill({ color: index === 0 ? "#fffdf0" : secondary, alpha: 0.88 });
+      star.position.set(rect.centerX + (index - 1) * cellSize * 0.12, rect.centerY);
+      star.alpha = 0;
+      layer.addChild(star);
+      return { star, baseX: star.x, baseY: star.y, index: cellIndex * 3 + index };
+    }));
+    layer.addChildAt(halo, 0);
+    await animate(duration, (raw) => {
+      halo.alpha = softPulse(raw, 0, 0.86) * 0.65;
+      halo.scale.set(0.72 + easeOutCubic(windowProgress(raw, 0, 0.6)) * 0.28);
+      stars.forEach(({ star, baseX, baseY, index }) => {
+        const local = windowProgress(raw, 0.14 + (index % 4) * 0.025, 0.92);
+        star.alpha = Math.sin(local * Math.PI) * 0.9;
+        star.position.set(baseX + Math.sin(index * 1.7) * cellSize * 0.08 * local, baseY - cellSize * (0.24 + index % 3 * 0.09) * local);
+        star.rotation = local * (index % 2 === 0 ? 0.8 : -0.8);
+      });
+    });
+    return;
+  }
+
+  if (design === "ember-ash") {
+    const fissures = ordered.map((rect, index) => new pixi.Graphics()
+      .moveTo(rect.x + rect.width * 0.28, rect.y + rect.height * 0.68)
+      .lineTo(rect.centerX, rect.centerY)
+      .lineTo(rect.x + rect.width * 0.7, rect.y + rect.height * 0.3)
+      .stroke({ color: index % 2 === 0 ? primary : secondary, width: Math.max(1.1, cellSize * 0.02), alpha: 0.7 }));
+    const embers = ordered.flatMap((rect, cellIndex) => Array.from({ length: 3 }, (_, index) => {
+      const ember = new pixi.Graphics().circle(0, 0, Math.max(1.2, cellSize * 0.024)).fill({ color: index === 1 ? "#fff0b5" : primary, alpha: 0.9 });
+      ember.position.set(rect.centerX + (index - 1) * cellSize * 0.13, rect.centerY + cellSize * 0.1);
+      ember.alpha = 0;
+      layer.addChild(ember);
+      return { ember, baseX: ember.x, baseY: ember.y, index: cellIndex * 3 + index };
+    }));
+    layer.addChild(...fissures);
+    await animate(duration, (raw) => {
+      fissures.forEach((fissure, index) => { fissure.alpha = softPulse(raw, 0.04 + index * 0.025, 0.62 + index * 0.02) * 0.82; });
+      embers.forEach(({ ember, baseX, baseY, index }) => {
+        const local = windowProgress(raw, 0.2 + (index % 3) * 0.035, 0.94);
+        ember.alpha = Math.sin(local * Math.PI) * 0.9;
+        ember.position.set(baseX + Math.sin(index * 2.1) * cellSize * 0.1 * local, baseY - cellSize * (0.32 + index % 4 * 0.08) * local);
+      });
+    });
+    return;
+  }
+
+  if (design === "prism-ribbon") {
+    const colors = [primary, secondary, tertiary];
+    const ribbons = colors.map((color, index) => {
+      const ribbon = connectionPath(pixi, ordered.map((rect) => ({ ...rect, centerY: rect.centerY + (index - 1) * cellSize * 0.09 })), color, Math.max(2.5, cellSize * 0.065), 0.4);
+      layer.addChild(ribbon);
+      return ribbon;
+    });
+    const prism = new pixi.Graphics()
+      .poly([
+        centroid.x, centroid.y - cellSize * 0.2,
+        centroid.x + cellSize * 0.18, centroid.y + cellSize * 0.14,
+        centroid.x - cellSize * 0.18, centroid.y + cellSize * 0.14,
+      ], true)
+      .fill({ color: "#f6f0ff", alpha: 0.18 })
+      .stroke({ color: "#ffffff", width: Math.max(1, cellSize * 0.016), alpha: 0.76 });
+    layer.addChild(prism);
+    await animate(duration, (raw) => {
+      const gather = easeInOutCubic(windowProgress(raw, 0.08, 0.7));
+      const exit = fadeOut(raw, 0.78);
+      ribbons.forEach((ribbon, index) => {
+        ribbon.alpha = Math.sin(windowProgress(raw, index * 0.04, 0.82) * Math.PI) * 0.82;
+        ribbon.position.y = Math.sin(raw * Math.PI * 2 + index * 2.1) * cellSize * 0.025;
+      });
+      prism.alpha = windowProgress(raw, 0.3, 0.62) * exit;
+      prism.rotation = (1 - gather) * -0.3;
+      prism.scale.set(0.72 + gather * 0.28);
+    });
+    return;
+  }
+
+  if (design === "cosmos-fold") {
+    const path = connectionPath(pixi, ordered, secondary, Math.max(1.2, cellSize * 0.022), 0.55);
+    const cells = ordered.map((rect, index) => {
+      const color = [primary, secondary, tertiary][index % 3]!;
+      const ring = new pixi.Graphics().circle(rect.centerX, rect.centerY, cellSize * 0.29).stroke({ color, width: Math.max(1, cellSize * 0.018), alpha: 0.72 });
+      const star = drawDiamond(new pixi.Graphics(), rect.centerX, rect.centerY, cellSize * 0.045).fill({ color: "#fffdf4", alpha: 0.9 });
+      const cell = new pixi.Container();
+      cell.addChild(ring, star);
+      layer.addChild(cell);
+      return { cell, ring, rect };
+    });
+    const core = new pixi.Graphics().circle(centroid.x, centroid.y, cellSize * 0.16).fill({ color: primary, alpha: 0.25 }).stroke({ color: secondary, width: 1.2, alpha: 0.7 });
+    layer.addChildAt(path, 0);
+    layer.addChild(core);
+    await animate(duration, (raw) => {
+      const gather = easeInOutCubic(windowProgress(raw, 0.3, 0.78));
+      const exit = fadeOut(raw, 0.8);
+      path.alpha = softPulse(raw, 0, 0.84) * 0.75;
+      cells.forEach(({ cell, ring, rect }, index) => {
+        const reveal = easeOutCubic(windowProgress(raw, index * 0.035, 0.42 + index * 0.025));
+        cell.alpha = reveal * exit;
+        cell.pivot.set(rect.centerX, rect.centerY);
+        cell.position.set(rect.centerX + (centroid.x - rect.centerX) * gather * 0.18, rect.centerY + (centroid.y - rect.centerY) * gather * 0.18);
+        cell.scale.set(1 - gather * 0.3);
+        ring.rotation = (index % 2 === 0 ? 1 : -1) * raw * 0.35;
+      });
+      core.alpha = windowProgress(raw, 0.42, 0.68) * exit;
+      core.scale.set(0.65 + gather * 0.35);
+    });
+    return;
+  }
+
+  const colors = [primary, secondary, tertiary];
+  const flows = colors.map((color, index) => {
+    const flow = connectionPath(pixi, ordered.map((rect) => ({ ...rect, centerY: rect.centerY + (index - 1) * cellSize * 0.08 })), color, Math.max(2.2, cellSize * 0.052), 0.5);
+    layer.addChild(flow);
+    return flow;
+  });
+  const mark = drawTangoOutlineMark(pixi, cellSize * 0.72, "#fff8e8", primary);
+  mark.position.set(centroid.x, centroid.y);
+  mark.alpha = 0;
+  layer.addChild(mark);
+  await animate(duration, (raw) => {
+    const merge = easeInOutCubic(windowProgress(raw, 0.12, 0.68));
+    const exit = fadeOut(raw, 0.82);
+    flows.forEach((flow, index) => {
+      flow.alpha = Math.sin(windowProgress(raw, index * 0.04, 0.8) * Math.PI) * 0.82;
+      flow.position.y = (index - 1) * cellSize * 0.08 * (1 - merge);
+    });
+    mark.alpha = windowProgress(raw, 0.42, 0.68) * exit;
+    mark.scale.set(0.72 + merge * 0.28);
+  });
+}
+
 export function TangoBoardFx({
   boardRef,
   lastPlaced,
@@ -788,6 +1177,7 @@ export function TangoBoardFx({
   scoreColors,
   motionStyle = "legacy",
   placementSequenceKey = 0,
+  scoreSequenceKey = 0,
   onReadyChange,
 }: TangoBoardFxProps) {
   const hostRef = useRef<HTMLDivElement>(null);
@@ -802,7 +1192,7 @@ export function TangoBoardFx({
   const placementKey = lastPlaced === null
     ? `none:${placementSequenceKey}`
     : `${lastPlaced.row}:${lastPlaced.col}:${placementSequenceKey}`;
-  const scoringKey = Array.from(scoringCells).sort().join("|");
+  const scoringKey = `${Array.from(scoringCells).sort().join("|")}:${scoreSequenceKey}`;
   const placementColorKey = placementColors.join("|");
   const scoreColorKey = scoreColors.join("|");
   const designs = resolveBoardFxDesign(placementPreset, scorePreset);
@@ -1067,7 +1457,18 @@ export function TangoBoardFx({
     }), { x: 0, y: 0 });
 
     const run = async () => {
-      if (designs.score === "maple-resolve") {
+      if (motionStyle === "refined") {
+        await renderRefinedScore({
+          pixi,
+          layer,
+          rects,
+          design: designs.score,
+          primary,
+          secondary,
+          tertiary,
+          animate: (duration, update) => tween(duration, scoreSequenceRef, sequence, update),
+        });
+      } else if (designs.score === "maple-fade") {
         const ordered = [...rects].sort((a, b) => (a.centerX + a.centerY) - (b.centerX + b.centerY));
         const panels = ordered.map((rect, index) => {
           const panel = new pixi.Graphics()
@@ -1100,7 +1501,7 @@ export function TangoBoardFx({
           });
           seam.alpha = raw < 0.56 ? easeOutCubic(raw / 0.56) : 1 - easeOutCubic((raw - 0.56) / 0.44);
         });
-      } else if (designs.score === "cosmos-fold" && motionStyle === "refined") {
+      } else if (designs.score === "cosmos-fold") {
         const ordered = [...rects].sort((a, b) => {
           if (Math.abs(a.centerY - b.centerY) > 1) return a.centerY - b.centerY;
           return a.centerX - b.centerX;
@@ -1197,46 +1598,6 @@ export function TangoBoardFx({
               startY + (centroid.y - startY) * gather * 0.58,
             );
           });
-        });
-      } else if (designs.score === "cosmos-fold") {
-        const cells = rects.map((rect, index) => {
-          const color = [primary, secondary, tertiary][index % 3]!;
-          const plane = new pixi.Graphics()
-            .roundRect(rect.x + 4, rect.y + 4, rect.width - 8, rect.height - 8, rect.width * 0.1)
-            .fill({ color, alpha: 0.08 })
-            .stroke({ color, width: 1.15, alpha: 0.72 });
-          const diagonal = new pixi.Graphics()
-            .moveTo(rect.x + rect.width * 0.2, rect.y + rect.height * 0.8)
-            .lineTo(rect.x + rect.width * 0.8, rect.y + rect.height * 0.2)
-            .stroke({ color, width: 0.85, alpha: 0.46 });
-          const pin = drawDiamond(new pixi.Graphics(), rect.centerX, rect.centerY, Math.max(1.6, rect.width * 0.028))
-            .fill({ color, alpha: 0.9 });
-          const cell = new pixi.Container();
-          cell.addChild(plane, diagonal, pin);
-          layer.addChild(cell);
-          return { cell, rect };
-        });
-        const axis = new pixi.Graphics();
-        rects.forEach((rect, index) => {
-          if (index === 0) axis.moveTo(rect.centerX, rect.centerY);
-          else axis.lineTo(rect.centerX, rect.centerY);
-        });
-        axis.stroke({ color: secondary, width: 1, alpha: 0.5 });
-        layer.addChild(axis);
-        await tween(650, scoreSequenceRef, sequence, (raw) => {
-          const gather = easeInOutCubic(Math.max(0, (raw - 0.36) / 0.48));
-          const exit = raw < 0.78 ? 1 : 1 - easeOutCubic((raw - 0.78) / 0.22);
-          cells.forEach(({ cell, rect }, index) => {
-            const reveal = easeOutCubic(Math.max(0, Math.min(1, (raw - index * 0.035) / 0.44)));
-            cell.alpha = reveal * exit;
-            cell.pivot.set(rect.centerX, rect.centerY);
-            cell.position.set(
-              rect.centerX + (centroid.x - rect.centerX) * gather * 0.12,
-              rect.centerY + (centroid.y - rect.centerY) * gather * 0.12,
-            );
-            cell.scale.set(1 - gather * 0.075);
-          });
-          axis.alpha = (raw < 0.52 ? easeOutCubic(raw / 0.52) : 1 - easeOutCubic((raw - 0.52) / 0.48)) * exit;
         });
       } else {
         const ordered = scorePreset === "sweep"

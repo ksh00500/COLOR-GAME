@@ -11,7 +11,7 @@ export interface MoveEffectTimeline {
  * the placed tile lands first, then the connected tiles resolve.
  *
  * The standard budget covers the longest catalog combination
- * (350 ms placement + 650 ms scoring) without clipping either effect.
+ * (up to 400 ms landing overlap + 860 ms scoring) without clipping either effect.
  */
 export const getMoveEffectTimeline = (
   presentationSpeed: PresentationSpeed,
@@ -24,6 +24,6 @@ export const getMoveEffectTimeline = (
   }
 
   return presentationSpeed === "fast"
-    ? { scorePhaseDelayMs: 250, boardCommitDelayMs: 980, scoreNoticeDurationMs: 1_150 }
-    : { scorePhaseDelayMs: 400, boardCommitDelayMs: 1_250, scoreNoticeDurationMs: 1_700 };
+    ? { scorePhaseDelayMs: 250, boardCommitDelayMs: 1_200, scoreNoticeDurationMs: 1_350 }
+    : { scorePhaseDelayMs: 400, boardCommitDelayMs: 1_500, scoreNoticeDurationMs: 1_900 };
 };

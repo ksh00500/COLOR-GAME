@@ -8,11 +8,11 @@ describe("getMoveEffectTimeline", () => {
 
     expect(standard.scorePhaseDelayMs).toBeGreaterThanOrEqual(350);
     expect(standard.boardCommitDelayMs).toBeGreaterThanOrEqual(
-      standard.scorePhaseDelayMs + 650 + 160,
+      standard.scorePhaseDelayMs + 860 + 160,
     );
     expect(fast.scorePhaseDelayMs).toBeGreaterThan(0);
     expect(fast.boardCommitDelayMs).toBeGreaterThanOrEqual(
-      fast.scorePhaseDelayMs + 650 + 80,
+      fast.scorePhaseDelayMs + 860 + 80,
     );
   });
 

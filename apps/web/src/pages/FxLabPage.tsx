@@ -1,17 +1,24 @@
 import { useEffect, useRef, useState } from "react";
 import type { Position } from "@color-game/shared-types";
 import { TangoBoardFx } from "../components/TangoBoardFx";
-import { PLACEMENT_FX_DURATION_MS, resolveBoardFxDesign } from "../components/boardFxDesign";
+import {
+  PLACEMENT_FX_DURATION_MS,
+  SCORE_FX_DURATION_MS,
+  resolveBoardFxDesign,
+} from "../components/boardFxDesign";
 import "./fx-lab.css";
 
 type FxPhase = "idle" | "placement" | "complete";
+type EffectMode = "placement" | "score";
 type PlacementChoice = "tap" | "shadow" | "edge" | "stamp" | "leaf" | "ripple" | "ring" | "bloom" | "seal" | "fold" | "orbit" | "trinity";
+type ScoreChoice = "fade" | "sweep" | "lift" | "dust" | "scatter" | "wash" | "glint" | "dissolve" | "ash" | "ribbon" | "cosmos-fold" | "tango-flow";
 type LabTheme = "dark" | "light";
 type TileSurface = "bright" | "dark" | "gradient";
 
 const TARGET_CELLS = [11, 12, 13] as const;
 const CENTER_POSITION: Position = { row: 2, col: 2 };
 const EMPTY_SCORING_CELLS = new Set<string>();
+const LAB_SCORING_CELLS = new Set(["2:1", "2:2", "2:3"]);
 
 const initialTiles: Record<number, "a" | "b" | "c"> = {
   2: "a",
@@ -115,6 +122,27 @@ const placementOptions: Array<{
   },
 ];
 
+const scoreOptions: Array<{
+  id: ScoreChoice;
+  rarity: string;
+  name: string;
+  description: string;
+  colors: readonly string[];
+}> = [
+  { id: "fade", rarity: "COMMON", name: "메이플 페이드", description: "따뜻한 결이 연결된 타일을 안쪽으로 가라앉혀 정리합니다.", colors: ["#d9a45d"] },
+  { id: "sweep", rarity: "COMMON", name: "월넛 스윕", description: "월넛 스캔이 연결의 시작부터 끝까지 한 번에 훑습니다.", colors: ["#765038"] },
+  { id: "lift", rarity: "COMMON", name: "아이보리 리프트", description: "아이보리 하부광이 순서대로 타일을 들어 올립니다.", colors: ["#eadbbd"] },
+  { id: "dust", rarity: "COMMON", name: "차콜 더스트", description: "타일의 실루엣이 절제된 차콜 입자로 부서집니다.", colors: ["#59544d"] },
+  { id: "scatter", rarity: "RARE", name: "포레스트 스캐터", description: "연결선을 따라 자란 잎맥이 가장자리로 흩어집니다.", colors: ["#7e9b63", "#c7d59b"] },
+  { id: "wash", rarity: "RARE", name: "코스탈 워시", description: "넓은 물결과 굴절광이 연결된 타일을 통과합니다.", colors: ["#53b9b5", "#9be2db"] },
+  { id: "glint", rarity: "RARE", name: "브라스 글린트", description: "황동 연결선 위로 연마된 빛이 빠르게 이동합니다.", colors: ["#d1a24f", "#fff0b8"] },
+  { id: "dissolve", rarity: "EPIC", name: "문라이트 디졸브", description: "달빛 후광과 별가루가 타일을 위로 해체합니다.", colors: ["#b8c6ed", "#7885c6"] },
+  { id: "ash", rarity: "EPIC", name: "엠버 애시", description: "가느다란 균열이 빛난 뒤 불씨와 재가 떠오릅니다.", colors: ["#f08b45", "#7b3329"] },
+  { id: "ribbon", rarity: "EPIC", name: "프리즘 리본", description: "세 투명 리본이 연결선을 따라 엮여 하나로 모입니다.", colors: ["#d84d63", "#36a173", "#4d6ed7"] },
+  { id: "cosmos-fold", rarity: "LEGENDARY", name: "코스모스 폴드", description: "별자리 연결이 중심으로 접히며 우주광을 남깁니다.", colors: ["#8b7de4", "#56d2ca"] },
+  { id: "tango-flow", rarity: "LEGENDARY", name: "Tango 컬러 플로우", description: "세 색의 흐름이 합쳐져 Tango 마크를 완성합니다.", colors: ["#d84d63", "#36a173", "#4d6ed7"] },
+];
+
 const phaseCopy: Record<FxPhase, { eyebrow: string; title: string; detail: string }> = {
   idle: {
     eyebrow: "READY",
@@ -138,14 +166,18 @@ export function FxLabPage() {
   const boardWrapRef = useRef<HTMLDivElement>(null);
   const timersRef = useRef<number[]>([]);
   const [placement, setPlacement] = useState<PlacementChoice>("tap");
+  const [score, setScore] = useState<ScoreChoice>("fade");
+  const [effectMode, setEffectMode] = useState<EffectMode>("placement");
   const [labTheme, setLabTheme] = useState<LabTheme>("dark");
   const [tileSurface, setTileSurface] = useState<TileSurface>("gradient");
   const [phase, setPhase] = useState<FxPhase>("idle");
   const [lastPlaced, setLastPlaced] = useState<Position | null>(null);
+  const [scoringCells, setScoringCells] = useState<Set<string>>(EMPTY_SCORING_CELLS);
   const [playbackId, setPlaybackId] = useState(0);
   const playing = phase === "placement";
   const copy = phaseCopy[phase];
   const placementOption = placementOptions.find((option) => option.id === placement)!;
+  const scoreOption = scoreOptions.find((option) => option.id === score)!;
   const placementDesign = resolveBoardFxDesign(placement, undefined).placement;
 
   const clearTimers = () => {
@@ -155,19 +187,28 @@ export function FxLabPage() {
 
   useEffect(() => clearTimers, []);
 
-  const play = (nextPlacement: PlacementChoice = placement, revealBoard = true) => {
+  const play = (nextChoice: PlacementChoice | ScoreChoice = effectMode === "placement" ? placement : score, revealBoard = true) => {
     if (playing) return;
     clearTimers();
-    const nextDesign = resolveBoardFxDesign(nextPlacement, undefined).placement;
-    const nextDuration = PLACEMENT_FX_DURATION_MS[nextDesign];
-    setPlacement(nextPlacement);
+    const isPlacement = effectMode === "placement";
+    const nextPlacementDesign = resolveBoardFxDesign(nextChoice, undefined).placement;
+    const nextScoreDesign = resolveBoardFxDesign(undefined, nextChoice).score;
+    const nextDuration = isPlacement
+      ? PLACEMENT_FX_DURATION_MS[nextPlacementDesign]
+      : SCORE_FX_DURATION_MS[nextScoreDesign];
+    if (isPlacement) setPlacement(nextChoice as PlacementChoice);
+    else setScore(nextChoice as ScoreChoice);
     setLastPlaced(null);
+    setScoringCells(EMPTY_SCORING_CELLS);
     setPlaybackId((value) => value + 1);
     setPhase("placement");
     if (revealBoard && window.matchMedia("(max-width: 900px)").matches) {
       boardWrapRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
     }
-    timersRef.current.push(window.setTimeout(() => setLastPlaced(CENTER_POSITION), revealBoard ? 360 : 40));
+    timersRef.current.push(window.setTimeout(() => {
+      if (isPlacement) setLastPlaced(CENTER_POSITION);
+      else setScoringCells(LAB_SCORING_CELLS);
+    }, revealBoard ? 360 : 40));
     timersRef.current.push(window.setTimeout(() => {
       setPhase("complete");
     }, nextDuration + (revealBoard ? 540 : 180)));
@@ -185,15 +226,20 @@ export function FxLabPage() {
 
       <section className="fx-lab-hero">
         <div className="fx-lab-copy">
-          <p className="fx-lab-kicker">PLACEMENT EFFECT COLLECTION · 12</p>
-          <h1>배치 효과</h1>
-          <p className="fx-lab-lead">상품 이름과 재질에서 출발한 12개의 고유 동작입니다. 모든 연출은 셀 경계를 넘지 않고, 한 수가 안착하는 감각에 집중합니다.</p>
+          <p className="fx-lab-kicker">{effectMode === "placement" ? "PLACEMENT" : "SCORING"} EFFECT COLLECTION · 12</p>
+          <h1>{effectMode === "placement" ? "배치 효과" : "득점 효과"}</h1>
+          <p className="fx-lab-lead">{effectMode === "placement" ? "상품 이름과 재질에서 출발한 12개의 고유 동작입니다. 모든 연출은 셀 경계를 넘지 않고, 한 수가 안착하는 감각에 집중합니다." : "연결 방향과 재질을 읽을 수 있는 12개의 고유 득점 연출입니다. 배치와 분리된 두 번째 박자로 재생됩니다."}</p>
+
+          <div className="fx-lab-mode-switch" aria-label="효과 종류">
+            <button type="button" className={effectMode === "placement" ? "active" : ""} onClick={() => { setEffectMode("placement"); setPhase("idle"); }}>배치 효과</button>
+            <button type="button" className={effectMode === "score" ? "active" : ""} onClick={() => { setEffectMode("score"); setPhase("idle"); }}>득점 효과</button>
+          </div>
 
           <fieldset className="fx-lab-picker">
-            <legend>배치 효과</legend>
-            {placementOptions.map((option) => (
+            <legend>{effectMode === "placement" ? "배치 효과" : "득점 효과"}</legend>
+            {(effectMode === "placement" ? placementOptions : scoreOptions).map((option) => (
               <button
-                className={placement === option.id ? "active" : ""}
+                className={(effectMode === "placement" ? placement : score) === option.id ? "active" : ""}
                 key={option.id}
                 onClick={() => play(option.id)}
                 type="button"
@@ -204,8 +250,6 @@ export function FxLabPage() {
               </button>
             ))}
           </fieldset>
-
-          <p className="fx-lab-next">득점 효과는 배치 효과 확정 후 별도 규격으로 다시 설계합니다.</p>
 
           <div className="fx-lab-view-controls" aria-label="검증 배경과 타일 표면">
             <div>
@@ -245,7 +289,8 @@ export function FxLabPage() {
                 const col = index % 5;
                 const target = TARGET_CELLS.includes(index as typeof TARGET_CELLS[number]);
                 const centerTile = index === 12 && phase !== "idle";
-                const tile = centerTile ? "b" : initialTiles[index];
+                const scoreTile = effectMode === "score" && TARGET_CELLS.includes(index as typeof TARGET_CELLS[number]);
+                const tile = centerTile || scoreTile ? "b" : initialTiles[index];
                 return (
                   <span
                     className={`fx-lab-cell ${target ? "target" : ""}`}
@@ -266,20 +311,21 @@ export function FxLabPage() {
             <TangoBoardFx
               boardRef={boardRef}
               lastPlaced={lastPlaced}
-              scoringCells={EMPTY_SCORING_CELLS}
+              scoringCells={scoringCells}
               placementPreset={placement}
-              scorePreset="fade"
+              scorePreset={score}
               placementColors={placementOption.colors}
-              scoreColors={["#d9a45d"]}
+              scoreColors={scoreOption.colors}
               motionStyle="refined"
               placementSequenceKey={playbackId}
+              scoreSequenceKey={playbackId}
             />
             <span className="fx-lab-board-glow" aria-hidden="true" />
           </div>
           <div className="fx-lab-selection-summary">
-            <span><b>배치</b>{placementOption.name}</span>
+            <span><b>{effectMode === "placement" ? "배치" : "득점"}</b>{effectMode === "placement" ? placementOption.name : scoreOption.name}</span>
             <i aria-hidden="true" />
-            <span><b>등급</b>{placementOption.rarity}</span>
+            <span><b>등급</b>{effectMode === "placement" ? placementOption.rarity : scoreOption.rarity}</span>
             <i aria-hidden="true" />
             <span><b>경계</b>셀 내부 고정</span>
           </div>

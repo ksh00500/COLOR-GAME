@@ -12,7 +12,20 @@ export type PlacementFxDesign =
   | "prism-fold"
   | "cosmos-orbit"
   | "tango-trinity";
-export type ScoreFxDesign = "trace" | "maple-resolve" | "cosmos-fold";
+export type ScoreFxDesign =
+  | "trace"
+  | "maple-fade"
+  | "walnut-sweep"
+  | "ivory-lift"
+  | "charcoal-dust"
+  | "forest-scatter"
+  | "coastal-wash"
+  | "brass-glint"
+  | "moonlight-dissolve"
+  | "ember-ash"
+  | "prism-ribbon"
+  | "cosmos-fold"
+  | "tango-flow";
 
 export interface BoardFxDesign {
   placement: PlacementFxDesign;
@@ -33,6 +46,22 @@ export const PLACEMENT_FX_DURATION_MS: Readonly<Record<PlacementFxDesign, number
   "prism-fold": 860,
   "cosmos-orbit": 720,
   "tango-trinity": 900,
+};
+
+export const SCORE_FX_DURATION_MS: Readonly<Record<ScoreFxDesign, number>> = {
+  trace: 450,
+  "maple-fade": 460,
+  "walnut-sweep": 520,
+  "ivory-lift": 520,
+  "charcoal-dust": 580,
+  "forest-scatter": 640,
+  "coastal-wash": 680,
+  "brass-glint": 640,
+  "moonlight-dissolve": 760,
+  "ember-ash": 780,
+  "prism-ribbon": 800,
+  "cosmos-fold": 860,
+  "tango-flow": 860,
 };
 
 export function placementFxUsesTileSurface(design: PlacementFxDesign) {
@@ -64,10 +93,19 @@ export function resolveBoardFxDesign(
       orbit: "cosmos-orbit",
       trinity: "tango-trinity",
     } as Record<string, PlacementFxDesign>)[placementPreset ?? ""] ?? "settle",
-    score: scorePreset === "fade"
-      ? "maple-resolve"
-      : scorePreset === "cosmos-fold"
-        ? "cosmos-fold"
-        : "trace",
+    score: ({
+      fade: "maple-fade",
+      sweep: "walnut-sweep",
+      lift: "ivory-lift",
+      dust: "charcoal-dust",
+      scatter: "forest-scatter",
+      wash: "coastal-wash",
+      glint: "brass-glint",
+      dissolve: "moonlight-dissolve",
+      ash: "ember-ash",
+      ribbon: "prism-ribbon",
+      "cosmos-fold": "cosmos-fold",
+      "tango-flow": "tango-flow",
+    } as Record<string, ScoreFxDesign>)[scorePreset ?? ""] ?? "trace",
   };
 }

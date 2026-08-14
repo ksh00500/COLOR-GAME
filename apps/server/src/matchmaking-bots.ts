@@ -91,7 +91,7 @@ export const occupiedCellCount = (game: GameState): number =>
     0,
   );
 
-export const MATCHMAKING_BOT_RESOLUTION_GRACE_MS = 1_350;
+export const MATCHMAKING_BOT_RESOLUTION_GRACE_MS = 1_500;
 
 export const botMoveResolutionGraceMs = (game: GameState): number =>
   (game.lastMove?.removedCells.length ?? 0) > 0

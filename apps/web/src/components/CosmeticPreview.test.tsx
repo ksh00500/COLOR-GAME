@@ -52,13 +52,14 @@ describe("CosmeticPreview", () => {
     expect(html).toContain("sample-c");
   });
 
-  it("uses descriptive vector scenes instead of letter placeholders", () => {
+  it("uses the shared scoring renderer instead of letter placeholders", () => {
     const score = renderToStaticMarkup(<CosmeticPreview item={cosmetic("score_effect", "wash")} label="score" />);
     const victory = renderToStaticMarkup(<CosmeticPreview item={cosmetic("victory_effect")} label="victory" />);
 
     expect(score).toContain("score-preview-motif-wash");
-    expect(score).toContain("score-motif-wash-tiles");
-    expect((score.match(/<path/g) ?? [])).toHaveLength(3);
+    expect(score).toContain("score-preview-board");
+    expect((score.match(/score-preview-cell/g) ?? [])).toHaveLength(3);
+    expect(score).toContain('data-score-fx-engine="modern"');
     expect(score).toContain("+4");
     expect(victory).toContain("victory-cup");
     expect(victory).toContain("victory-laurel");

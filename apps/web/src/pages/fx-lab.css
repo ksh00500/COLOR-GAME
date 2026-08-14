@@ -89,6 +89,11 @@
 .fx-lab-kicker { margin: 0 0 1rem; color: #bc667a; font-size: 0.68rem; font-weight: 900; letter-spacing: 0.25em; }
 .fx-lab-copy h1 { margin: 0; color: #f4e9dc; font-family: Georgia, "Noto Serif KR", serif; font-size: clamp(3rem, 4.3vw, 4.8rem); font-weight: 600; line-height: 0.98; letter-spacing: -0.055em; white-space: nowrap; word-break: keep-all; }
 .fx-lab-lead { margin: 1.2rem 0 1.35rem; color: #b1a397; font-size: clamp(0.9rem, 1.05vw, 1.02rem); line-height: 1.68; word-break: keep-all; }
+.fx-lab-mode-switch { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: .38rem; margin: 0 0 1rem; padding: .32rem; border: 1px solid var(--fx-line); border-radius: .34rem; background: rgba(24,20,18,.52); }
+.theme-light .fx-lab-mode-switch { background: rgba(255,250,241,.68); }
+.fx-lab-mode-switch button { min-height: 2.45rem; border: 1px solid transparent; border-radius: .26rem; color: #938579; background: transparent; font-size: .76rem; font-weight: 850; cursor: pointer; transition: color 180ms ease,border-color 180ms ease,background 180ms ease; }
+.fx-lab-mode-switch button:hover { color: var(--fx-ink); }
+.fx-lab-mode-switch button.active { border-color: rgba(185,92,114,.48); color: var(--fx-ink); background: rgba(165,72,96,.2); box-shadow: inset 2px 0 #b95c72; }
 .fx-lab-version { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 0.5rem 0.85rem; margin: 0 0 1rem; padding: 0.72rem 0.8rem; border: 1px solid rgba(222,197,164,0.13); border-radius: 0.3rem; background: rgba(25,21,19,0.64); }
 .fx-lab-version > span { color: #84766b; font-size: 0.61rem; font-weight: 900; letter-spacing: 0.13em; text-transform: uppercase; }
 .fx-lab-version > div { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 0.3rem; }

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   PLACEMENT_FX_DURATION_MS,
+  SCORE_FX_DURATION_MS,
   placementFxUsesTileSurface,
   resolveBoardFxDesign,
 } from "./boardFxDesign";
@@ -21,7 +22,7 @@ describe("resolveBoardFxDesign", () => {
   it("keeps placement and scoring presets independent", () => {
     expect(resolveBoardFxDesign("orbit", "fade")).toEqual({
       placement: "cosmos-orbit",
-      score: "maple-resolve",
+      score: "maple-fade",
     });
     expect(resolveBoardFxDesign("tap", "cosmos-fold")).toEqual({
       placement: "maple-tap",
@@ -29,8 +30,15 @@ describe("resolveBoardFxDesign", () => {
     });
   });
 
+  it("maps every scoring catalog preset to its own renderer", () => {
+    const presets = ["fade", "sweep", "lift", "dust", "scatter", "wash", "glint", "dissolve", "ash", "ribbon", "cosmos-fold", "tango-flow"];
+    const designs = presets.map((preset) => resolveBoardFxDesign(undefined, preset).score);
+    expect(new Set(designs).size).toBe(presets.length);
+    expect(designs).not.toContain("trace");
+  });
+
   it("falls back to restrained generic feedback for unknown presets", () => {
-    expect(resolveBoardFxDesign("unknown-placement", "glint")).toEqual({
+    expect(resolveBoardFxDesign("unknown-placement", "unknown-score")).toEqual({
       placement: "settle",
       score: "trace",
     });
@@ -54,6 +62,24 @@ describe("resolveBoardFxDesign", () => {
     });
     expect(resolveBoardFxDesign("edge", undefined).placement).toBe("ivory-click");
     expect(resolveBoardFxDesign("ivory-edge", undefined).placement).toBe("ivory-click");
+  });
+
+  it("keeps the scoring duration contract within the board resolution budget", () => {
+    expect(SCORE_FX_DURATION_MS).toEqual({
+      trace: 450,
+      "maple-fade": 460,
+      "walnut-sweep": 520,
+      "ivory-lift": 520,
+      "charcoal-dust": 580,
+      "forest-scatter": 640,
+      "coastal-wash": 680,
+      "brass-glint": 640,
+      "moonlight-dissolve": 760,
+      "ember-ash": 780,
+      "prism-ribbon": 800,
+      "cosmos-fold": 860,
+      "tango-flow": 860,
+    });
   });
 
   it("only routes physical tile effects through the tile surface", () => {
